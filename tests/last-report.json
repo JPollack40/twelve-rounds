@@ -1,199 +1,28 @@
 {
- "when": "2026-10-28T14:53:41.831Z",
- "fights": [
-  {
-   "id": "human_eq_champ",
-   "why": "an equal opponent on Champion should be competitive (calibrate with real play)",
-   "band": [
-    0.3,
-    0.9
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 0,
-   "ok": false,
-   "avgLanded": 135,
-   "avgAcc": 0.47,
-   "avgOppAcc": 0.27,
-   "results": "o:DECR6 o:DECR6"
-  },
-  {
-   "id": "human_eq_legend",
-   "why": "Legend difficulty should bite",
-   "band": [
-    0.1,
-    0.7
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 0,
-   "ok": false,
-   "avgLanded": 106,
-   "avgAcc": 0.42,
-   "avgOppAcc": 0.33,
-   "results": "o:DECR6 o:DECR6"
-  },
-  {
-   "id": "human_eq_contender",
-   "why": "Contender is the learning setting",
-   "band": [
-    0.7,
-    1
-   ],
-   "winRate": 1,
-   "n": 2,
-   "kos": 2,
-   "koed": 0,
-   "ok": true,
-   "avgLanded": 142.5,
-   "avgAcc": 0.67,
-   "avgOppAcc": 0.14,
-   "results": "p:KOR4 p:KOR4"
-  },
-  {
-   "id": "human_plus15",
-   "why": "a +15 rated opponent should be a real underdog fight",
-   "band": [
-    0.1,
-    0.65
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 0,
-   "ok": false,
-   "avgLanded": 130,
-   "avgAcc": 0.48,
-   "avgOppAcc": 0.26,
-   "results": "o:DECR6 o:DECR6"
-  },
-  {
-   "id": "novice_eq_contender",
-   "why": "a slow reader should still win on Contender",
-   "band": [
-    0.5,
-    1
-   ],
-   "winRate": 1,
-   "n": 2,
-   "kos": 2,
-   "koed": 0,
-   "ok": true,
-   "avgLanded": 138.5,
-   "avgAcc": 0.67,
-   "avgOppAcc": 0.23,
-   "results": "p:KOR4 p:KOR4"
-  },
-  {
-   "id": "expert_plus20",
-   "why": "skill should beat ratings",
-   "band": [
-    0.1,
-    0.9
-   ],
-   "winRate": 0.5,
-   "n": 2,
-   "kos": 1,
-   "koed": 0,
-   "ok": true,
-   "avgLanded": 157,
-   "avgAcc": 0.52,
-   "avgOppAcc": 0.11,
-   "results": "o:DECR6 p:KOR6"
-  },
-  {
-   "id": "masher_eq",
-   "why": "button mashing must not work",
-   "band": [
-    0,
-    0.4
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 2,
-   "ok": true,
-   "avgLanded": 85,
-   "avgAcc": 0.28,
-   "avgOppAcc": 0.81,
-   "results": "o:KOR5 o:KOR5"
-  },
-  {
-   "id": "turtle_eq",
-   "why": "frame-perfect blocking should not dominate (and never KO)",
-   "band": [
-    0,
-    0.75
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 0,
-   "ok": true,
-   "avgLanded": 100,
-   "avgAcc": 0.3,
-   "avgOppAcc": 0.28,
-   "results": "o:DECR6 o:DECR6"
-  },
-  {
-   "id": "human_legend_tyrell",
-   "why": "legends are the hardest fights, even for an 85-rated player",
-   "band": [
-    0.05,
-    0.6
-   ],
-   "winRate": 0,
-   "n": 2,
-   "kos": 0,
-   "koed": 0,
-   "ok": false,
-   "avgLanded": 135,
-   "avgAcc": 0.44,
-   "avgOppAcc": 0.26,
-   "results": "o:DECR6 o:DECR6"
-  },
-  {
-   "id": "human_legend_hollis",
-   "why": "legends are the hardest fights, even for an 85-rated player",
-   "band": [
-    0.3,
-    1
-   ],
-   "winRate": 0.5,
-   "n": 2,
-   "kos": 1,
-   "koed": 0,
-   "ok": true,
-   "avgLanded": 163.5,
-   "avgAcc": 0.49,
-   "avgOppAcc": 0.61,
-   "results": "o:DECR6 p:KOR6"
-  }
- ],
+ "when": "2026-10-28T16:32:06.795Z",
+ "fights": [],
  "careers": {
   "n": 60,
   "retireAgeMed": 38,
   "winsMed": 47,
   "lossesMed": 23,
   "titlesMed": 1,
-  "titlesAvg": 1.68,
-  "champShare": 1,
+  "titlesAvg": 1.73,
+  "champShare": 0.98,
   "undisputedShare": 0.08,
   "multiDivShare": 0,
-  "legendsAvg": 1.43,
-  "chaptersAvg": 1.03,
-  "moneyMed": 38366067,
-  "hofMed": 284,
+  "legendsAvg": 1.42,
+  "chaptersAvg": 1.05,
+  "moneyMed": 42060507,
+  "hofMed": 330,
   "tiers": {
-   "Champion": 31,
-   "Hall of Famer": 21,
-   "All-Time Great": 5,
-   "Contender": 3
+   "Hall of Famer": 28,
+   "Champion": 21,
+   "All-Time Great": 6,
+   "Contender": 5
   },
   "forcedRetireShare": 0,
-  "dmgMed": 69
+  "dmgMed": 68
  },
  "errors": [],
  "careerChecks": [
@@ -208,7 +37,7 @@
   },
   {
    "k": "champShare",
-   "v": 1,
+   "v": 0.98,
    "band": [
     0.4,
     1
@@ -226,7 +55,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1.03,
+   "v": 1.05,
    "band": [
     0.3,
     5
@@ -235,7 +64,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.43,
+   "v": 1.42,
    "band": [
     0.2,
     6
