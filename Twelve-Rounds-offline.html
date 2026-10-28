@@ -633,6 +633,12 @@ const GEAR=[
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
 ];
 const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
+/* sponsors: pay a share of each purse (half on a loss) and put their name on your waistband for a set number of fights */
+const SPONSORS=[
+  {id:'ironbrew',name:'IronBrew Energy',band:'IRONBREW',cut:.12,min:1500,fights:5,hype:25,drop:2,perk:'',desc:'An energy drink that wants a scrapper.'},
+  {id:'apex',name:'Apex Sportswear',band:'APEX',cut:.1,min:4000,fights:6,hype:45,drop:3,perk:'gear',desc:'Kit maker. Their fighters get 20% off everything in the Locker.'},
+  {id:'goldline',name:'Goldline Watches',band:'GOLDLINE',cut:.18,min:25000,fights:4,hype:60,title:1,drop:2,perk:'',desc:'Luxury watches. They only sign champions.'},
+];
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',
@@ -825,9 +831,10 @@ function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
 function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
 function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
 function gearHype(){return gearEquipped().reduce((s,g)=>s+(g.hype||0),0)}
-function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});return L}
-function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<g.price)return `You need ${money(g.price)}`;
-  b.money-=g.price;st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
+function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);if(S)L.band=S.band}return L}
+function gearPrice(g){return Math.round(g.price*(G.sponsor&&G.sponsor.id==='apex'?.8:1)/100)*100}
+function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<gearPrice(g))return `You need ${money(gearPrice(g))}`;
+  b.money-=gearPrice(g);st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
 function equipGear(id){const g=GEAR_BY[id],st=gearState();if(!g||!st.owned.includes(id))return false;st.eq[g.slot]=id;return true}
 /* free unlocks (price 0 with a condition) are granted; newly purchasable items are announced once */
 function gearCheckUnlocks(lines){const st=gearState();st.seen=st.seen||[];const fresh=[];
@@ -1138,6 +1145,8 @@ function yearAwards(){
     if(Y.ko){aw.push({year,type:'Knockout of the Year',who:`${Y.ko.by} over ${Y.ko.on}`,player:Y.ko.id==='P'});if(Y.ko.id==='P'){b.awards.push('koy');news(`Your knockout of ${Y.ko.on} is ${year} Knockout of the Year.`,'gold')}}
     if(Y.up){aw.push({year,type:'Upset of the Year',who:`${Y.up.by} over ${Y.up.on}`,player:Y.up.id==='P'});if(Y.up.id==='P'){b.awards.push('uoy');news(`Your win over ${Y.up.on} is ${year} Upset of the Year.`,'gold')}}
   }
+  if(G.yrP&&G.phase==='pro'){const Y=G.yrP;G.recap=Object.assign({year,ovr1:playerOvr(),pts1:B().pts,rank1:playerRank(),awards:(G.awards||[]).filter(a=>a.year===year&&a.player).map(a=>a.type)},Y)}
+  G.yrP={w:0,l:0,d:0,ko:0,titles:0,money:0,ovr0:G.boxer?playerOvr():0,pts0:G.boxer?B().pts:0,rank0:G.boxer?playerRank():null};
   if(G.hofQ&&G.hofQ.length){G.hof=G.hof||[];const cls=G.hofQ.splice(0);cls.forEach(h=>G.hof.push(Object.assign({year:year+1},h)));news(`Hall of Fame class of ${year+1}: ${cls.map(h=>h.name.replace(/ “.*” /,' ')).join(', ')}.`,'gold')}
   G.yr={fw:{},ko:null,up:null};
 }
@@ -1203,6 +1212,7 @@ function applyResult(o,res){
   const pro=!o.amateur;
   const prevRank=playerRank();
   if(pro){if(win){b.record.w++;if(ko)b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
+  if(pro){const Y=G.yrP=G.yrP||{w:0,l:0,d:0,ko:0,titles:0,ovr0:playerOvr(),pts0:b.pts,rank0:prevRank};if(win){Y.w++;if(ko)Y.ko++;if(o.title&&!o.title.regional&&!o.title.defense)Y.titles++}else if(loss)Y.l++;else Y.d++}
   if(pro){const me={id:'P',first:b.first,last:b.last,nick:b.nick,div:b.div,rating:playerOvr()};if(win)recYear(me,f,ko,!!(o.title&&!o.title.regional&&!o.title.defense));else if(loss)recYear(f,me,ko,false)}
   else{if(win)b.am.w++;else b.am.l++}
   if(win){f.l++}else if(loss){f.w++;if(ko)f.ko++}else f.d++;
@@ -1247,8 +1257,12 @@ function applyResult(o,res){
     if(G.staff.cutman)lines.push(['Cutman',-1500]);
     if(G.staff.nutri)lines.push(['Nutritionist',-2500]);
     const med=Math.round(res.dmgTaken*15+(res.kdAgainst*500));if(med>200)lines.push(['Medical',-med]);
+    if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);if(S){const pay=Math.round(Math.max(S.min,gross*S.cut)*(win?1:.5)/100)*100;lines.push([S.name,pay])}}
     const net=sum(lines.map(l=>l[1]));
-    b.money+=net;out.money=net;out.moneyLines=lines;
+    b.money+=net;out.money=net;out.moneyLines=lines;(G.yrP=G.yrP||{w:0,l:0,d:0,ko:0,titles:0,money:0,ovr0:playerOvr(),pts0:b.pts,rank0:prevRank}).money=(G.yrP.money||0)+net;
+    if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);G.sponsor.left--;if(loss)G.sponsor.losses++;else if(win)G.sponsor.losses=0;
+      if(S&&G.sponsor.losses>=S.drop){news(`${S.name} drops you after ${G.sponsor.losses} straight losses.`,'red');out.lines.push(`Dropped by ${S.name}`);(G.flags.spDropped=G.flags.spDropped||[]).push(S.id);G.sponsor=null}
+      else if(S&&G.sponsor.left<=0){news(`Your deal with ${S.name} has run its course.`);out.lines.push(`${S.name} deal finished`);G.sponsor=null}}
     if(G.promoter){G.promoter.left--;if(loss)G.promoter.losses=(G.promoter.losses||0)+1;else if(win)G.promoter.losses=0}
   }
   // hype
@@ -1452,7 +1466,11 @@ function recordQuickLoss(label){
   b.record.l++;f.w++;b.form.push('L');b.streak=Math.min(-1,b.streak-1);b.pts=Math.max(0,b.pts-30);
   G.history.push({id:'h'+uid(),w:G.week,oppId:f.id,opp:fullName(f),oppRec:recStr(f),oppRating:f.rating,res:'L',method:'SD',round:10,time:'3:00',title:'',type:'dive',label,purse:0,pro:true,div:b.div});
 }
+function sponsorOffer(){const b=B();return SPONSORS.filter(S=>b.hype>=S.hype&&(!S.title||b.titleWins)&&!(G.flags.spDropped||[]).includes(S.id)).sort((a,b)=>b.cut-a.cut)[0]||null}
 const EVENTS=[
+  {id:'sponsor',w:3,cond:()=>G.phase==='pro'&&!!sponsorOffer()&&(!G.sponsor||(SPONSORS.find(x=>x.id===G.sponsor.id)||{cut:0}).cut<sponsorOffer().cut)&&G.week-(G.flags.spAsk||-99)>=16,title:'A Sponsor Calls',prep:()=>{const S=sponsorOffer();if(!S)return false;G.flags.spAsk=G.week;G.flags.spOffer=S.id;return true},
+    text:()=>{const S=SPONSORS.find(x=>x.id===G.flags.spOffer)||sponsorOffer();if(!S)return 'A sponsor calls, then thinks better of it.';return `${S.name} wants you. ${S.desc} They pay ${Math.round(S.cut*100)}% of every purse (at least ${money(S.min)}) for ${S.fights} fights, half after a loss, and their name goes on your waistband.${G.sponsor?' Signing ends your current deal.':''}`},
+    choices:[{t:'Sign the deal',fx:()=>{const S=SPONSORS.find(x=>x.id===G.flags.spOffer)||sponsorOffer();if(!S)return 'The deal fell through.';G.sponsor={id:S.id,left:S.fights,losses:0};return `You signed with ${S.name}.`}},{t:'Not interested',fx:()=>'You keep your trunks clean.'}]},
   {id:'sponsor',w:3,cond:()=>G.phase==='pro'&&B().hype>=15,title:'Sponsorship Offer',
     text:()=>`An energy drink company wants your face on their cans. ${money(3000+B().hype*400)} up front, plus appearances.`,
     choices:[{t:'Sign it',fx:()=>{const m=3000+B().hype*400;B().money+=m;G.flags.campPenalty=1;return `+${money(m)}. The appearances will cost you a week of your next camp.`}},{t:'Stay focused',fx:()=>'You pass. Pops nods approvingly.'}]},
@@ -1965,7 +1983,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
-    trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
+    robe:lk.robe||null,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -2212,6 +2230,19 @@ function r3boxer(L,opt={}){
     const sole=r3mesh(new THREE.BoxGeometry(.15,.035,.3),r3matte(0x1d1517),{ol:false});sole.position.set(0,-.37*ll-.2,.06);knee.add(sole);
     legs[s]={hip,knee};
   }
+  if(opt.robe&&L.robe){
+    // walkout robe: open-front satin hanging from the shoulders over the arms, with a trim edge; hood or gold variants
+    const col=L.robe==='gold'?'#f0be48':L.trunks,edge=L.robe==='gold'?'#161616':L.trim;
+    const rc=document.createElement('canvas');rc.width=256;rc.height=256;const rx=rc.getContext('2d');rx.fillStyle=new THREE.Color(col).getStyle();rx.fillRect(0,0,256,256);
+    rx.fillStyle=new THREE.Color(edge).getStyle();rx.fillRect(0,0,12,256);rx.fillRect(244,0,12,256);rx.fillRect(0,240,256,16);
+    if(L.band){rx.save();rx.translate(128,92);rx.fillStyle=new THREE.Color(edge).getStyle();rx.font='bold 34px "Alfa Slab One",Georgia,serif';rx.textAlign='center';rx.fillText(L.band.slice(0,10),0,0);rx.restore()}
+    const rt=new THREE.CanvasTexture(rc);rt.colorSpace=THREE.SRGBColorSpace;
+    const C=P.chest*m;const prof=[[.16,.78],[.36*C,.74],[.47*C,.68],[.5*C,.56],[.5*C,.3],[.48*C,0],[.51*C,-.4],[.56*C,-.85],[.6*C,-1.05]];
+    const pts=prof.map(([r,y])=>new THREE.Vector2(r,y)).reverse();const rg=new THREE.LatheGeometry(pts,48,.42,Math.PI*2-.84);rg.scale(1.2,R3_TS,P.depth/.72*1.05);rg.computeVertexNormals();
+    const rm=r3cel(0xffffff,rt,true);rm.side=THREE.DoubleSide;spine.add(r3mesh(rg,rm,{olw:.004}));
+    const sm=r3cel(new THREE.Color(col).getHex(),null,true);for(const s of [-1,1]){const sl=r3mesh(r3muscle(.62*P.len,(t,a)=>(.15+.035*t)*m*P.arm,{seg:8,rad:20,cap:3,ck:.5}),sm,{olw:.004});sl.position.y=.06;arms[s].sh.add(sl)}
+    if(L.robe==='hood'){const hg=new THREE.SphereGeometry(.27,32,16,0,Math.PI*2,0,Math.PI*.62);const hm=r3cel(new THREE.Color(col).getHex(),null,true);hm.side=THREE.DoubleSide;const hood=r3mesh(hg,hm,{olw:.004});hood.rotation.x=-1.05;hood.position.set(0,.02,-.07);headG.add(hood)}
+  }
   r3outline(root);
   const hy0=pelvis.position.y+spine.position.y+headG.position.y+head.position.y;
   root.userData={pelvis,spine,chest,headG,head,arms,legs,P,legY,hy0};
@@ -2251,7 +2282,7 @@ function r3guard(bx,kind='high'){
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
   const hy=u.headG.getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
-  for(const s of [-1,1]){const t=kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
+  for(const s of [-1,1]){const t=kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
     r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),new THREE.Vector3(s*.35,-1.5,.7).applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
 }
 function r3dispose(o){o.traverse(m=>{if(m.geometry&&!m.geometry.userData.keep)m.geometry.dispose();const mats=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];for(const mt of mats){if(mt.userData&&mt.userData.keep)continue;for(const k of ['map','alphaMap'])if(mt[k]&&!mt[k].userData.keep)mt[k].dispose();mt.dispose()}})}
@@ -2314,12 +2345,12 @@ const R3P={cache:new Map(),
   },
   shot(look,o={}){
     const mode=o.mode||'bust',size=o.size||(mode==='full'?360:224);
-    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'']);
+    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'']);
     if(this.cache.has(key))return this.cache.get(key);
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
-    const bx=r3boxer(L);bx.rotation.y=mode==='full'?-.42:-.22;this.scene.add(bx);r3guard(bx,o.guard);
+    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=mode==='full'?(o.robe?-.18:-.42):-.22;this.scene.add(bx);r3guard(bx,o.guard);
     r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
     bx.updateWorldMatrix(true,true);const hp=bx.userData.headG.getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
@@ -3142,8 +3173,10 @@ class Fight{
   /* ring announcer: a short, skippable introduction before the opening bell */
   announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
     const el=document.createElement('div');el.className='annc';
-    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+'<div class="skip">Tap to skip</div>';
+    const imgs=A.imgs?`<div class="row" style="gap:10px;justify-content:center;align-items:flex-end"><div class="al" style="animation-delay:${1.15*2}s"><img id="wkO" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#9fb3ff">Blue corner</div></div><div class="al" style="animation-delay:${1.15*3}s"><img id="wkP" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#ff8a7a">Red corner</div></div></div>`:'';
+    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+imgs+'<div class="skip">Tap to skip</div>';
     this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
+    if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
@@ -3906,8 +3939,16 @@ function ensureState(){
   if(G.phase==='amateur'&&!G.am.done&&!G.next)acceptOffer(amateurOffer());
   if(G.phase==='pro'&&!G.next&&!G.offers.length)genOffers();
 }
+function showRecap(){if(!G||!G.recap||UI.silent)return;const R=G.recap;G.recap=null;Save.write();
+  const rk=(a,b)=>a&&b?(b<a?`#${a} → #${b} (up ${a-b})`:b>a?`#${a} → #${b} (down ${b-a})`:`#${b}`):b?`#${b}`:'Unranked';
+  setTimeout(()=>modal(`<div class="kicker">Year in review</div><div class="bigtxt" style="font-size:44px;text-align:center">${R.year}</div>
+    <div class="tblw"><table class="t"><tr><td>Record this year</td><td class="r num">${R.w}-${R.l}${R.d?'-'+R.d:''} (${R.ko} KO)</td></tr>
+    <tr><td>World titles won</td><td class="r num">${R.titles}</td></tr><tr><td>Overall rating</td><td class="r num">${R.ovr0} → ${R.ovr1}</td></tr>
+    <tr><td>Ranking</td><td class="r num">${rk(R.rank0,R.rank1)}</td></tr><tr><td>Money earned</td><td class="r num">${money(R.money||0)}</td></tr></table></div>
+    ${R.awards&&R.awards.length?`<p class="goldt" style="text-align:center"><b>${R.awards.map(esc).join(' · ')}</b></p>`:''}
+    <button class="btn primary" data-close="ok">On to ${R.year+1}</button>`),350)}
 SCR.home=()=>{
-  ensureState();
+  ensureState();showRecap();
   const b=B();let hero='';
   if(G.fightSave&&G.next&&G.fightSave.offerId===G.next.offer.id){const f=G.world.f[G.next.offer.oppId];
     return shell('home','Home',`<div class="hero"><div class="in"><div class="kicker">Fight interrupted</div><h1 class="disp" style="font-size:28px">Round ${G.fightSave.round} vs ${esc(f?f.last:'your opponent')}</h1><p class="muted">The fight was cut off. It picks up at the start of round ${G.fightSave.round} with the scorecards, damage and stamina as they were.</p><button class="btn primary wide" data-act="resumefight" style="min-height:56px;font-size:19px">Resume the fight</button></div></div>`)}
@@ -3951,7 +3992,7 @@ function pathHTML(){
   else if(r<=3){goal='Mandatory challenger: a title shot is on the table.'}
   else if(r<=6){goal='Win while on a roll and promoters will offer a title shot.'}
   else if(r<=15){goal='Ranked. Reach the top 6 to get title-shot offers.'}
-  else{const e15=list[14];need=e15?Math.max(0,e15.pts-b.pts+1):0;goal=`Unranked. About ${need} ranking points to crack the top 15. Step-up fights earn the most.`}
+  else{const e15=list[14];need=e15?Math.max(0,Math.ceil(e15.pts-b.pts+1)):0;goal=`Unranked. About ${need} ranking points to crack the top 15. Step-up fights earn the most.`}
   const pct=clamp(1-(r-1)/Math.max(1,list.length-1),0,1);
   return `<div class="card col"><div class="row sp"><h3>Path to a title</h3><span class="pill ${bl.length?'gold':'blue'}">${bl.length?'Champion':'#'+r} · ${DIVS[b.div].short}</span></div>
     <div class="bar g"><i style="width:${pct*100}%"></i></div><p style="font-size:14px">${goal}</p><p class="muted num" style="font-size:12.5px">Ranking points ${b.pts} · Hype ${Math.round(b.hype)}/100</p></div>`;
@@ -4067,6 +4108,12 @@ function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
   if(b.hype>60)L.push('The crowd is on its feet!');
   L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
+function walkout(o,f){const A={lines:announceLines(o,f)};
+  if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
+    A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
+    const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
+    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260})}catch(e){}return A};
+  return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
   if(!sim&&!resume&&G.fightSave&&G.fightSave.offerId===o.id)resume=G.fightSave;
@@ -4081,7 +4128,7 @@ function startFight(sim,resume){
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
     edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
-    seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?{lines:announceLines(o,f)}:null,
+    seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?walkout(o,f):null,
     onCheckpoint:cp=>{G.fightSave=Object.assign(cp,{offerId:o.id});Save.write()},
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
@@ -4293,7 +4340,7 @@ SCR.locker=()=>{
   const prev=R3P.ok()?`<img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;display:block;margin:0 auto">`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
   const sw=(k,arr)=>arr.map(c=>`<button class="sw${b.look[k]===c?' on':''}" style="background:${c}" data-act="recolor" data-k="${k}" data-v="${c}" aria-label="${k} ${c}"></button>`).join('');
   const item=g=>{const own=st.owned.includes(g.id),eq=st.eq[g.slot]===g.id,u=gearUnlock(g);
-    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=g.price?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=g.price?'':'disabled'}>${g.price?money(g.price):'Free'}</button>`;
+    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=gearPrice(g)?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=gearPrice(g)?'':'disabled'}>${g.price?money(gearPrice(g)):'Free'}</button>`;
     const locked=!own&&!u.ok;
     return `<div class="card flat" style="padding:10px;${eq?'border-color:var(--gold)':''}${locked?';opacity:.62':''}"><div class="row sp" style="align-items:flex-start;gap:10px"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${esc(g.name)}</b>
       <div class="muted" style="font-size:13px">${esc(g.desc)}</div><div class="row" style="gap:4px;margin-top:4px;flex-wrap:wrap">${fxPills(g.fx)}${g.hype?` <span class="pill gold" style="font-size:11px">+${g.hype} hype per win</span>`:''}</div>${locked?`<div style="margin-top:6px">${act}</div>`:''}</div>${locked?'':act}</div></div>`};

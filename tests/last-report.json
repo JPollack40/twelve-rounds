@@ -1,35 +1,35 @@
 {
- "when": "2026-10-28T20:53:21.864Z",
+ "when": "2026-10-28T21:02:18.442Z",
  "fights": [],
  "careers": {
   "n": 60,
-  "retireAgeMed": 38,
-  "winsMed": 45,
+  "retireAgeMed": 37,
+  "winsMed": 48,
   "lossesMed": 22,
   "titlesMed": 1,
-  "titlesAvg": 1.55,
-  "champShare": 0.95,
-  "undisputedShare": 0.03,
+  "titlesAvg": 1.67,
+  "champShare": 0.97,
+  "undisputedShare": 0.05,
   "multiDivShare": 0,
-  "legendsAvg": 1.38,
-  "chaptersAvg": 1.05,
-  "moneyMed": 34166116,
-  "hofMed": 306,
+  "legendsAvg": 1.5,
+  "chaptersAvg": 1.02,
+  "moneyMed": 39789195,
+  "hofMed": 307,
   "tiers": {
-   "Hall of Famer": 21,
-   "Champion": 24,
+   "Hall of Famer": 22,
    "All-Time Great": 9,
-   "Journeyman": 2,
-   "Contender": 4
+   "Champion": 26,
+   "Contender": 2,
+   "Journeyman": 1
   },
-  "forcedRetireShare": 0.02,
-  "dmgMed": 72
+  "forcedRetireShare": 0,
+  "dmgMed": 69
  },
  "errors": [],
  "careerChecks": [
   {
    "k": "retireAgeMed",
-   "v": 38,
+   "v": 37,
    "band": [
     31,
     40
@@ -38,7 +38,7 @@
   },
   {
    "k": "champShare",
-   "v": 0.95,
+   "v": 0.97,
    "band": [
     0.4,
     1
@@ -47,7 +47,7 @@
   },
   {
    "k": "forcedRetireShare",
-   "v": 0.02,
+   "v": 0,
    "band": [
     0,
     0.4
@@ -56,7 +56,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1.05,
+   "v": 1.02,
    "band": [
     0.3,
     5
@@ -65,7 +65,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.38,
+   "v": 1.5,
    "band": [
     0.2,
     6
@@ -73,5 +73,5 @@
    "ok": true
   }
  ],
- "seconds": 15
+ "seconds": 13
 }

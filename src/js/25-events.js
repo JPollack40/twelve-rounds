@@ -57,7 +57,11 @@ function recordQuickLoss(label){
   b.record.l++;f.w++;b.form.push('L');b.streak=Math.min(-1,b.streak-1);b.pts=Math.max(0,b.pts-30);
   G.history.push({id:'h'+uid(),w:G.week,oppId:f.id,opp:fullName(f),oppRec:recStr(f),oppRating:f.rating,res:'L',method:'SD',round:10,time:'3:00',title:'',type:'dive',label,purse:0,pro:true,div:b.div});
 }
+function sponsorOffer(){const b=B();return SPONSORS.filter(S=>b.hype>=S.hype&&(!S.title||b.titleWins)&&!(G.flags.spDropped||[]).includes(S.id)).sort((a,b)=>b.cut-a.cut)[0]||null}
 const EVENTS=[
+  {id:'sponsor',w:3,cond:()=>G.phase==='pro'&&!!sponsorOffer()&&(!G.sponsor||(SPONSORS.find(x=>x.id===G.sponsor.id)||{cut:0}).cut<sponsorOffer().cut)&&G.week-(G.flags.spAsk||-99)>=16,title:'A Sponsor Calls',prep:()=>{const S=sponsorOffer();if(!S)return false;G.flags.spAsk=G.week;G.flags.spOffer=S.id;return true},
+    text:()=>{const S=SPONSORS.find(x=>x.id===G.flags.spOffer)||sponsorOffer();if(!S)return 'A sponsor calls, then thinks better of it.';return `${S.name} wants you. ${S.desc} They pay ${Math.round(S.cut*100)}% of every purse (at least ${money(S.min)}) for ${S.fights} fights, half after a loss, and their name goes on your waistband.${G.sponsor?' Signing ends your current deal.':''}`},
+    choices:[{t:'Sign the deal',fx:()=>{const S=SPONSORS.find(x=>x.id===G.flags.spOffer)||sponsorOffer();if(!S)return 'The deal fell through.';G.sponsor={id:S.id,left:S.fights,losses:0};return `You signed with ${S.name}.`}},{t:'Not interested',fx:()=>'You keep your trunks clean.'}]},
   {id:'sponsor',w:3,cond:()=>G.phase==='pro'&&B().hype>=15,title:'Sponsorship Offer',
     text:()=>`An energy drink company wants your face on their cans. ${money(3000+B().hype*400)} up front, plus appearances.`,
     choices:[{t:'Sign it',fx:()=>{const m=3000+B().hype*400;B().money+=m;G.flags.campPenalty=1;return `+${money(m)}. The appearances will cost you a week of your next camp.`}},{t:'Stay focused',fx:()=>'You pass. Pops nods approvingly.'}]},

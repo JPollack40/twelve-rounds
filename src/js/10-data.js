@@ -194,6 +194,12 @@ const GEAR=[
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
 ];
 const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
+/* sponsors: pay a share of each purse (half on a loss) and put their name on your waistband for a set number of fights */
+const SPONSORS=[
+  {id:'ironbrew',name:'IronBrew Energy',band:'IRONBREW',cut:.12,min:1500,fights:5,hype:25,drop:2,perk:'',desc:'An energy drink that wants a scrapper.'},
+  {id:'apex',name:'Apex Sportswear',band:'APEX',cut:.1,min:4000,fights:6,hype:45,drop:3,perk:'gear',desc:'Kit maker. Their fighters get 20% off everything in the Locker.'},
+  {id:'goldline',name:'Goldline Watches',band:'GOLDLINE',cut:.18,min:25000,fights:4,hype:60,title:1,drop:2,perk:'',desc:'Luxury watches. They only sign champions.'},
+];
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',

@@ -214,8 +214,16 @@ function ensureState(){
   if(G.phase==='amateur'&&!G.am.done&&!G.next)acceptOffer(amateurOffer());
   if(G.phase==='pro'&&!G.next&&!G.offers.length)genOffers();
 }
+function showRecap(){if(!G||!G.recap||UI.silent)return;const R=G.recap;G.recap=null;Save.write();
+  const rk=(a,b)=>a&&b?(b<a?`#${a} → #${b} (up ${a-b})`:b>a?`#${a} → #${b} (down ${b-a})`:`#${b}`):b?`#${b}`:'Unranked';
+  setTimeout(()=>modal(`<div class="kicker">Year in review</div><div class="bigtxt" style="font-size:44px;text-align:center">${R.year}</div>
+    <div class="tblw"><table class="t"><tr><td>Record this year</td><td class="r num">${R.w}-${R.l}${R.d?'-'+R.d:''} (${R.ko} KO)</td></tr>
+    <tr><td>World titles won</td><td class="r num">${R.titles}</td></tr><tr><td>Overall rating</td><td class="r num">${R.ovr0} → ${R.ovr1}</td></tr>
+    <tr><td>Ranking</td><td class="r num">${rk(R.rank0,R.rank1)}</td></tr><tr><td>Money earned</td><td class="r num">${money(R.money||0)}</td></tr></table></div>
+    ${R.awards&&R.awards.length?`<p class="goldt" style="text-align:center"><b>${R.awards.map(esc).join(' · ')}</b></p>`:''}
+    <button class="btn primary" data-close="ok">On to ${R.year+1}</button>`),350)}
 SCR.home=()=>{
-  ensureState();
+  ensureState();showRecap();
   const b=B();let hero='';
   if(G.fightSave&&G.next&&G.fightSave.offerId===G.next.offer.id){const f=G.world.f[G.next.offer.oppId];
     return shell('home','Home',`<div class="hero"><div class="in"><div class="kicker">Fight interrupted</div><h1 class="disp" style="font-size:28px">Round ${G.fightSave.round} vs ${esc(f?f.last:'your opponent')}</h1><p class="muted">The fight was cut off. It picks up at the start of round ${G.fightSave.round} with the scorecards, damage and stamina as they were.</p><button class="btn primary wide" data-act="resumefight" style="min-height:56px;font-size:19px">Resume the fight</button></div></div>`)}
@@ -259,7 +267,7 @@ function pathHTML(){
   else if(r<=3){goal='Mandatory challenger: a title shot is on the table.'}
   else if(r<=6){goal='Win while on a roll and promoters will offer a title shot.'}
   else if(r<=15){goal='Ranked. Reach the top 6 to get title-shot offers.'}
-  else{const e15=list[14];need=e15?Math.max(0,e15.pts-b.pts+1):0;goal=`Unranked. About ${need} ranking points to crack the top 15. Step-up fights earn the most.`}
+  else{const e15=list[14];need=e15?Math.max(0,Math.ceil(e15.pts-b.pts+1)):0;goal=`Unranked. About ${need} ranking points to crack the top 15. Step-up fights earn the most.`}
   const pct=clamp(1-(r-1)/Math.max(1,list.length-1),0,1);
   return `<div class="card col"><div class="row sp"><h3>Path to a title</h3><span class="pill ${bl.length?'gold':'blue'}">${bl.length?'Champion':'#'+r} · ${DIVS[b.div].short}</span></div>
     <div class="bar g"><i style="width:${pct*100}%"></i></div><p style="font-size:14px">${goal}</p><p class="muted num" style="font-size:12.5px">Ranking points ${b.pts} · Hype ${Math.round(b.hype)}/100</p></div>`;
@@ -375,6 +383,12 @@ function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
   if(b.hype>60)L.push('The crowd is on its feet!');
   L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
+function walkout(o,f){const A={lines:announceLines(o,f)};
+  if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
+    A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
+    const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
+    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260})}catch(e){}return A};
+  return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
   if(!sim&&!resume&&G.fightSave&&G.fightSave.offerId===o.id)resume=G.fightSave;
@@ -389,7 +403,7 @@ function startFight(sim,resume){
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
     edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
-    seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?{lines:announceLines(o,f)}:null,
+    seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?walkout(o,f):null,
     onCheckpoint:cp=>{G.fightSave=Object.assign(cp,{offerId:o.id});Save.write()},
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
@@ -601,7 +615,7 @@ SCR.locker=()=>{
   const prev=R3P.ok()?`<img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;display:block;margin:0 auto">`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
   const sw=(k,arr)=>arr.map(c=>`<button class="sw${b.look[k]===c?' on':''}" style="background:${c}" data-act="recolor" data-k="${k}" data-v="${c}" aria-label="${k} ${c}"></button>`).join('');
   const item=g=>{const own=st.owned.includes(g.id),eq=st.eq[g.slot]===g.id,u=gearUnlock(g);
-    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=g.price?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=g.price?'':'disabled'}>${g.price?money(g.price):'Free'}</button>`;
+    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=gearPrice(g)?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=gearPrice(g)?'':'disabled'}>${g.price?money(gearPrice(g)):'Free'}</button>`;
     const locked=!own&&!u.ok;
     return `<div class="card flat" style="padding:10px;${eq?'border-color:var(--gold)':''}${locked?';opacity:.62':''}"><div class="row sp" style="align-items:flex-start;gap:10px"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${esc(g.name)}</b>
       <div class="muted" style="font-size:13px">${esc(g.desc)}</div><div class="row" style="gap:4px;margin-top:4px;flex-wrap:wrap">${fxPills(g.fx)}${g.hype?` <span class="pill gold" style="font-size:11px">+${g.hype} hype per win</span>`:''}</div>${locked?`<div style="margin-top:6px">${act}</div>`:''}</div>${locked?'':act}</div></div>`};

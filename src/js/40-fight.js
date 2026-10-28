@@ -686,8 +686,10 @@ class Fight{
   /* ring announcer: a short, skippable introduction before the opening bell */
   announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
     const el=document.createElement('div');el.className='annc';
-    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+'<div class="skip">Tap to skip</div>';
+    const imgs=A.imgs?`<div class="row" style="gap:10px;justify-content:center;align-items:flex-end"><div class="al" style="animation-delay:${1.15*2}s"><img id="wkO" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#9fb3ff">Blue corner</div></div><div class="al" style="animation-delay:${1.15*3}s"><img id="wkP" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#ff8a7a">Red corner</div></div></div>`:'';
+    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+imgs+'<div class="skip">Tap to skip</div>';
     this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
+    if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}

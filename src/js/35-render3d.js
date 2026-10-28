@@ -180,7 +180,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
-    trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
+    robe:lk.robe||null,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -427,6 +427,19 @@ function r3boxer(L,opt={}){
     const sole=r3mesh(new THREE.BoxGeometry(.15,.035,.3),r3matte(0x1d1517),{ol:false});sole.position.set(0,-.37*ll-.2,.06);knee.add(sole);
     legs[s]={hip,knee};
   }
+  if(opt.robe&&L.robe){
+    // walkout robe: open-front satin hanging from the shoulders over the arms, with a trim edge; hood or gold variants
+    const col=L.robe==='gold'?'#f0be48':L.trunks,edge=L.robe==='gold'?'#161616':L.trim;
+    const rc=document.createElement('canvas');rc.width=256;rc.height=256;const rx=rc.getContext('2d');rx.fillStyle=new THREE.Color(col).getStyle();rx.fillRect(0,0,256,256);
+    rx.fillStyle=new THREE.Color(edge).getStyle();rx.fillRect(0,0,12,256);rx.fillRect(244,0,12,256);rx.fillRect(0,240,256,16);
+    if(L.band){rx.save();rx.translate(128,92);rx.fillStyle=new THREE.Color(edge).getStyle();rx.font='bold 34px "Alfa Slab One",Georgia,serif';rx.textAlign='center';rx.fillText(L.band.slice(0,10),0,0);rx.restore()}
+    const rt=new THREE.CanvasTexture(rc);rt.colorSpace=THREE.SRGBColorSpace;
+    const C=P.chest*m;const prof=[[.16,.78],[.36*C,.74],[.47*C,.68],[.5*C,.56],[.5*C,.3],[.48*C,0],[.51*C,-.4],[.56*C,-.85],[.6*C,-1.05]];
+    const pts=prof.map(([r,y])=>new THREE.Vector2(r,y)).reverse();const rg=new THREE.LatheGeometry(pts,48,.42,Math.PI*2-.84);rg.scale(1.2,R3_TS,P.depth/.72*1.05);rg.computeVertexNormals();
+    const rm=r3cel(0xffffff,rt,true);rm.side=THREE.DoubleSide;spine.add(r3mesh(rg,rm,{olw:.004}));
+    const sm=r3cel(new THREE.Color(col).getHex(),null,true);for(const s of [-1,1]){const sl=r3mesh(r3muscle(.62*P.len,(t,a)=>(.15+.035*t)*m*P.arm,{seg:8,rad:20,cap:3,ck:.5}),sm,{olw:.004});sl.position.y=.06;arms[s].sh.add(sl)}
+    if(L.robe==='hood'){const hg=new THREE.SphereGeometry(.27,32,16,0,Math.PI*2,0,Math.PI*.62);const hm=r3cel(new THREE.Color(col).getHex(),null,true);hm.side=THREE.DoubleSide;const hood=r3mesh(hg,hm,{olw:.004});hood.rotation.x=-1.05;hood.position.set(0,.02,-.07);headG.add(hood)}
+  }
   r3outline(root);
   const hy0=pelvis.position.y+spine.position.y+headG.position.y+head.position.y;
   root.userData={pelvis,spine,chest,headG,head,arms,legs,P,legY,hy0};
@@ -466,7 +479,7 @@ function r3guard(bx,kind='high'){
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
   const hy=u.headG.getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
-  for(const s of [-1,1]){const t=kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
+  for(const s of [-1,1]){const t=kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
     r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),new THREE.Vector3(s*.35,-1.5,.7).applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
 }
 function r3dispose(o){o.traverse(m=>{if(m.geometry&&!m.geometry.userData.keep)m.geometry.dispose();const mats=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];for(const mt of mats){if(mt.userData&&mt.userData.keep)continue;for(const k of ['map','alphaMap'])if(mt[k]&&!mt[k].userData.keep)mt[k].dispose();mt.dispose()}})}
@@ -529,12 +542,12 @@ const R3P={cache:new Map(),
   },
   shot(look,o={}){
     const mode=o.mode||'bust',size=o.size||(mode==='full'?360:224);
-    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'']);
+    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'']);
     if(this.cache.has(key))return this.cache.get(key);
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
-    const bx=r3boxer(L);bx.rotation.y=mode==='full'?-.42:-.22;this.scene.add(bx);r3guard(bx,o.guard);
+    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=mode==='full'?(o.robe?-.18:-.42):-.22;this.scene.add(bx);r3guard(bx,o.guard);
     r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
     bx.updateWorldMatrix(true,true);const hp=bx.userData.headG.getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}

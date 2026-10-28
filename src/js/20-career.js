@@ -123,9 +123,10 @@ function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
 function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
 function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
 function gearHype(){return gearEquipped().reduce((s,g)=>s+(g.hype||0),0)}
-function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});return L}
-function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<g.price)return `You need ${money(g.price)}`;
-  b.money-=g.price;st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
+function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);if(S)L.band=S.band}return L}
+function gearPrice(g){return Math.round(g.price*(G.sponsor&&G.sponsor.id==='apex'?.8:1)/100)*100}
+function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<gearPrice(g))return `You need ${money(gearPrice(g))}`;
+  b.money-=gearPrice(g);st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
 function equipGear(id){const g=GEAR_BY[id],st=gearState();if(!g||!st.owned.includes(id))return false;st.eq[g.slot]=id;return true}
 /* free unlocks (price 0 with a condition) are granted; newly purchasable items are announced once */
 function gearCheckUnlocks(lines){const st=gearState();st.seen=st.seen||[];const fresh=[];
@@ -436,6 +437,8 @@ function yearAwards(){
     if(Y.ko){aw.push({year,type:'Knockout of the Year',who:`${Y.ko.by} over ${Y.ko.on}`,player:Y.ko.id==='P'});if(Y.ko.id==='P'){b.awards.push('koy');news(`Your knockout of ${Y.ko.on} is ${year} Knockout of the Year.`,'gold')}}
     if(Y.up){aw.push({year,type:'Upset of the Year',who:`${Y.up.by} over ${Y.up.on}`,player:Y.up.id==='P'});if(Y.up.id==='P'){b.awards.push('uoy');news(`Your win over ${Y.up.on} is ${year} Upset of the Year.`,'gold')}}
   }
+  if(G.yrP&&G.phase==='pro'){const Y=G.yrP;G.recap=Object.assign({year,ovr1:playerOvr(),pts1:B().pts,rank1:playerRank(),awards:(G.awards||[]).filter(a=>a.year===year&&a.player).map(a=>a.type)},Y)}
+  G.yrP={w:0,l:0,d:0,ko:0,titles:0,money:0,ovr0:G.boxer?playerOvr():0,pts0:G.boxer?B().pts:0,rank0:G.boxer?playerRank():null};
   if(G.hofQ&&G.hofQ.length){G.hof=G.hof||[];const cls=G.hofQ.splice(0);cls.forEach(h=>G.hof.push(Object.assign({year:year+1},h)));news(`Hall of Fame class of ${year+1}: ${cls.map(h=>h.name.replace(/ “.*” /,' ')).join(', ')}.`,'gold')}
   G.yr={fw:{},ko:null,up:null};
 }
@@ -501,6 +504,7 @@ function applyResult(o,res){
   const pro=!o.amateur;
   const prevRank=playerRank();
   if(pro){if(win){b.record.w++;if(ko)b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
+  if(pro){const Y=G.yrP=G.yrP||{w:0,l:0,d:0,ko:0,titles:0,ovr0:playerOvr(),pts0:b.pts,rank0:prevRank};if(win){Y.w++;if(ko)Y.ko++;if(o.title&&!o.title.regional&&!o.title.defense)Y.titles++}else if(loss)Y.l++;else Y.d++}
   if(pro){const me={id:'P',first:b.first,last:b.last,nick:b.nick,div:b.div,rating:playerOvr()};if(win)recYear(me,f,ko,!!(o.title&&!o.title.regional&&!o.title.defense));else if(loss)recYear(f,me,ko,false)}
   else{if(win)b.am.w++;else b.am.l++}
   if(win){f.l++}else if(loss){f.w++;if(ko)f.ko++}else f.d++;
@@ -545,8 +549,12 @@ function applyResult(o,res){
     if(G.staff.cutman)lines.push(['Cutman',-1500]);
     if(G.staff.nutri)lines.push(['Nutritionist',-2500]);
     const med=Math.round(res.dmgTaken*15+(res.kdAgainst*500));if(med>200)lines.push(['Medical',-med]);
+    if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);if(S){const pay=Math.round(Math.max(S.min,gross*S.cut)*(win?1:.5)/100)*100;lines.push([S.name,pay])}}
     const net=sum(lines.map(l=>l[1]));
-    b.money+=net;out.money=net;out.moneyLines=lines;
+    b.money+=net;out.money=net;out.moneyLines=lines;(G.yrP=G.yrP||{w:0,l:0,d:0,ko:0,titles:0,money:0,ovr0:playerOvr(),pts0:b.pts,rank0:prevRank}).money=(G.yrP.money||0)+net;
+    if(G.sponsor){const S=SPONSORS.find(x=>x.id===G.sponsor.id);G.sponsor.left--;if(loss)G.sponsor.losses++;else if(win)G.sponsor.losses=0;
+      if(S&&G.sponsor.losses>=S.drop){news(`${S.name} drops you after ${G.sponsor.losses} straight losses.`,'red');out.lines.push(`Dropped by ${S.name}`);(G.flags.spDropped=G.flags.spDropped||[]).push(S.id);G.sponsor=null}
+      else if(S&&G.sponsor.left<=0){news(`Your deal with ${S.name} has run its course.`);out.lines.push(`${S.name} deal finished`);G.sponsor=null}}
     if(G.promoter){G.promoter.left--;if(loss)G.promoter.losses=(G.promoter.losses||0)+1;else if(win)G.promoter.losses=0}
   }
   // hype
