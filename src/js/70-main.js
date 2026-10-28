@@ -81,7 +81,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')&&!location
 function start(data){
   if(!$('#app')){const a=document.createElement('div');a.id='app';document.body.appendChild(a)}
   if(location.hash==='#dev'){Settings.dev=true;saveSettings()}
-  devBadge();
+  devBadge();applyTextSize();
   if(data&&data.G&&data.G.boxer){loadCareer(Save.migrate(data.G));UI.go(['fight','result','fightnight'].includes(data.screen)?'home':data.screen||'home')}
   else UI.go('title');
   initCloud();

@@ -1,6 +1,6 @@
-# Regression report 2026-10-28T16:32:06.795Z
+# Regression report 2026-10-28T17:52:47.308Z
 
-2 fights per matchup, 60 simulated careers, 13s.
+2 fights per matchup, 60 simulated careers, 14s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
@@ -14,22 +14,22 @@
  "winsMed": 47,
  "lossesMed": 23,
  "titlesMed": 1,
- "titlesAvg": 1.73,
+ "titlesAvg": 1.7,
  "champShare": 0.98,
  "undisputedShare": 0.08,
  "multiDivShare": 0,
  "legendsAvg": 1.42,
  "chaptersAvg": 1.05,
- "moneyMed": 42060507,
- "hofMed": 330,
+ "moneyMed": 38344054,
+ "hofMed": 328,
  "tiers": {
-  "Hall of Famer": 28,
-  "Champion": 21,
-  "All-Time Great": 6,
-  "Contender": 5
+  "Hall of Famer": 24,
+  "Champion": 23,
+  "All-Time Great": 9,
+  "Contender": 4
  },
  "forcedRetireShare": 0,
- "dmgMed": 68
+ "dmgMed": 71
 }
 ```
 

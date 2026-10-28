@@ -44,16 +44,17 @@ class Fight{
     this.p=mkC(cfg.p,'p');this.o=mkC(cfg.o,'o');this.p.foe=this.o;this.o.foe=this.p;this.o.sway=rand(0,6);
     this.round=1;this.clock=cfg.roundLen;this.phase='intro';this.phaseT=0;this.time=0;this.acc=0;this.stop=0;this.flashSil=0;
     this.fx=[];this.parts=[];this.texts=[];this.shake=0;this.flash=0;this.slow=0;this.paused=false;
-    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];
-    const rob=cfg.robbery||0;
+    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];this.hitBy={};this.roundStats=[];
+    const rob=Math.max(0,(cfg.robbery||0)-(cfg.press==='respect'?.15:0));
     this.judges=[0,1,2].map(()=>({agg:rand(-.35,.35),noise:.07+rob*.12,lean:rob?rand(0,rob*.18):0}));
     this.held={block:false,body:false};this.bodyT=0;this.count=null;this.res={seed:this.seed};this.cornerPick='breathe';
-    this.scout=(cfg.scout||0)+(cfg.edge||0)*.4;this.gameplan=0;this.edgeDmg=1+(cfg.edge||0)*.05;this.ended=false;this.pBlocks=0;
+    this.scout=(cfg.scout||0)+(cfg.edge||0)*.4;this.gameplan=0;this.pressTell=cfg.press==='focus'?.06:0;this.edgeDmg=1+(cfg.edge||0)*.05;this.ended=false;this.pBlocks=0;
     this.cam={x:0,y:0,rot:0,zoom:1};
     this.oPose=null;this.oFrom=null;this.oBlend=1;this.oKey='';
     this.pG={L:{x:0,y:0,r:1},R:{x:0,y:0,r:1}};
     this.tell=null;this.tells=[];
-    if(this.o.ai.intimidate&&!cfg.sparring){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
+    if(cfg.press==='trash'){this.o.ai.agg=Math.min(1,(this.o.ai.agg||.5)+.15);this.o.ai.counter=(this.o.ai.counter||.3)*.8;this.o.st.pow=Math.min(99,this.o.st.pow+3)}
+    if(this.o.ai.intimidate&&!cfg.sparring&&cfg.press!=='respect'){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
     RNG.use(prev);
     Logs.start({seed:this.seed,p:this.p.name,o:this.o.name,oLegend:cfg.o.legend||null,rounds:cfg.rounds,roundLen:cfg.roundLen,diff:cfg.diff,label:cfg.label||'',sparring:!!cfg.sparring,practice:!!cfg.practice});
   }
@@ -81,6 +82,7 @@ class Fight{
     document.body.appendChild(el);this.el=el;
     this.cv=$('canvas',el);
     this.stage=$('.fstage',el);this.ov=$('#fov',el);
+    this.coachEl=document.createElement('div');this.coachEl.className='coachb';this.stage.appendChild(this.coachEl);this.coachRep={};
     this.r3d=null;if(R3D.ok()){try{this.r3d=new Render3D(this,this.stage)}catch(e){console.warn('3D renderer unavailable, using 2D',e);this.r3d=null}}
     // a desynchronized (low-latency) canvas is promoted to a hardware overlay on Android, which ignores alpha;
     // the 2D layer must stay a normal canvas when it sits on top of the 3D scene
@@ -198,9 +200,10 @@ class Fight{
     let w;
     if(c.side==='p'){w=P.wind*this.spdF(c);if(type==='hook')w/=this.bmul(c,'hookSpd');if(opts.fast)w*=.55}
     else{
-      w=P.tell*this.D.tell*(1.3-c.st.spd*.006)*(1+(this.p.m.tell||0)+this.p.st.iq*.0025+this.scout*.12+this.gameplan);
+      w=P.tell*this.D.tell*(1.3-c.st.spd*.006)*(1+(this.p.m.tell||0)+this.p.st.iq*.0025+this.scout*.12+this.gameplan+(this.pressTell||0));
       if(c.hurt>0)w*=1.2;if(opts.follow)w*=.72;if(opts.quick)w*=.62;if(opts.fast)w*=.6;if(type==='hook')w/=this.bmul(c,'hookSpd');
       if(this.cheats.tellMul)w*=this.cheats.tellMul;
+      if(Settings.assist)w*=1+.25*Settings.assist;
     }
     if(opts.instant)w=.05;
     if(c.side==='p'){c.rep=(type===c.lastType&&!body===!c.lastBody)?Math.min(5,(c.rep||0)+1):0;c.lastType=type;c.lastBody=body}
@@ -213,12 +216,22 @@ class Fight{
       this.tell={type,body,dur:w,start:this.time,inputs:[],quick:!!(opts.quick||opts.follow||opts.fast),res:null};
       this.log({ev:'tell',type,body,dur:+w.toFixed(3),quick:this.tell.quick});
       if(!opts.instant)Sfx.tell(type,w);
+      if(this.coachEl&&!opts.instant){const sd=this.screenSide(c,type)==='L'?'left':'right',ot=sd==='left'?'RIGHT':'LEFT';
+        const M={jab:'JAB coming: block it, or slip and fire back.',cross:'CROSS coming straight: DUCK or slip, then counter.',hook:`HOOK from the ${sd}: slip ${ot}, away from it.`,upper:'UPPERCUT: never duck it. Slip or block.'};
+        if(body)this.coach('tell_body','BODY SHOT: block it or slip it. Ducking walks into it.',{slow:.7});else this.coach('tell_'+type,M[type],{slow:.7})}
     }
   }
   impact(a){
     const d=a.foe,pu=a.pu,P=PUNCH[pu.type];
     const r=this.resolve(a,d,pu);
     if(a.side==='o'&&this.tell){this.tell.res=r;this.tells.push(this.tell);if(this.tells.length>12)this.tells.shift();this.tell=null}
+    if(a.side==='o'&&r==='hit'){const k=pu.body?'body':pu.type;this.hitBy[k]=(this.hitBy[k]||0)+1}
+    if(this.coachEl&&a.side==='o'){
+      if(r==='miss')this.coach('miss','They missed. PUNCH NOW while they recover!',{slow:.45});
+      if(r==='hit'){const k=pu.body?'body':pu.type;
+        if(this.hitBy[k]===3&&!this.coachRep[k]){this.coachRep[k]=1;const sd=this.screenSide(a,pu.type)==='L'?'RIGHT':'LEFT';
+          const T={jab:'Their jab keeps finding you. Block it and answer with your own.',cross:'That cross keeps landing. Duck it, then come up with a hook.',hook:`Those hooks keep landing. Slip ${sd}, away from the hook.`,upper:'You keep eating uppercuts. Stop ducking against this guy: slip instead.',body:'They are working your body. Block low punches and step away.'};
+          this.coach('again_'+k,'Corner: '+T[k],{repeat:true,ms:2800})}}}
     if(this.phase!=='fight'&&this.phase!=='down')return;
     if(a.state==='down')return;
     if(a.state!=='wind')return;
@@ -324,7 +337,7 @@ class Fight{
     Sfx.hit(dm/3.2,pu.body);
     if(Settings.hitstop&&big)this.stop=Math.max(this.stop,flags.counter||flags.hay?.1:.065);
     if(d.side==='o'&&big)this.flashSil=.09;
-    if(d.side==='p'){this.shake=Math.max(this.shake,dm*2.8);buzz(big?[30,20,40]:18);this.flash=Math.max(this.flash,big?.35:.12);this.pHit={t:.25,dir:dirX}}
+    if(d.side==='p'){this.shake=Math.max(this.shake,dm*2.8);buzz(big?[30,20,40]:18);this.doFlash(big?.35:.12);this.pHit={t:.25,dir:dirX}}
     else{this.shake=Math.max(this.shake,dm*1);if(big)buzz(12);d.hitAnim={t:.22,dir:dirX,up:P.kind==='upper',body:!!pu.body}}
     if(flags.counter){this.text('COUNTER!','#ffd34d',pos.x,pos.y-30,.9,26);Sfx.roar(.12,1)}
     else if(flags.into)this.text(d.side==='p'?'SLIPPED INTO IT':'CAUGHT','#ff8a7a',pos.x,pos.y-30,.8,18);
@@ -459,7 +472,7 @@ class Fight{
     a.stats.kd++;a.rs.kd++;d.rs.kdd++;a.pu=null;a.seq=[];a.state='idle';a.queue=null;
     this.phase='down';this.count={d,n:0,t:-1.3,rise:99,need:0,prog:0,ready:false};
     this.log({ev:'kd',who:d.side,n:d.kdTotal});
-    if(Settings.slowmo)this.slow=.8;this.flash=.6;this.shake=18;Sfx.roar(.35,2.5);Sfx.hit(2,false);buzz([60,40,120]);
+    if(Settings.slowmo)this.slow=.8;this.doFlash(.6);this.shake=18;Sfx.roar(.35,2.5);Sfx.hit(2,false);buzz([60,40,120]);
     if(Settings.hitstop)this.stop=Math.max(this.stop,.14);
     this.text(d.side==='o'?'DOWN!':'YOU\'RE DOWN!','#fff',200,150,1.4,40);
     if(this.cfg.longCount&&d.side==='p'&&!this.longUsed){this.longUsed=true;this.count.t=-4.6;this.res.longCount=true;if(!this.cfg.headless)setTimeout(()=>this.text('THE LONG COUNT!','#ffd34d',200,80,3,22),900)}
@@ -519,7 +532,7 @@ class Fight{
         this.cards[i][0]+=a;this.cards[i][1]+=b;rc.push([a,b]);
       });
     });
-    this.roundCards.push(rc);
+    this.roundCards.push(rc);this.roundStats.push({p:{l:P.landed,t:P.thrown,pw:P.pow,kd:P.kd,blk:(P.blockT||0)/this.cfg.roundLen},o:{l:O.landed,t:O.thrown,pw:O.pow,kd:O.kd,blk:(O.blockT||0)/this.cfg.roundLen},rc});
     this.log({ev:'round',cards:rc,p:{l:P.landed,t:P.thrown},o:{l:O.landed,t:O.thrown},php:+this.p.hp.toFixed(1),ohp:+this.o.hp.toFixed(1)});
     this.p.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};this.o.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};
     this.p.kd=0;this.o.kd=0;
@@ -539,7 +552,7 @@ class Fight{
     this.releaseAll();
     const elapsed=this.cfg.roundLen-this.clock;
     const tScaled=Math.round(elapsed/this.cfg.roundLen*180);
-    Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,
+    Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,hitBy:Object.assign({},this.hitBy),
       stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut,note});
     this.log({ev:'end',winner,method,round:this.round});
     this.res.log=this.cfg.headless?(Logs.cur=null):Logs.end(this.res);
@@ -550,6 +563,15 @@ class Fight{
     if(this.cfg.headless)return;
     setTimeout(()=>{this.destroy();this.cfg.onEnd(this.res)},2600);
   }
+  /* the round just scored: what each side landed, and (open scoring) each judge's card */
+  roundBox(){const R=this.roundStats[this.roundStats.length-1];if(!R)return '';
+    const why=[];if(R.p.blk>.2)why.push('Judges marked you down for covering up too long.');if(R.o.blk>.2)why.push('They spent the round behind their gloves, and the judges noticed.');
+    if(R.p.kd||R.o.kd)why.push('A knockdown makes it a 10-8 round.');
+    const op=Settings.openScoring!==false;const sc=R.rc.map(([a,b])=>`<span class="pill${a>b?' gold':a<b?' red':''}">${a}-${b}</span>`).join(' ');
+    return `<div class="card flat" style="padding:8px 10px"><div class="tblw"><table class="t" style="font-size:13.5px"><tr><th>Round ${this.round}</th><th>You</th><th>${esc(this.o.last)}</th></tr>
+      <tr><td>Landed</td><td class="num">${R.p.l}/${R.p.t}</td><td class="num">${R.o.l}/${R.o.t}</td></tr><tr><td>Power shots</td><td class="num">${R.p.pw}</td><td class="num">${R.o.pw}</td></tr>
+      ${R.p.kd||R.o.kd?`<tr><td>Knockdowns</td><td class="num">${R.p.kd}</td><td class="num">${R.o.kd}</td></tr>`:''}</table></div>
+      ${op?`<div class="row" style="gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap"><span class="lbl">Judges</span>${sc}</div>`:''}${why.length?`<div class="muted" style="font-size:13px;margin-top:4px">${esc(why.join(' '))}</div>`:''}</div>`}
   showCorner(){
     const p=this.p,o=this.o,cq=this.cfg.corner||1;
     const est=this.cards.reduce((s,c)=>s+(c[0]-c[1]),0)/3;
@@ -569,6 +591,7 @@ class Fight{
     const el=document.createElement('div');el.className='corner';
     el.innerHTML=`<div class="box">
       <div class="row sp"><div class="kicker">Between rounds · ${this.round} of ${this.cfg.rounds} done</div><span class="pill">${esc(this.cfg.trainerName||'Your corner')}</span></div>
+      ${this.roundBox()}
       <div class="quote">${esc(cardLine)}<br>${esc(tips.slice(0,cq>=3?2:1).map(t=>'"'+t+'"').join(' '))}</div>
       <div class="grid2" style="gap:8px">${opts.map(o=>`<button class="copt${o[0]===this.cornerPick?' on':''}" data-c="${o[0]}"><b>${o[1]}</b><small>${o[2]}</small></button>`).join('')}</div>
       <div class="row"><button class="btn primary grow" id="nextRd">Round ${this.round+1}</button><button class="btn ghost sm" id="stool">${this.cfg.practice||this.cfg.sparring?'End session':'Retire on stool'}</button></div>
@@ -654,7 +677,7 @@ class Fight{
     this.draw(rdt);this.updHud();
   }
   fxTick(rdt){
-    this.shake=Math.max(0,this.shake-rdt*40);this.flash=Math.max(0,this.flash-rdt*1.8);this.flashSil=Math.max(0,this.flashSil-rdt);
+    if(!Settings.shake)this.shake=0;this.shake=Math.max(0,this.shake-rdt*40);this.flash=Math.max(0,this.flash-rdt*1.8);this.flashSil=Math.max(0,this.flashSil-rdt);
     this.fx=this.fx.filter(f=>(f.t+=rdt)<f.life);this.texts=this.texts.filter(f=>(f.t+=rdt)<f.life);
     for(const p of this.parts){p.t+=rdt;p.x+=p.vx*rdt;p.y+=p.vy*rdt;p.vy+=p.g*rdt;p.vx*=Math.pow(.6,rdt)}
     this.parts=this.parts.filter(p=>p.t<p.life);
@@ -939,9 +962,43 @@ class Fight{
     if(p.cut>50){c.fillStyle=`rgba(150,0,0,${Math.min(.45,(p.cut-40)/120)})`;c.beginPath();c.ellipse(W*.12,H*.18,W*.22,H*.2,.4,0,7);c.fill()}
     if(this.flash>0){c.fillStyle=`rgba(255,255,255,${this.flash})`;c.fillRect(0,0,W,H)}
     if(this.p.state==='down'){c.fillStyle='rgba(0,0,0,.35)';c.fillRect(0,0,W,H)}
+    this.drawTellIcon(c);
     if(this.cfg.overlay)this.drawOverlay(c);
   }
   drop3d(){try{this.r3d?.destroy()}catch(e){}this.r3d=null;this.resize();if(typeof toast==='function')toast('3D unavailable on this device, using 2D')}
+  /* coach banner: once per tip on this device (unless repeat), with a brief slow-down so the prompt can be acted on */
+  coach(id,text,o={}){
+    if(!this.coachEl||!Settings.coach||this.cfg.practice&&this.cfg.label&&this.cfg.label.startsWith('Lab'))return;
+    const seen=Store.get('tr_coach')||{};if(!o.repeat&&seen[id])return;
+    if(this.coachT&&this.time-this.coachT<1.1)return;
+    if(!o.repeat){seen[id]=1;Store.set('tr_coach',seen)}
+    this.coachT=this.time;this.coachEl.textContent=text;this.coachEl.classList.add('on');
+    clearTimeout(this.coachTO);this.coachTO=setTimeout(()=>this.coachEl&&this.coachEl.classList.remove('on'),o.ms||2300);
+    if(o.slow&&Settings.slowmo)this.slow=Math.max(this.slow,o.slow);
+    this.log({ev:'coach',id});
+  }
+  /* full-screen flash: never more than three per second; dim when bright flashes are off */
+  doFlash(v){const t=this.time||0;if(t-(this.lastFlashT??-9)<.34)return;this.lastFlashT=t;this.flash=Math.max(this.flash,Settings.flashes?v:Math.min(.1,v*.3))}
+  /* tell symbol over the winding glove: shape, not colour, says which punch is coming */
+  drawTellIcon(c){
+    const o=this.o;if(!Settings.tellIcons||!o.pu||!(o.state==='wind'||o.state==='feint'))return;
+    const hand=this.hand(o,o.pu.type),type=o.pu.type;let pt=null;
+    if(this.r3d)pt=this.r3d.gloveScreen(hand);
+    else if(this.oPose){const P=this.oPose,g=hand==='L'?P.lg:P.rg;pt=this.toScreen(200+g[0],430+g[1]-40)}
+    if(!pt)return;
+    const s=Math.min(this.W,this.H)*.055,k=o.dur?clamp(o.t/o.dur,0,1):0,x=pt.x,y=pt.y-s*1.6;
+    c.save();c.globalAlpha=Math.min(1,.4+k*1.2);c.translate(x,y);c.scale(1+.15*Math.sin(this.time*20),1+.15*Math.sin(this.time*20));
+    c.fillStyle='rgba(12,10,14,.82)';c.strokeStyle=TELL_COL[type];c.lineWidth=s*.14;c.beginPath();c.arc(0,0,s,0,7);c.fill();c.stroke();
+    c.fillStyle='#fff';c.strokeStyle='#fff';c.lineWidth=s*.18;c.lineCap='round';c.lineJoin='round';
+    const side=this.screenSide(o,type)==='L'?-1:1;
+    if(type==='jab'){c.beginPath();c.arc(0,0,s*.28,0,7);c.fill()}
+    else if(type==='cross'){c.beginPath();c.moveTo(-s*.42,-s*.25);c.lineTo(0,s*.4);c.lineTo(s*.42,-s*.25);c.closePath();c.fill()}
+    else if(type==='upper'){c.beginPath();c.moveTo(-s*.42,s*.25);c.lineTo(0,-s*.45);c.lineTo(s*.42,s*.25);c.closePath();c.fill()}
+    else{c.beginPath();c.arc(-side*s*.05,0,s*.45,side>0?Math.PI*1.05:-Math.PI*.05,side>0?Math.PI*1.95:Math.PI*.95+0,side<0);c.stroke();
+      const ax=side*s*.42,ay=s*.05;c.beginPath();c.moveTo(ax,ay+s*.2);c.lineTo(ax+side*s*.02,ay-s*.12);c.lineTo(ax-side*s*.3,ay+s*.02);c.stroke()}
+    if(o.pu.body){c.font=`700 ${s*.5}px "Barlow Condensed",sans-serif`;c.textAlign='center';c.fillStyle='#fff';c.fillText('BODY',0,s*1.6)}
+    c.restore();
+  }
   drawOverlay(c){
     const W=this.W,dpr=this.dpr,o=this.o,p=this.p;
     c.save();c.setTransform(dpr,0,0,dpr,0,0);

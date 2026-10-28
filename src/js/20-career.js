@@ -332,6 +332,7 @@ function birthday(){
     const dec=a>=36?3:a>=33?2:1;
     for(const k of ['spd','foot','sta']){const v=Math.round(dec*(1-dur*.6)*rand(.5,1.2));if(v>0){b.stats[k]=Math.max(20,b.stats[k]-v);lines.push(`-${v} ${STAT_NAME[k]}`)}}
     gainStat('iq',1);lines.push('+1 Ring IQ');
+    if(!G.flags.ageTalk){G.flags.ageTalk=1;if(typeof modal==='function'&&!(typeof UI!=='undefined'&&UI.silent))setTimeout(()=>modal(`<div class="kicker">Age ${a}</div><h2 class="sec">Father Time</h2><p>Your legs aren't what they were. From now on each birthday costs a little Speed, Footwork and Stamina, a bit more after 33 and 36.</p><p>Your skills and abilities never fade, and Ring IQ keeps climbing. Durability skills slow the decline.</p><button class="btn primary" data-close="ok">Understood</button>`),400)}
   }
   if([25,29,33].includes(a)&&b.natural<7&&chance(.4)){b.natural++;news(`You've filled out. Your natural weight is now ${DIVS[b.natural].name}.`,'gold')}
   news(`Happy ${ordinal(a)} birthday.${lines.length?' Age changes: '+lines.join(', ')+'.':''}`);
@@ -357,26 +358,49 @@ function worldWeekInner(W,rv){
   if(G.week%52===0)yearTick();
   if(rv&&rv.active){rv.rating+=((playerOvr()+rv.edge)-rv.rating)*.03;rv.rating=clamp(rv.rating,30,97)}
 }
+/* ---------- yearly awards and the Hall of Fame ---------- */
+function yrState(){return G.yr=G.yr||{fw:{},ko:null,up:null}}
+function recYear(w,l,ko,titleWin){
+  const Y=yrState(),id=w.id||'P';const e=Y.fw[id]=Y.fw[id]||{w:0,ko:0,tw:0,name:w.first?fullName(w):'',div:w.div};e.w++;if(ko)e.ko++;if(titleWin)e.tw++;
+  const wr=w.rating??playerOvr(),lr=l.rating??playerOvr();
+  if(ko&&(!Y.ko||lr>Y.ko.r))Y.ko={by:e.name,on:l.first?shortName(l):'',r:lr,id};
+  if(lr-wr>6&&(!Y.up||lr-wr>Y.up.gap))Y.up={by:e.name,on:l.first?shortName(l):'',gap:lr-wr,id};
+}
+function hofWorthy(f,beltsNow){return !!f.legend||(f.titles||0)>=2||((f.titles||0)>=1||beltsNow>0)&&f.w>=22||f.w>=38&&f.l<=6}
+function yearAwards(){
+  const Y=G.yr;const year=START_YEAR+Math.floor(G.week/52)-1;
+  if(Y){
+    const fw=Object.entries(Y.fw).filter(([,e])=>e.w>=2).map(([id,e])=>({id,e,sc:e.w*2+e.ko+e.tw*6})).sort((a,b)=>b.sc-a.sc)[0];
+    const aw=G.awards=G.awards||[];const b=B();b.awards=b.awards||[];
+    if(fw){aw.push({year,type:'Fighter of the Year',who:fw.e.name,player:fw.id==='P'});if(fw.id==='P'){b.awards.push('foy');news(`You are ${year} Fighter of the Year!`,'gold')}else news(`${year} Fighter of the Year: ${fw.e.name}.`)}
+    if(Y.ko){aw.push({year,type:'Knockout of the Year',who:`${Y.ko.by} over ${Y.ko.on}`,player:Y.ko.id==='P'});if(Y.ko.id==='P'){b.awards.push('koy');news(`Your knockout of ${Y.ko.on} is ${year} Knockout of the Year.`,'gold')}}
+    if(Y.up){aw.push({year,type:'Upset of the Year',who:`${Y.up.by} over ${Y.up.on}`,player:Y.up.id==='P'});if(Y.up.id==='P'){b.awards.push('uoy');news(`Your win over ${Y.up.on} is ${year} Upset of the Year.`,'gold')}}
+  }
+  if(G.hofQ&&G.hofQ.length){G.hof=G.hof||[];const cls=G.hofQ.splice(0);cls.forEach(h=>G.hof.push(Object.assign({year:year+1},h)));news(`Hall of Fame class of ${year+1}: ${cls.map(h=>h.name.replace(/ “.*” /,' ')).join(', ')}.`,'gold')}
+  G.yr={fw:{},ko:null,up:null};
+}
 function simWorldFight(a,c,d,title){
   const pa=1/(1+Math.pow(10,(c.rating-a.rating)/12));
   const draw=chance(.04);const aw=!draw&&chance(pa);const w=aw?a:c,l=aw?c:a;
   if(draw){a.d++;c.d++;return}
   w.w++;l.l++;const ko=chance(w.arch==='slugger'?.6:.4);if(ko)w.ko++;
   const g=clamp(18+(l.pts-w.pts)*.12+(ko?6:0),4,60);w.pts=Math.min(1000,w.pts+g);l.pts=Math.max(0,l.pts-clamp(22+(l.pts-w.pts)*.05,8,50));
+  recYear(w,l,ko,title&&beltsOf(l.id,d).length>0);
   if(title){
-    const lb=beltsOf(l.id,d);if(lb.length){lb.forEach(k=>G.world.champs[d][k]=w.id);
+    const lb=beltsOf(l.id,d);if(lb.length){lb.forEach(k=>G.world.champs[d][k]=w.id);w.titles=(w.titles||0)+1;
       if(w.legend||l.legend||w.rival||l.rival||chance(.5))news(`${DIVS[d].name}: ${shortName(w)} beats ${shortName(l)}${ko?' by KO':''} to take the ${lb.join(' & ')} title.`,w.rival?'red':'')}
   }else if(w.rival&&chance(.6))news(`Your rival ${shortName(w)} beats ${shortName(l)}${ko?' by knockout':''}. Now ${recStr(w)}.`,'red');
   else if((w.legend||l.legend)&&chance(.25))news(`${shortName(w)} defeats ${shortName(l)}${ko?' by KO':''} (${DIVS[d].short}).`);
 }
 function yearTick(){
   const W=G.world;
+  yearAwards();
   for(const id in W.f){
     const f=W.f[id];if(!f.active||f.amateur)continue;const a=ageOf(f.born);
     if(a<26)f.rating=Math.min(f.pot,f.rating+randi(0,3));else if(a>31)f.rating-=randi(1,3)*(f.legend?.6:1);
     const retireAge=f.legend?39:36;
     if(!f.rival&&(a>=retireAge&&chance(.5)||f.rating<32||(a>33&&f.l>f.w&&chance(.4)))){
-      f.active=false;const bl=beltsOf(f.id,f.div);bl.forEach(k=>G.world.champs[f.div][k]=null);
+      f.active=false;const bl=beltsOf(f.id,f.div);if(hofWorthy(f,bl.length))(G.hofQ=G.hofQ||[]).push({name:fullName(f),rec:recStr(f),ko:f.ko,div:f.div,titles:f.titles||0,legend:!!f.legend});bl.forEach(k=>G.world.champs[f.div][k]=null);
       if(f.legend||bl.length)news(`${fullName(f)} retires at ${a} with a record of ${recStr(f)}.`);
       if(bl.length)assignChamps(f.div,false);
       const nf=makeFighter(f.div,rand(45,64),randi(19,22));nf.pts=randi(120,300);nf.w=randi(3,10);nf.l=randi(0,2);nf.ko=Math.floor(nf.w*.6);W.f[nf.id]=nf;W.divs[f.div].push(nf.id);
@@ -417,6 +441,7 @@ function applyResult(o,res){
   const pro=!o.amateur;
   const prevRank=playerRank();
   if(pro){if(win){b.record.w++;if(ko)b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
+  if(pro){const me={id:'P',first:b.first,last:b.last,nick:b.nick,div:b.div,rating:playerOvr()};if(win)recYear(me,f,ko,!!(o.title&&!o.title.regional&&!o.title.defense));else if(loss)recYear(f,me,ko,false)}
   else{if(win)b.am.w++;else b.am.l++}
   if(win){f.l++}else if(loss){f.w++;if(ko)f.ko++}else f.d++;
   b.form.push(win?(ko?'WKO':'W'):loss?(ko?'LKO':'L'):'D');if(b.form.length>8)b.form.shift();
@@ -569,6 +594,7 @@ function legacy(){
     ['Story chapters',G.chapters.length*20],['Rivalry wins',(G.rival?.w||0)*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
     ['Amateur gold',(G.flags.am_gold_0?5:0)+(G.flags.am_gold_1?10:0)],
   ];
+  const aw=b.awards||[];parts.push(['Fighter of the Year',aw.filter(x=>x==='foy').length*20],['Knockout of the Year',aw.filter(x=>x==='koy').length*10],['Upset of the Year',aw.filter(x=>x==='uoy').length*8]);
   if(G.flags.exile)parts.push(['Took a stand',40]);
   if(b.retired&&r.l===0&&r.w>=25)parts.push(['Retired undefeated',50]);
   const score=Math.max(0,Math.round(sum(parts.map(p=>p[1]))));

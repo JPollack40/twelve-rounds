@@ -2,12 +2,25 @@
 const app=()=>$('#app');
 const UI={cur:'title',arg:null,cr:null,lastResult:null,
   go(s,arg){this.cur=s;this.arg=arg;Sfx.click();this.render();const m=$('.main .scr')||$('.scr');if(m)m.scrollTop=0},
-  render(){const f=SCR[this.cur]||SCR.title;app().innerHTML=f(this.arg);const after=AFTER[this.cur];if(after)after(this.arg)},
+  render(){const f=SCR[this.cur]||SCR.title;app().innerHTML=f(this.arg);const after=AFTER[this.cur];if(after)after(this.arg);showTip(this.cur)},
 };
 const isWide=()=>innerWidth>=680;
 let _rw=isWide();
 window.addEventListener('resize',()=>{const w=isWide();if(w!==_rw){_rw=w;if(!$('.fight')&&!$('.mg')&&!$('.modal'))UI.render()}});
 
+/* first-visit coaching for career screens: one line, shown once per device */
+const TIPS={
+  home:'Book a fight, train in camp, then walk out. Losses sting but your career keeps going.',
+  camp:'Each drill builds the stats it names. Drills linked to this opponent also give you an edge on fight night.',
+  skills:'Levels give skill points. Each branch builds toward a capstone worth saving for.',
+  rankings:'Wins over ranked fighters move you up fastest. Losses push you down and get you a prove-it fight.',
+  division:'Moving down makes you bigger but drains stamina. Moving up makes you faster but smaller.',
+  team:'Better trainers mean bigger camp gains and smarter corners between rounds. A cutman keeps cuts from ending fights.',
+  legacy:'Titles, defenses, big wins and legends beaten all build your Hall of Fame case.',
+  halloffame:'Retired greats are inducted here each year. Build a career that earns you a plaque.',
+};
+function showTip(s){try{$$('.tipb').forEach(e=>e.remove());if(!Settings.coach||UI.silent||!TIPS[s]||!G)return;const seen=Store.get('tr_tips')||{};if(seen[s])return;seen[s]=1;Store.set('tr_tips',seen);
+  const el=document.createElement('div');el.className='tipb';el.innerHTML=`<p><b>Coach:</b> ${esc(TIPS[s])}</p><button class="btn sm gold">Got it</button>`;el.querySelector('button').onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),9000)}catch(e){}}
 function toast(t){if(UI.silent)return;const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
 function modal(html,opts={}){
   const el=document.createElement('div');el.className='modal';el.innerHTML=`<div class="box${opts.wide?' wide':''}">${html}</div>`;
@@ -101,6 +114,15 @@ function settingsHTML(inCareer){
     ${tg('audioTells','Audio tells','A different wind-up sound for each punch, and a chime before power shots.')}
     ${tg('gfx3d','3D fighters','Stylized 3D opponent and gloves. Off uses the 2D renderer.')}
     ${tg('gfxHi','High detail','Shadows, antialiasing and a sharper render. Turn off on a hot or slow phone.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Reaction assist</b><div class="muted" style="font-size:13px">Longer wind-ups on every opponent punch, so you have more time to read and react. No penalty, change it any time.</div>
+    <div class="chips">${[[0,'Off'],[1,'+25% time'],[2,'+50% time']].map(([v,l])=>`<button class="chip${(Settings.assist||0)===v?' on':''}" data-act="setv" data-k="assist" data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${tg('tellIcons','Tell symbols','A symbol over the winding glove: dot jab, down-arrow cross, curl hook (slip the other way), up-arrow uppercut. Works without colour.')}
+    ${tg('shake','Screen shake','Camera shake on hits and knockdowns.')}
+    ${tg('flashes','Bright flashes','White hit flashes. Off keeps them dim. Never more than three per second either way.')}
+    ${tg('openScoring','Open scoring','Show each judge\'s score for the round in your corner. Off: rely on your trainer\'s read.')}
+    ${tg('coach','Coach tips','One-line coaching the first time you meet each punch, plus tips on new screens.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Text size</b>
+    <div class="chips">${[[1,'Normal'],[1.12,'Large'],[1.25,'Larger']].map(([v,l])=>`<button class="chip${(Settings.textSize||1)===v?' on':''}" data-act="setv" data-k="textSize" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
     ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
     ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}
@@ -306,10 +328,27 @@ SCR.fightnight=()=>{
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
     </div>
+    ${pressHTML(n,f,o)}
     <button class="btn primary wide" data-act="walk" style="min-height:60px;font-size:20px">Walk to the ring</button>
     ${o.amateur||o.title||o.chapter?'':`<button class="btn ghost" data-act="simfight">Simulate fight (60% XP)</button>`}
   </div></div>`;
 };
+/* press conference: the opponent talks, you answer, and the answer changes the fight */
+const PRESS={
+  trash:{name:'Talk trash',fx:'Hype sells tickets: +8% purse. They come out angry: more aggressive and harder-hitting, but they take more risks.'},
+  respect:{name:'Show respect',fx:'The judges and the crowd warm to you: fairer scoring, and stare-downs don\'t rattle you.'},
+  focus:{name:'Stay focused',fx:'No comment. You spend the time on tape: their wind-ups read 6% longer all night.'},
+};
+function pressLine(f){const L=f.legend?LEGEND_BY[f.legend]:null;const ex=(f.look&&f.look.expr)||'stern';
+  if(f.rival)return `"Last time doesn't count. Saturday I settle this for good."`;
+  if(L&&L.ai&&L.ai.trash)return `"I'm too pretty and too fast for this one. Pick the round, I'll make it happen."`;
+  const P={cocky:[`"I'll be home before the main event starts."`,`"He's a nice story. Saturday the story ends."`],grit:[`"He's in for the worst night of his life."`,`"I don't talk. I hurt people."`],stern:[`"I respect him. I'm still taking his spot."`,`"Good fighter. Not good enough."`],calm:[`"Nothing to say. See you Saturday."`,`"We trained for everything he does."`]};
+  const a=P[ex]||P.stern;return a[hashStr(f.id)%a.length]}
+function pressHTML(n,f,o){
+  if(o.amateur||!G||G.phase!=='pro')return '';
+  if(n.press){const c=PRESS[n.press];return `<div class="card flat"><span class="lbl">Press conference</span><p style="margin:6px 0 2px"><b>${esc(c.name)}.</b> ${esc(c.fx)}</p></div>`}
+  return `<div class="card col"><span class="lbl">Press conference</span><p style="margin:4px 0"><b>${esc(f.last)}:</b> ${esc(pressLine(f))}</p>
+    <div class="col" style="gap:6px">${Object.entries(PRESS).map(([k,c])=>`<button class="arch" data-act="press" data-k="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div></div>`}
 function startFight(sim){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
   o.foughtHurt=B().injuries.length>0;
@@ -322,7 +361,7 @@ function startFight(sim){
   const rob=(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
-    edge:Object.keys(n.edge||{}).length,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
+    edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
   fight.mount();
@@ -333,6 +372,22 @@ function afterFight(o,res){
   UI.lastResult={o,res,sum};
   Save.write();
   UI.go('result');
+}
+/* two or three concrete pointers from the fight's numbers */
+function coachNotes(res,win){
+  const P=res.stats.p,O=res.stats.o,hb=res.hitBy||{},out=[];
+  const top=Object.entries(hb).sort((a,b)=>b[1]-a[1])[0];
+  const adv={jab:'block it and jab back',cross:'duck it and come up with a hook',hook:'slip away from the side it comes from',upper:'slip or block it, never duck',body:'block it, and stop dipping your head'};
+  const nm={jab:'jab',cross:'cross',hook:'hook',upper:'uppercut',body:'body shot'};
+  if(top&&top[1]>=4)out.push(`Their ${nm[top[0]]} landed ${top[1]} times. Next time, ${adv[top[0]]}.`);
+  const acc=P.thrown?P.landed/P.thrown:0;
+  if(P.thrown>=15&&acc<.3)out.push(`You landed ${Math.round(acc*100)}% of your punches. Throw right after they miss, not into a set guard.`);
+  if(P.perfect>=3)out.push(`${P.perfect} perfect dodges. Your counters are your best weapon: keep making them miss.`);
+  if((P.bodyL||0)<3&&res.round>=3&&!['KO','TKO'].includes(res.method)||(!win&&(P.bodyL||0)<2))out.push('Go to the body more. It drains their stamina and brings the guard down.');
+  if(P.jabT>0&&P.powT>0&&P.jabT>P.powT*3)out.push('Lots of jabs, few power shots. Follow the jab with a cross or hook to win rounds clearly.');
+  if(!win&&['KO','TKO'].includes(res.method))out.push('You got stopped. When you are tired or hurt, clinch and defend until your legs come back.');
+  if(win&&!out.length)out.push('Clean work. Keep doing what got you here.');
+  return out.slice(0,3);
 }
 SCR.result=()=>{
   const {o,res,sum}=UI.lastResult,f=G.world.f[o.oppId],b=B();
@@ -349,6 +404,8 @@ SCR.result=()=>{
     <tr><td>Knockdowns</td><td>${res.kdFor}</td><td>${res.kdAgainst}</td></tr>
     ${P.perfect!=null?`<tr><td>Perfect dodges</td><td>${P.perfect}</td><td>–</td></tr>`:''}</table></div></div>`;
   const mny=sum.moneyLines?`<div class="card"><h3>Payday</h3><div class="tblw"><table class="t">${sum.moneyLines.map(l=>`<tr><td>${esc(l[0])}</td><td class="r num ${l[1]<0?'bad':''}">${money(l[1])}</td></tr>`).join('')}<tr><td><b>Net</b></td><td class="r num"><b>${money(sum.money)}</b></td></tr></table></div></div>`:'';
+  const notes=coachNotes(res,win);
+  const cn=notes.length?`<div class="card"><h3>Coach's notes</h3><ul style="margin:6px 0 0 18px;padding:0">${notes.map(n=>`<li style="margin:4px 0">${esc(n)}</li>`).join('')}</ul></div>`:'';
   const lines=sum.lines.map(l=>`<div class="pill gold" style="white-space:normal">${esc(l)}</div>`).join('');
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="hero"><div class="in" style="align-items:center;text-align:center">
@@ -360,7 +417,7 @@ SCR.result=()=>{
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
       <div class="card"><span class="lbl">Health</span><p class="num">Recovery: ${sum.recovery} week${sum.recovery!==1?'s':''}</p>${sum.injuries.length?`<p class="bad">${sum.injuries.map(i=>INJ[i].name).join(', ')}</p>`:''}<p class="muted num" style="font-size:13px">Long-term damage ${Math.round(b.damage)}/100</p></div>
     </div>
-    ${cards}${cbx}${mny}
+    ${cn}${cards}${cbx}${mny}
     <button class="btn primary wide" data-act="resultdone">Continue</button></div></div>`;
 };
 
@@ -464,8 +521,14 @@ SCR.legacy=()=>{
   const L=legacy(),b=B();
   return shell('legacy','Legacy',`<div class="hero"><div class="in" style="text-align:center;align-items:center"><div class="kicker">Hall of Fame standing</div><div class="bigtxt" style="font-size:clamp(34px,9vw,56px)">${esc(L.tier)}</div><p class="rec num">${L.score} legacy points</p>${L.next?`<p class="muted">${L.next[0]-L.score} more to reach ${esc(L.next[1])}</p>`:''}</div></div>
     <div class="card"><div class="tblw"><table class="t">${L.parts.filter(p=>p[1]).map(p=>`<tr><td>${esc(p[0])}</td><td class="r num ${p[1]<0?'bad':''}">${p[1]>0?'+':''}${p[1]}</td></tr>`).join('')}</table></div></div>
+    <button class="btn gold" data-go="halloffame">Hall of Fame and year-end awards</button>
     ${G.phase!=='retired'?`<div class="card col"><h3>Retirement</h3><p class="muted" style="font-size:13.5px">Hang up the gloves whenever you choose. Retiring undefeated with 25+ wins earns a special place in history.</p><button class="btn primary" data-act="retire">Retire</button></div>`:`<button class="btn gold" data-act="totitle">Back to title screen</button>`}`);
 };
+SCR.halloffame=()=>{
+  const aw=(G.awards||[]).slice().reverse(),hof=(G.hof||[]).slice().reverse();
+  const awT=aw.length?`<div class="tblw"><table class="t"><tr><th>Year</th><th>Award</th><th>Winner</th></tr>${aw.map(a=>`<tr${a.player?' class="goldt"':''}><td class="num">${a.year}</td><td>${esc(a.type)}</td><td>${esc(a.who)}</td></tr>`).join('')}</table></div>`:'<p class="muted">The first awards are handed out at the end of your first full year.</p>';
+  const hT=hof.length?`<div class="tblw"><table class="t"><tr><th>Class</th><th>Inductee</th><th>Record</th><th>Division</th></tr>${hof.map(h=>`<tr${h.player?' class="goldt"':''}><td class="num">${h.year}</td><td>${esc(h.name)}</td><td class="num">${esc(h.rec)}${h.ko!=null?' ('+h.ko+' KO)':''}</td><td>${esc(DIVS[h.div]?.name||'')}</td></tr>`).join('')}</table></div>`:'<p class="muted">No one has been inducted yet. Great fighters join the year after they retire.</p>';
+  return shell('legacy','Hall of Fame',`<h2 class="sec">Hall of Fame</h2><div class="card">${hT}</div><h2 class="sec">Year-end awards</h2><div class="card">${awT}</div>`)};
 SCR.settings=()=>shell('settings','Settings',`<h2 class="sec">Settings</h2>${settingsHTML(true)}`);
 
 /* ---------- retire ---------- */
@@ -474,6 +537,7 @@ function retireNow(reason){
   const bl=playerBelts();bl.forEach(x=>G.world.champs[x.d][x.k]=null);for(let d=0;d<8;d++)assignChamps(d,false);
   if(b.record.l===0&&b.record.w>=25&&!G.chapters.includes('fortynine'))G.chapters.push('fortynine');
   const L=legacy();
+  if(L.score>=300){G.hof=G.hof||[];G.hof.push({year:START_YEAR+Math.floor(G.week/52)+1,name:fullName(b),rec:`${b.record.w}-${b.record.l}-${b.record.d}`,ko:b.record.ko,div:b.div,player:true});news(`You will be inducted into the Hall of Fame next year.`,'gold')}
   news(`${fullName(b)} retires at ${ageOf(b.born)} with a record of ${b.record.w}-${b.record.l}-${b.record.d} (${b.record.ko} KOs). ${L.tier}.`,'gold');
   Save.write();
   modal(`<div class="kicker">${esc(reason||'The final bell')}</div><div class="bigtxt" style="font-size:40px;text-align:center">${esc(L.tier.toUpperCase())}</div>
@@ -553,6 +617,10 @@ const ACT={
     Save.write();UI.render();
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },
+  press(el){const n=G.next;if(!n||n.press)return;const k=el.dataset.k;n.press=k;const f=G.world.f[n.offer.oppId];
+    if(k==='trash'){n.offer.purse=Math.round(n.offer.purse*1.08);news(`Press conference: you went at ${f.last} hard. Ticket sales jumped.`)}
+    else if(k==='respect')news(`Press conference: you praised ${f.last}. Fans and media liked it.`);else news(`Press conference: you kept it short and went back to the film room.`);
+    Save.write();Sfx.click();UI.render()},
   walk(){startFight(false)},
   simfight(){startFight(true)},
   resultdone(){
@@ -573,8 +641,9 @@ const ACT={
   hire(el){const k=el.dataset.k;G.trainer=k;news(`You hire ${TRAINERS[k].name}.`);if(TRAINERS[k].teach)toast(`${TRAINERS[k].name} can teach ${AB[TRAINERS[k].teach].name}. See Skills.`);Save.write();UI.render()},
   gym(el){G.gym=el.dataset.k;Save.write();UI.render()},
   staff(el){const k=el.dataset.k;G.staff[k]=!G.staff[k];Save.write();UI.render()},
-  toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
+  toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='coach'&&Settings.coach){Store.set('tr_coach',{});Store.set('tr_tips',{});toast('Coach tips will show again')}if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
   roundlen(el){Settings.roundLen=+el.dataset.s;saveSettings();UI.render()},
+  setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
   devgo(){UI.go('dev')},
   export(){

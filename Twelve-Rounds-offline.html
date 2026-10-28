@@ -199,6 +199,10 @@ table.t td.r,table.t th.r{text-align:right}
 .fstage{position:relative;min-height:0;overflow:hidden}
 .fstage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
 .fstage canvas.gl{z-index:0}
+.coachb{position:absolute;left:50%;bottom:5%;transform:translate(-50%,8px);z-index:4;max-width:min(92%,460px);padding:9px 14px;border-radius:10px;background:rgba(10,10,16,.86);border:2px solid var(--gold);color:#fff;font-family:var(--f-ui);font-weight:800;font-size:calc(15px*var(--bs,1));letter-spacing:.03em;text-align:center;pointer-events:none;opacity:0;transition:opacity .15s,transform .15s}
+.coachb.on{opacity:1;transform:translate(-50%,0)}
+.tipb{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;width:min(92vw,520px);background:var(--panel2);border:1px solid var(--gold);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px #000a}
+.tipb p{margin:0;font-size:14.5px;flex:1}.tipb b{color:var(--gold)}
 .fstage.ink::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background-image:var(--grain);background-size:160px;mix-blend-mode:multiply;opacity:.28}
 .fctl{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:8px 10px 10px;background:linear-gradient(0deg,#000,#0000)}
 .cl{display:grid;gap:7px;width:min(49%,330px)}
@@ -332,8 +336,9 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true},Store.get('tr_settings')||{});
-function saveSettings(){Store.set('tr_settings',Settings)}
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true},Store.get('tr_settings')||{});
+function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
+function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 
 function buzz(p){if(!Settings.haptics)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 
@@ -981,6 +986,7 @@ function birthday(){
     const dec=a>=36?3:a>=33?2:1;
     for(const k of ['spd','foot','sta']){const v=Math.round(dec*(1-dur*.6)*rand(.5,1.2));if(v>0){b.stats[k]=Math.max(20,b.stats[k]-v);lines.push(`-${v} ${STAT_NAME[k]}`)}}
     gainStat('iq',1);lines.push('+1 Ring IQ');
+    if(!G.flags.ageTalk){G.flags.ageTalk=1;if(typeof modal==='function'&&!(typeof UI!=='undefined'&&UI.silent))setTimeout(()=>modal(`<div class="kicker">Age ${a}</div><h2 class="sec">Father Time</h2><p>Your legs aren't what they were. From now on each birthday costs a little Speed, Footwork and Stamina, a bit more after 33 and 36.</p><p>Your skills and abilities never fade, and Ring IQ keeps climbing. Durability skills slow the decline.</p><button class="btn primary" data-close="ok">Understood</button>`),400)}
   }
   if([25,29,33].includes(a)&&b.natural<7&&chance(.4)){b.natural++;news(`You've filled out. Your natural weight is now ${DIVS[b.natural].name}.`,'gold')}
   news(`Happy ${ordinal(a)} birthday.${lines.length?' Age changes: '+lines.join(', ')+'.':''}`);
@@ -1006,26 +1012,49 @@ function worldWeekInner(W,rv){
   if(G.week%52===0)yearTick();
   if(rv&&rv.active){rv.rating+=((playerOvr()+rv.edge)-rv.rating)*.03;rv.rating=clamp(rv.rating,30,97)}
 }
+/* ---------- yearly awards and the Hall of Fame ---------- */
+function yrState(){return G.yr=G.yr||{fw:{},ko:null,up:null}}
+function recYear(w,l,ko,titleWin){
+  const Y=yrState(),id=w.id||'P';const e=Y.fw[id]=Y.fw[id]||{w:0,ko:0,tw:0,name:w.first?fullName(w):'',div:w.div};e.w++;if(ko)e.ko++;if(titleWin)e.tw++;
+  const wr=w.rating??playerOvr(),lr=l.rating??playerOvr();
+  if(ko&&(!Y.ko||lr>Y.ko.r))Y.ko={by:e.name,on:l.first?shortName(l):'',r:lr,id};
+  if(lr-wr>6&&(!Y.up||lr-wr>Y.up.gap))Y.up={by:e.name,on:l.first?shortName(l):'',gap:lr-wr,id};
+}
+function hofWorthy(f,beltsNow){return !!f.legend||(f.titles||0)>=2||((f.titles||0)>=1||beltsNow>0)&&f.w>=22||f.w>=38&&f.l<=6}
+function yearAwards(){
+  const Y=G.yr;const year=START_YEAR+Math.floor(G.week/52)-1;
+  if(Y){
+    const fw=Object.entries(Y.fw).filter(([,e])=>e.w>=2).map(([id,e])=>({id,e,sc:e.w*2+e.ko+e.tw*6})).sort((a,b)=>b.sc-a.sc)[0];
+    const aw=G.awards=G.awards||[];const b=B();b.awards=b.awards||[];
+    if(fw){aw.push({year,type:'Fighter of the Year',who:fw.e.name,player:fw.id==='P'});if(fw.id==='P'){b.awards.push('foy');news(`You are ${year} Fighter of the Year!`,'gold')}else news(`${year} Fighter of the Year: ${fw.e.name}.`)}
+    if(Y.ko){aw.push({year,type:'Knockout of the Year',who:`${Y.ko.by} over ${Y.ko.on}`,player:Y.ko.id==='P'});if(Y.ko.id==='P'){b.awards.push('koy');news(`Your knockout of ${Y.ko.on} is ${year} Knockout of the Year.`,'gold')}}
+    if(Y.up){aw.push({year,type:'Upset of the Year',who:`${Y.up.by} over ${Y.up.on}`,player:Y.up.id==='P'});if(Y.up.id==='P'){b.awards.push('uoy');news(`Your win over ${Y.up.on} is ${year} Upset of the Year.`,'gold')}}
+  }
+  if(G.hofQ&&G.hofQ.length){G.hof=G.hof||[];const cls=G.hofQ.splice(0);cls.forEach(h=>G.hof.push(Object.assign({year:year+1},h)));news(`Hall of Fame class of ${year+1}: ${cls.map(h=>h.name.replace(/ “.*” /,' ')).join(', ')}.`,'gold')}
+  G.yr={fw:{},ko:null,up:null};
+}
 function simWorldFight(a,c,d,title){
   const pa=1/(1+Math.pow(10,(c.rating-a.rating)/12));
   const draw=chance(.04);const aw=!draw&&chance(pa);const w=aw?a:c,l=aw?c:a;
   if(draw){a.d++;c.d++;return}
   w.w++;l.l++;const ko=chance(w.arch==='slugger'?.6:.4);if(ko)w.ko++;
   const g=clamp(18+(l.pts-w.pts)*.12+(ko?6:0),4,60);w.pts=Math.min(1000,w.pts+g);l.pts=Math.max(0,l.pts-clamp(22+(l.pts-w.pts)*.05,8,50));
+  recYear(w,l,ko,title&&beltsOf(l.id,d).length>0);
   if(title){
-    const lb=beltsOf(l.id,d);if(lb.length){lb.forEach(k=>G.world.champs[d][k]=w.id);
+    const lb=beltsOf(l.id,d);if(lb.length){lb.forEach(k=>G.world.champs[d][k]=w.id);w.titles=(w.titles||0)+1;
       if(w.legend||l.legend||w.rival||l.rival||chance(.5))news(`${DIVS[d].name}: ${shortName(w)} beats ${shortName(l)}${ko?' by KO':''} to take the ${lb.join(' & ')} title.`,w.rival?'red':'')}
   }else if(w.rival&&chance(.6))news(`Your rival ${shortName(w)} beats ${shortName(l)}${ko?' by knockout':''}. Now ${recStr(w)}.`,'red');
   else if((w.legend||l.legend)&&chance(.25))news(`${shortName(w)} defeats ${shortName(l)}${ko?' by KO':''} (${DIVS[d].short}).`);
 }
 function yearTick(){
   const W=G.world;
+  yearAwards();
   for(const id in W.f){
     const f=W.f[id];if(!f.active||f.amateur)continue;const a=ageOf(f.born);
     if(a<26)f.rating=Math.min(f.pot,f.rating+randi(0,3));else if(a>31)f.rating-=randi(1,3)*(f.legend?.6:1);
     const retireAge=f.legend?39:36;
     if(!f.rival&&(a>=retireAge&&chance(.5)||f.rating<32||(a>33&&f.l>f.w&&chance(.4)))){
-      f.active=false;const bl=beltsOf(f.id,f.div);bl.forEach(k=>G.world.champs[f.div][k]=null);
+      f.active=false;const bl=beltsOf(f.id,f.div);if(hofWorthy(f,bl.length))(G.hofQ=G.hofQ||[]).push({name:fullName(f),rec:recStr(f),ko:f.ko,div:f.div,titles:f.titles||0,legend:!!f.legend});bl.forEach(k=>G.world.champs[f.div][k]=null);
       if(f.legend||bl.length)news(`${fullName(f)} retires at ${a} with a record of ${recStr(f)}.`);
       if(bl.length)assignChamps(f.div,false);
       const nf=makeFighter(f.div,rand(45,64),randi(19,22));nf.pts=randi(120,300);nf.w=randi(3,10);nf.l=randi(0,2);nf.ko=Math.floor(nf.w*.6);W.f[nf.id]=nf;W.divs[f.div].push(nf.id);
@@ -1066,6 +1095,7 @@ function applyResult(o,res){
   const pro=!o.amateur;
   const prevRank=playerRank();
   if(pro){if(win){b.record.w++;if(ko)b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
+  if(pro){const me={id:'P',first:b.first,last:b.last,nick:b.nick,div:b.div,rating:playerOvr()};if(win)recYear(me,f,ko,!!(o.title&&!o.title.regional&&!o.title.defense));else if(loss)recYear(f,me,ko,false)}
   else{if(win)b.am.w++;else b.am.l++}
   if(win){f.l++}else if(loss){f.w++;if(ko)f.ko++}else f.d++;
   b.form.push(win?(ko?'WKO':'W'):loss?(ko?'LKO':'L'):'D');if(b.form.length>8)b.form.shift();
@@ -1218,6 +1248,7 @@ function legacy(){
     ['Story chapters',G.chapters.length*20],['Rivalry wins',(G.rival?.w||0)*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
     ['Amateur gold',(G.flags.am_gold_0?5:0)+(G.flags.am_gold_1?10:0)],
   ];
+  const aw=b.awards||[];parts.push(['Fighter of the Year',aw.filter(x=>x==='foy').length*20],['Knockout of the Year',aw.filter(x=>x==='koy').length*10],['Upset of the Year',aw.filter(x=>x==='uoy').length*8]);
   if(G.flags.exile)parts.push(['Took a stand',40]);
   if(b.retired&&r.l===0&&r.w>=25)parts.push(['Retired undefeated',50]);
   const score=Math.max(0,Math.round(sum(parts.map(p=>p[1]))));
@@ -2245,6 +2276,9 @@ class Render3D{
     const d=P.dmg||{};const key=[Math.round((d.swellL||0)*5),Math.round((d.swellR||0)*5),Math.round((d.cheek||0)*4),Math.round((P.cut||0)/12),Math.min(5,P.sweat||0)].join(',');
     if(key!==this.texKey){this.texKey=key;const c=u.head.userData.ctl;r3skinTex(this.oL,{dmg:d,cut:P.cut,sweat:P.sweat},c.texC);c.tex.needsUpdate=true}
   }
+  /* opponent glove position in 2D-canvas pixels, for tell symbols */
+  gloveScreen(hand){const u=this.opp.userData;const g=u.arms[hand==='L'?1:-1].glove;const v=g.getWorldPosition(new THREE.Vector3()).project(this.cam);
+    const f=this.f;return {x:(v.x*.5+.5)*f.W,y:(-v.y*.5+.5)*f.H}}
   posePlayer(){
     const f=this.f,p=f.p,W=f.W,H=f.H;
     for(const h of ['L','R']){const g=f.pG[h],G3=this.pg[h];if(g.init==null)continue;
@@ -2330,16 +2364,17 @@ class Fight{
     this.p=mkC(cfg.p,'p');this.o=mkC(cfg.o,'o');this.p.foe=this.o;this.o.foe=this.p;this.o.sway=rand(0,6);
     this.round=1;this.clock=cfg.roundLen;this.phase='intro';this.phaseT=0;this.time=0;this.acc=0;this.stop=0;this.flashSil=0;
     this.fx=[];this.parts=[];this.texts=[];this.shake=0;this.flash=0;this.slow=0;this.paused=false;
-    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];
-    const rob=cfg.robbery||0;
+    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];this.hitBy={};this.roundStats=[];
+    const rob=Math.max(0,(cfg.robbery||0)-(cfg.press==='respect'?.15:0));
     this.judges=[0,1,2].map(()=>({agg:rand(-.35,.35),noise:.07+rob*.12,lean:rob?rand(0,rob*.18):0}));
     this.held={block:false,body:false};this.bodyT=0;this.count=null;this.res={seed:this.seed};this.cornerPick='breathe';
-    this.scout=(cfg.scout||0)+(cfg.edge||0)*.4;this.gameplan=0;this.edgeDmg=1+(cfg.edge||0)*.05;this.ended=false;this.pBlocks=0;
+    this.scout=(cfg.scout||0)+(cfg.edge||0)*.4;this.gameplan=0;this.pressTell=cfg.press==='focus'?.06:0;this.edgeDmg=1+(cfg.edge||0)*.05;this.ended=false;this.pBlocks=0;
     this.cam={x:0,y:0,rot:0,zoom:1};
     this.oPose=null;this.oFrom=null;this.oBlend=1;this.oKey='';
     this.pG={L:{x:0,y:0,r:1},R:{x:0,y:0,r:1}};
     this.tell=null;this.tells=[];
-    if(this.o.ai.intimidate&&!cfg.sparring){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
+    if(cfg.press==='trash'){this.o.ai.agg=Math.min(1,(this.o.ai.agg||.5)+.15);this.o.ai.counter=(this.o.ai.counter||.3)*.8;this.o.st.pow=Math.min(99,this.o.st.pow+3)}
+    if(this.o.ai.intimidate&&!cfg.sparring&&cfg.press!=='respect'){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
     RNG.use(prev);
     Logs.start({seed:this.seed,p:this.p.name,o:this.o.name,oLegend:cfg.o.legend||null,rounds:cfg.rounds,roundLen:cfg.roundLen,diff:cfg.diff,label:cfg.label||'',sparring:!!cfg.sparring,practice:!!cfg.practice});
   }
@@ -2367,6 +2402,7 @@ class Fight{
     document.body.appendChild(el);this.el=el;
     this.cv=$('canvas',el);
     this.stage=$('.fstage',el);this.ov=$('#fov',el);
+    this.coachEl=document.createElement('div');this.coachEl.className='coachb';this.stage.appendChild(this.coachEl);this.coachRep={};
     this.r3d=null;if(R3D.ok()){try{this.r3d=new Render3D(this,this.stage)}catch(e){console.warn('3D renderer unavailable, using 2D',e);this.r3d=null}}
     // a desynchronized (low-latency) canvas is promoted to a hardware overlay on Android, which ignores alpha;
     // the 2D layer must stay a normal canvas when it sits on top of the 3D scene
@@ -2484,9 +2520,10 @@ class Fight{
     let w;
     if(c.side==='p'){w=P.wind*this.spdF(c);if(type==='hook')w/=this.bmul(c,'hookSpd');if(opts.fast)w*=.55}
     else{
-      w=P.tell*this.D.tell*(1.3-c.st.spd*.006)*(1+(this.p.m.tell||0)+this.p.st.iq*.0025+this.scout*.12+this.gameplan);
+      w=P.tell*this.D.tell*(1.3-c.st.spd*.006)*(1+(this.p.m.tell||0)+this.p.st.iq*.0025+this.scout*.12+this.gameplan+(this.pressTell||0));
       if(c.hurt>0)w*=1.2;if(opts.follow)w*=.72;if(opts.quick)w*=.62;if(opts.fast)w*=.6;if(type==='hook')w/=this.bmul(c,'hookSpd');
       if(this.cheats.tellMul)w*=this.cheats.tellMul;
+      if(Settings.assist)w*=1+.25*Settings.assist;
     }
     if(opts.instant)w=.05;
     if(c.side==='p'){c.rep=(type===c.lastType&&!body===!c.lastBody)?Math.min(5,(c.rep||0)+1):0;c.lastType=type;c.lastBody=body}
@@ -2499,12 +2536,22 @@ class Fight{
       this.tell={type,body,dur:w,start:this.time,inputs:[],quick:!!(opts.quick||opts.follow||opts.fast),res:null};
       this.log({ev:'tell',type,body,dur:+w.toFixed(3),quick:this.tell.quick});
       if(!opts.instant)Sfx.tell(type,w);
+      if(this.coachEl&&!opts.instant){const sd=this.screenSide(c,type)==='L'?'left':'right',ot=sd==='left'?'RIGHT':'LEFT';
+        const M={jab:'JAB coming: block it, or slip and fire back.',cross:'CROSS coming straight: DUCK or slip, then counter.',hook:`HOOK from the ${sd}: slip ${ot}, away from it.`,upper:'UPPERCUT: never duck it. Slip or block.'};
+        if(body)this.coach('tell_body','BODY SHOT: block it or slip it. Ducking walks into it.',{slow:.7});else this.coach('tell_'+type,M[type],{slow:.7})}
     }
   }
   impact(a){
     const d=a.foe,pu=a.pu,P=PUNCH[pu.type];
     const r=this.resolve(a,d,pu);
     if(a.side==='o'&&this.tell){this.tell.res=r;this.tells.push(this.tell);if(this.tells.length>12)this.tells.shift();this.tell=null}
+    if(a.side==='o'&&r==='hit'){const k=pu.body?'body':pu.type;this.hitBy[k]=(this.hitBy[k]||0)+1}
+    if(this.coachEl&&a.side==='o'){
+      if(r==='miss')this.coach('miss','They missed. PUNCH NOW while they recover!',{slow:.45});
+      if(r==='hit'){const k=pu.body?'body':pu.type;
+        if(this.hitBy[k]===3&&!this.coachRep[k]){this.coachRep[k]=1;const sd=this.screenSide(a,pu.type)==='L'?'RIGHT':'LEFT';
+          const T={jab:'Their jab keeps finding you. Block it and answer with your own.',cross:'That cross keeps landing. Duck it, then come up with a hook.',hook:`Those hooks keep landing. Slip ${sd}, away from the hook.`,upper:'You keep eating uppercuts. Stop ducking against this guy: slip instead.',body:'They are working your body. Block low punches and step away.'};
+          this.coach('again_'+k,'Corner: '+T[k],{repeat:true,ms:2800})}}}
     if(this.phase!=='fight'&&this.phase!=='down')return;
     if(a.state==='down')return;
     if(a.state!=='wind')return;
@@ -2610,7 +2657,7 @@ class Fight{
     Sfx.hit(dm/3.2,pu.body);
     if(Settings.hitstop&&big)this.stop=Math.max(this.stop,flags.counter||flags.hay?.1:.065);
     if(d.side==='o'&&big)this.flashSil=.09;
-    if(d.side==='p'){this.shake=Math.max(this.shake,dm*2.8);buzz(big?[30,20,40]:18);this.flash=Math.max(this.flash,big?.35:.12);this.pHit={t:.25,dir:dirX}}
+    if(d.side==='p'){this.shake=Math.max(this.shake,dm*2.8);buzz(big?[30,20,40]:18);this.doFlash(big?.35:.12);this.pHit={t:.25,dir:dirX}}
     else{this.shake=Math.max(this.shake,dm*1);if(big)buzz(12);d.hitAnim={t:.22,dir:dirX,up:P.kind==='upper',body:!!pu.body}}
     if(flags.counter){this.text('COUNTER!','#ffd34d',pos.x,pos.y-30,.9,26);Sfx.roar(.12,1)}
     else if(flags.into)this.text(d.side==='p'?'SLIPPED INTO IT':'CAUGHT','#ff8a7a',pos.x,pos.y-30,.8,18);
@@ -2745,7 +2792,7 @@ class Fight{
     a.stats.kd++;a.rs.kd++;d.rs.kdd++;a.pu=null;a.seq=[];a.state='idle';a.queue=null;
     this.phase='down';this.count={d,n:0,t:-1.3,rise:99,need:0,prog:0,ready:false};
     this.log({ev:'kd',who:d.side,n:d.kdTotal});
-    if(Settings.slowmo)this.slow=.8;this.flash=.6;this.shake=18;Sfx.roar(.35,2.5);Sfx.hit(2,false);buzz([60,40,120]);
+    if(Settings.slowmo)this.slow=.8;this.doFlash(.6);this.shake=18;Sfx.roar(.35,2.5);Sfx.hit(2,false);buzz([60,40,120]);
     if(Settings.hitstop)this.stop=Math.max(this.stop,.14);
     this.text(d.side==='o'?'DOWN!':'YOU\'RE DOWN!','#fff',200,150,1.4,40);
     if(this.cfg.longCount&&d.side==='p'&&!this.longUsed){this.longUsed=true;this.count.t=-4.6;this.res.longCount=true;if(!this.cfg.headless)setTimeout(()=>this.text('THE LONG COUNT!','#ffd34d',200,80,3,22),900)}
@@ -2805,7 +2852,7 @@ class Fight{
         this.cards[i][0]+=a;this.cards[i][1]+=b;rc.push([a,b]);
       });
     });
-    this.roundCards.push(rc);
+    this.roundCards.push(rc);this.roundStats.push({p:{l:P.landed,t:P.thrown,pw:P.pow,kd:P.kd,blk:(P.blockT||0)/this.cfg.roundLen},o:{l:O.landed,t:O.thrown,pw:O.pow,kd:O.kd,blk:(O.blockT||0)/this.cfg.roundLen},rc});
     this.log({ev:'round',cards:rc,p:{l:P.landed,t:P.thrown},o:{l:O.landed,t:O.thrown},php:+this.p.hp.toFixed(1),ohp:+this.o.hp.toFixed(1)});
     this.p.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};this.o.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};
     this.p.kd=0;this.o.kd=0;
@@ -2825,7 +2872,7 @@ class Fight{
     this.releaseAll();
     const elapsed=this.cfg.roundLen-this.clock;
     const tScaled=Math.round(elapsed/this.cfg.roundLen*180);
-    Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,
+    Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,hitBy:Object.assign({},this.hitBy),
       stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut,note});
     this.log({ev:'end',winner,method,round:this.round});
     this.res.log=this.cfg.headless?(Logs.cur=null):Logs.end(this.res);
@@ -2836,6 +2883,15 @@ class Fight{
     if(this.cfg.headless)return;
     setTimeout(()=>{this.destroy();this.cfg.onEnd(this.res)},2600);
   }
+  /* the round just scored: what each side landed, and (open scoring) each judge's card */
+  roundBox(){const R=this.roundStats[this.roundStats.length-1];if(!R)return '';
+    const why=[];if(R.p.blk>.2)why.push('Judges marked you down for covering up too long.');if(R.o.blk>.2)why.push('They spent the round behind their gloves, and the judges noticed.');
+    if(R.p.kd||R.o.kd)why.push('A knockdown makes it a 10-8 round.');
+    const op=Settings.openScoring!==false;const sc=R.rc.map(([a,b])=>`<span class="pill${a>b?' gold':a<b?' red':''}">${a}-${b}</span>`).join(' ');
+    return `<div class="card flat" style="padding:8px 10px"><div class="tblw"><table class="t" style="font-size:13.5px"><tr><th>Round ${this.round}</th><th>You</th><th>${esc(this.o.last)}</th></tr>
+      <tr><td>Landed</td><td class="num">${R.p.l}/${R.p.t}</td><td class="num">${R.o.l}/${R.o.t}</td></tr><tr><td>Power shots</td><td class="num">${R.p.pw}</td><td class="num">${R.o.pw}</td></tr>
+      ${R.p.kd||R.o.kd?`<tr><td>Knockdowns</td><td class="num">${R.p.kd}</td><td class="num">${R.o.kd}</td></tr>`:''}</table></div>
+      ${op?`<div class="row" style="gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap"><span class="lbl">Judges</span>${sc}</div>`:''}${why.length?`<div class="muted" style="font-size:13px;margin-top:4px">${esc(why.join(' '))}</div>`:''}</div>`}
   showCorner(){
     const p=this.p,o=this.o,cq=this.cfg.corner||1;
     const est=this.cards.reduce((s,c)=>s+(c[0]-c[1]),0)/3;
@@ -2855,6 +2911,7 @@ class Fight{
     const el=document.createElement('div');el.className='corner';
     el.innerHTML=`<div class="box">
       <div class="row sp"><div class="kicker">Between rounds · ${this.round} of ${this.cfg.rounds} done</div><span class="pill">${esc(this.cfg.trainerName||'Your corner')}</span></div>
+      ${this.roundBox()}
       <div class="quote">${esc(cardLine)}<br>${esc(tips.slice(0,cq>=3?2:1).map(t=>'"'+t+'"').join(' '))}</div>
       <div class="grid2" style="gap:8px">${opts.map(o=>`<button class="copt${o[0]===this.cornerPick?' on':''}" data-c="${o[0]}"><b>${o[1]}</b><small>${o[2]}</small></button>`).join('')}</div>
       <div class="row"><button class="btn primary grow" id="nextRd">Round ${this.round+1}</button><button class="btn ghost sm" id="stool">${this.cfg.practice||this.cfg.sparring?'End session':'Retire on stool'}</button></div>
@@ -2940,7 +2997,7 @@ class Fight{
     this.draw(rdt);this.updHud();
   }
   fxTick(rdt){
-    this.shake=Math.max(0,this.shake-rdt*40);this.flash=Math.max(0,this.flash-rdt*1.8);this.flashSil=Math.max(0,this.flashSil-rdt);
+    if(!Settings.shake)this.shake=0;this.shake=Math.max(0,this.shake-rdt*40);this.flash=Math.max(0,this.flash-rdt*1.8);this.flashSil=Math.max(0,this.flashSil-rdt);
     this.fx=this.fx.filter(f=>(f.t+=rdt)<f.life);this.texts=this.texts.filter(f=>(f.t+=rdt)<f.life);
     for(const p of this.parts){p.t+=rdt;p.x+=p.vx*rdt;p.y+=p.vy*rdt;p.vy+=p.g*rdt;p.vx*=Math.pow(.6,rdt)}
     this.parts=this.parts.filter(p=>p.t<p.life);
@@ -3225,9 +3282,43 @@ class Fight{
     if(p.cut>50){c.fillStyle=`rgba(150,0,0,${Math.min(.45,(p.cut-40)/120)})`;c.beginPath();c.ellipse(W*.12,H*.18,W*.22,H*.2,.4,0,7);c.fill()}
     if(this.flash>0){c.fillStyle=`rgba(255,255,255,${this.flash})`;c.fillRect(0,0,W,H)}
     if(this.p.state==='down'){c.fillStyle='rgba(0,0,0,.35)';c.fillRect(0,0,W,H)}
+    this.drawTellIcon(c);
     if(this.cfg.overlay)this.drawOverlay(c);
   }
   drop3d(){try{this.r3d?.destroy()}catch(e){}this.r3d=null;this.resize();if(typeof toast==='function')toast('3D unavailable on this device, using 2D')}
+  /* coach banner: once per tip on this device (unless repeat), with a brief slow-down so the prompt can be acted on */
+  coach(id,text,o={}){
+    if(!this.coachEl||!Settings.coach||this.cfg.practice&&this.cfg.label&&this.cfg.label.startsWith('Lab'))return;
+    const seen=Store.get('tr_coach')||{};if(!o.repeat&&seen[id])return;
+    if(this.coachT&&this.time-this.coachT<1.1)return;
+    if(!o.repeat){seen[id]=1;Store.set('tr_coach',seen)}
+    this.coachT=this.time;this.coachEl.textContent=text;this.coachEl.classList.add('on');
+    clearTimeout(this.coachTO);this.coachTO=setTimeout(()=>this.coachEl&&this.coachEl.classList.remove('on'),o.ms||2300);
+    if(o.slow&&Settings.slowmo)this.slow=Math.max(this.slow,o.slow);
+    this.log({ev:'coach',id});
+  }
+  /* full-screen flash: never more than three per second; dim when bright flashes are off */
+  doFlash(v){const t=this.time||0;if(t-(this.lastFlashT??-9)<.34)return;this.lastFlashT=t;this.flash=Math.max(this.flash,Settings.flashes?v:Math.min(.1,v*.3))}
+  /* tell symbol over the winding glove: shape, not colour, says which punch is coming */
+  drawTellIcon(c){
+    const o=this.o;if(!Settings.tellIcons||!o.pu||!(o.state==='wind'||o.state==='feint'))return;
+    const hand=this.hand(o,o.pu.type),type=o.pu.type;let pt=null;
+    if(this.r3d)pt=this.r3d.gloveScreen(hand);
+    else if(this.oPose){const P=this.oPose,g=hand==='L'?P.lg:P.rg;pt=this.toScreen(200+g[0],430+g[1]-40)}
+    if(!pt)return;
+    const s=Math.min(this.W,this.H)*.055,k=o.dur?clamp(o.t/o.dur,0,1):0,x=pt.x,y=pt.y-s*1.6;
+    c.save();c.globalAlpha=Math.min(1,.4+k*1.2);c.translate(x,y);c.scale(1+.15*Math.sin(this.time*20),1+.15*Math.sin(this.time*20));
+    c.fillStyle='rgba(12,10,14,.82)';c.strokeStyle=TELL_COL[type];c.lineWidth=s*.14;c.beginPath();c.arc(0,0,s,0,7);c.fill();c.stroke();
+    c.fillStyle='#fff';c.strokeStyle='#fff';c.lineWidth=s*.18;c.lineCap='round';c.lineJoin='round';
+    const side=this.screenSide(o,type)==='L'?-1:1;
+    if(type==='jab'){c.beginPath();c.arc(0,0,s*.28,0,7);c.fill()}
+    else if(type==='cross'){c.beginPath();c.moveTo(-s*.42,-s*.25);c.lineTo(0,s*.4);c.lineTo(s*.42,-s*.25);c.closePath();c.fill()}
+    else if(type==='upper'){c.beginPath();c.moveTo(-s*.42,s*.25);c.lineTo(0,-s*.45);c.lineTo(s*.42,s*.25);c.closePath();c.fill()}
+    else{c.beginPath();c.arc(-side*s*.05,0,s*.45,side>0?Math.PI*1.05:-Math.PI*.05,side>0?Math.PI*1.95:Math.PI*.95+0,side<0);c.stroke();
+      const ax=side*s*.42,ay=s*.05;c.beginPath();c.moveTo(ax,ay+s*.2);c.lineTo(ax+side*s*.02,ay-s*.12);c.lineTo(ax-side*s*.3,ay+s*.02);c.stroke()}
+    if(o.pu.body){c.font=`700 ${s*.5}px "Barlow Condensed",sans-serif`;c.textAlign='center';c.fillStyle='#fff';c.fillText('BODY',0,s*1.6)}
+    c.restore();
+  }
   drawOverlay(c){
     const W=this.W,dpr=this.dpr,o=this.o,p=this.p;
     c.save();c.setTransform(dpr,0,0,dpr,0,0);
@@ -3411,12 +3502,25 @@ function runMinigame(kind,onDone){
 const app=()=>$('#app');
 const UI={cur:'title',arg:null,cr:null,lastResult:null,
   go(s,arg){this.cur=s;this.arg=arg;Sfx.click();this.render();const m=$('.main .scr')||$('.scr');if(m)m.scrollTop=0},
-  render(){const f=SCR[this.cur]||SCR.title;app().innerHTML=f(this.arg);const after=AFTER[this.cur];if(after)after(this.arg)},
+  render(){const f=SCR[this.cur]||SCR.title;app().innerHTML=f(this.arg);const after=AFTER[this.cur];if(after)after(this.arg);showTip(this.cur)},
 };
 const isWide=()=>innerWidth>=680;
 let _rw=isWide();
 window.addEventListener('resize',()=>{const w=isWide();if(w!==_rw){_rw=w;if(!$('.fight')&&!$('.mg')&&!$('.modal'))UI.render()}});
 
+/* first-visit coaching for career screens: one line, shown once per device */
+const TIPS={
+  home:'Book a fight, train in camp, then walk out. Losses sting but your career keeps going.',
+  camp:'Each drill builds the stats it names. Drills linked to this opponent also give you an edge on fight night.',
+  skills:'Levels give skill points. Each branch builds toward a capstone worth saving for.',
+  rankings:'Wins over ranked fighters move you up fastest. Losses push you down and get you a prove-it fight.',
+  division:'Moving down makes you bigger but drains stamina. Moving up makes you faster but smaller.',
+  team:'Better trainers mean bigger camp gains and smarter corners between rounds. A cutman keeps cuts from ending fights.',
+  legacy:'Titles, defenses, big wins and legends beaten all build your Hall of Fame case.',
+  halloffame:'Retired greats are inducted here each year. Build a career that earns you a plaque.',
+};
+function showTip(s){try{$$('.tipb').forEach(e=>e.remove());if(!Settings.coach||UI.silent||!TIPS[s]||!G)return;const seen=Store.get('tr_tips')||{};if(seen[s])return;seen[s]=1;Store.set('tr_tips',seen);
+  const el=document.createElement('div');el.className='tipb';el.innerHTML=`<p><b>Coach:</b> ${esc(TIPS[s])}</p><button class="btn sm gold">Got it</button>`;el.querySelector('button').onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),9000)}catch(e){}}
 function toast(t){if(UI.silent)return;const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
 function modal(html,opts={}){
   const el=document.createElement('div');el.className='modal';el.innerHTML=`<div class="box${opts.wide?' wide':''}">${html}</div>`;
@@ -3510,6 +3614,15 @@ function settingsHTML(inCareer){
     ${tg('audioTells','Audio tells','A different wind-up sound for each punch, and a chime before power shots.')}
     ${tg('gfx3d','3D fighters','Stylized 3D opponent and gloves. Off uses the 2D renderer.')}
     ${tg('gfxHi','High detail','Shadows, antialiasing and a sharper render. Turn off on a hot or slow phone.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Reaction assist</b><div class="muted" style="font-size:13px">Longer wind-ups on every opponent punch, so you have more time to read and react. No penalty, change it any time.</div>
+    <div class="chips">${[[0,'Off'],[1,'+25% time'],[2,'+50% time']].map(([v,l])=>`<button class="chip${(Settings.assist||0)===v?' on':''}" data-act="setv" data-k="assist" data-v="${v}">${l}</button>`).join('')}</div></div>
+    ${tg('tellIcons','Tell symbols','A symbol over the winding glove: dot jab, down-arrow cross, curl hook (slip the other way), up-arrow uppercut. Works without colour.')}
+    ${tg('shake','Screen shake','Camera shake on hits and knockdowns.')}
+    ${tg('flashes','Bright flashes','White hit flashes. Off keeps them dim. Never more than three per second either way.')}
+    ${tg('openScoring','Open scoring','Show each judge\'s score for the round in your corner. Off: rely on your trainer\'s read.')}
+    ${tg('coach','Coach tips','One-line coaching the first time you meet each punch, plus tips on new screens.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Text size</b>
+    <div class="chips">${[[1,'Normal'],[1.12,'Large'],[1.25,'Larger']].map(([v,l])=>`<button class="chip${(Settings.textSize||1)===v?' on':''}" data-act="setv" data-k="textSize" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
     ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
     ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}
@@ -3715,10 +3828,27 @@ SCR.fightnight=()=>{
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
     </div>
+    ${pressHTML(n,f,o)}
     <button class="btn primary wide" data-act="walk" style="min-height:60px;font-size:20px">Walk to the ring</button>
     ${o.amateur||o.title||o.chapter?'':`<button class="btn ghost" data-act="simfight">Simulate fight (60% XP)</button>`}
   </div></div>`;
 };
+/* press conference: the opponent talks, you answer, and the answer changes the fight */
+const PRESS={
+  trash:{name:'Talk trash',fx:'Hype sells tickets: +8% purse. They come out angry: more aggressive and harder-hitting, but they take more risks.'},
+  respect:{name:'Show respect',fx:'The judges and the crowd warm to you: fairer scoring, and stare-downs don\'t rattle you.'},
+  focus:{name:'Stay focused',fx:'No comment. You spend the time on tape: their wind-ups read 6% longer all night.'},
+};
+function pressLine(f){const L=f.legend?LEGEND_BY[f.legend]:null;const ex=(f.look&&f.look.expr)||'stern';
+  if(f.rival)return `"Last time doesn't count. Saturday I settle this for good."`;
+  if(L&&L.ai&&L.ai.trash)return `"I'm too pretty and too fast for this one. Pick the round, I'll make it happen."`;
+  const P={cocky:[`"I'll be home before the main event starts."`,`"He's a nice story. Saturday the story ends."`],grit:[`"He's in for the worst night of his life."`,`"I don't talk. I hurt people."`],stern:[`"I respect him. I'm still taking his spot."`,`"Good fighter. Not good enough."`],calm:[`"Nothing to say. See you Saturday."`,`"We trained for everything he does."`]};
+  const a=P[ex]||P.stern;return a[hashStr(f.id)%a.length]}
+function pressHTML(n,f,o){
+  if(o.amateur||!G||G.phase!=='pro')return '';
+  if(n.press){const c=PRESS[n.press];return `<div class="card flat"><span class="lbl">Press conference</span><p style="margin:6px 0 2px"><b>${esc(c.name)}.</b> ${esc(c.fx)}</p></div>`}
+  return `<div class="card col"><span class="lbl">Press conference</span><p style="margin:4px 0"><b>${esc(f.last)}:</b> ${esc(pressLine(f))}</p>
+    <div class="col" style="gap:6px">${Object.entries(PRESS).map(([k,c])=>`<button class="arch" data-act="press" data-k="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div></div>`}
 function startFight(sim){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
   o.foughtHurt=B().injuries.length>0;
@@ -3731,7 +3861,7 @@ function startFight(sim){
   const rob=(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
-    edge:Object.keys(n.edge||{}).length,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
+    edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
   fight.mount();
@@ -3742,6 +3872,22 @@ function afterFight(o,res){
   UI.lastResult={o,res,sum};
   Save.write();
   UI.go('result');
+}
+/* two or three concrete pointers from the fight's numbers */
+function coachNotes(res,win){
+  const P=res.stats.p,O=res.stats.o,hb=res.hitBy||{},out=[];
+  const top=Object.entries(hb).sort((a,b)=>b[1]-a[1])[0];
+  const adv={jab:'block it and jab back',cross:'duck it and come up with a hook',hook:'slip away from the side it comes from',upper:'slip or block it, never duck',body:'block it, and stop dipping your head'};
+  const nm={jab:'jab',cross:'cross',hook:'hook',upper:'uppercut',body:'body shot'};
+  if(top&&top[1]>=4)out.push(`Their ${nm[top[0]]} landed ${top[1]} times. Next time, ${adv[top[0]]}.`);
+  const acc=P.thrown?P.landed/P.thrown:0;
+  if(P.thrown>=15&&acc<.3)out.push(`You landed ${Math.round(acc*100)}% of your punches. Throw right after they miss, not into a set guard.`);
+  if(P.perfect>=3)out.push(`${P.perfect} perfect dodges. Your counters are your best weapon: keep making them miss.`);
+  if((P.bodyL||0)<3&&res.round>=3&&!['KO','TKO'].includes(res.method)||(!win&&(P.bodyL||0)<2))out.push('Go to the body more. It drains their stamina and brings the guard down.');
+  if(P.jabT>0&&P.powT>0&&P.jabT>P.powT*3)out.push('Lots of jabs, few power shots. Follow the jab with a cross or hook to win rounds clearly.');
+  if(!win&&['KO','TKO'].includes(res.method))out.push('You got stopped. When you are tired or hurt, clinch and defend until your legs come back.');
+  if(win&&!out.length)out.push('Clean work. Keep doing what got you here.');
+  return out.slice(0,3);
 }
 SCR.result=()=>{
   const {o,res,sum}=UI.lastResult,f=G.world.f[o.oppId],b=B();
@@ -3758,6 +3904,8 @@ SCR.result=()=>{
     <tr><td>Knockdowns</td><td>${res.kdFor}</td><td>${res.kdAgainst}</td></tr>
     ${P.perfect!=null?`<tr><td>Perfect dodges</td><td>${P.perfect}</td><td>–</td></tr>`:''}</table></div></div>`;
   const mny=sum.moneyLines?`<div class="card"><h3>Payday</h3><div class="tblw"><table class="t">${sum.moneyLines.map(l=>`<tr><td>${esc(l[0])}</td><td class="r num ${l[1]<0?'bad':''}">${money(l[1])}</td></tr>`).join('')}<tr><td><b>Net</b></td><td class="r num"><b>${money(sum.money)}</b></td></tr></table></div></div>`:'';
+  const notes=coachNotes(res,win);
+  const cn=notes.length?`<div class="card"><h3>Coach's notes</h3><ul style="margin:6px 0 0 18px;padding:0">${notes.map(n=>`<li style="margin:4px 0">${esc(n)}</li>`).join('')}</ul></div>`:'';
   const lines=sum.lines.map(l=>`<div class="pill gold" style="white-space:normal">${esc(l)}</div>`).join('');
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="hero"><div class="in" style="align-items:center;text-align:center">
@@ -3769,7 +3917,7 @@ SCR.result=()=>{
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
       <div class="card"><span class="lbl">Health</span><p class="num">Recovery: ${sum.recovery} week${sum.recovery!==1?'s':''}</p>${sum.injuries.length?`<p class="bad">${sum.injuries.map(i=>INJ[i].name).join(', ')}</p>`:''}<p class="muted num" style="font-size:13px">Long-term damage ${Math.round(b.damage)}/100</p></div>
     </div>
-    ${cards}${cbx}${mny}
+    ${cn}${cards}${cbx}${mny}
     <button class="btn primary wide" data-act="resultdone">Continue</button></div></div>`;
 };
 
@@ -3873,8 +4021,14 @@ SCR.legacy=()=>{
   const L=legacy(),b=B();
   return shell('legacy','Legacy',`<div class="hero"><div class="in" style="text-align:center;align-items:center"><div class="kicker">Hall of Fame standing</div><div class="bigtxt" style="font-size:clamp(34px,9vw,56px)">${esc(L.tier)}</div><p class="rec num">${L.score} legacy points</p>${L.next?`<p class="muted">${L.next[0]-L.score} more to reach ${esc(L.next[1])}</p>`:''}</div></div>
     <div class="card"><div class="tblw"><table class="t">${L.parts.filter(p=>p[1]).map(p=>`<tr><td>${esc(p[0])}</td><td class="r num ${p[1]<0?'bad':''}">${p[1]>0?'+':''}${p[1]}</td></tr>`).join('')}</table></div></div>
+    <button class="btn gold" data-go="halloffame">Hall of Fame and year-end awards</button>
     ${G.phase!=='retired'?`<div class="card col"><h3>Retirement</h3><p class="muted" style="font-size:13.5px">Hang up the gloves whenever you choose. Retiring undefeated with 25+ wins earns a special place in history.</p><button class="btn primary" data-act="retire">Retire</button></div>`:`<button class="btn gold" data-act="totitle">Back to title screen</button>`}`);
 };
+SCR.halloffame=()=>{
+  const aw=(G.awards||[]).slice().reverse(),hof=(G.hof||[]).slice().reverse();
+  const awT=aw.length?`<div class="tblw"><table class="t"><tr><th>Year</th><th>Award</th><th>Winner</th></tr>${aw.map(a=>`<tr${a.player?' class="goldt"':''}><td class="num">${a.year}</td><td>${esc(a.type)}</td><td>${esc(a.who)}</td></tr>`).join('')}</table></div>`:'<p class="muted">The first awards are handed out at the end of your first full year.</p>';
+  const hT=hof.length?`<div class="tblw"><table class="t"><tr><th>Class</th><th>Inductee</th><th>Record</th><th>Division</th></tr>${hof.map(h=>`<tr${h.player?' class="goldt"':''}><td class="num">${h.year}</td><td>${esc(h.name)}</td><td class="num">${esc(h.rec)}${h.ko!=null?' ('+h.ko+' KO)':''}</td><td>${esc(DIVS[h.div]?.name||'')}</td></tr>`).join('')}</table></div>`:'<p class="muted">No one has been inducted yet. Great fighters join the year after they retire.</p>';
+  return shell('legacy','Hall of Fame',`<h2 class="sec">Hall of Fame</h2><div class="card">${hT}</div><h2 class="sec">Year-end awards</h2><div class="card">${awT}</div>`)};
 SCR.settings=()=>shell('settings','Settings',`<h2 class="sec">Settings</h2>${settingsHTML(true)}`);
 
 /* ---------- retire ---------- */
@@ -3883,6 +4037,7 @@ function retireNow(reason){
   const bl=playerBelts();bl.forEach(x=>G.world.champs[x.d][x.k]=null);for(let d=0;d<8;d++)assignChamps(d,false);
   if(b.record.l===0&&b.record.w>=25&&!G.chapters.includes('fortynine'))G.chapters.push('fortynine');
   const L=legacy();
+  if(L.score>=300){G.hof=G.hof||[];G.hof.push({year:START_YEAR+Math.floor(G.week/52)+1,name:fullName(b),rec:`${b.record.w}-${b.record.l}-${b.record.d}`,ko:b.record.ko,div:b.div,player:true});news(`You will be inducted into the Hall of Fame next year.`,'gold')}
   news(`${fullName(b)} retires at ${ageOf(b.born)} with a record of ${b.record.w}-${b.record.l}-${b.record.d} (${b.record.ko} KOs). ${L.tier}.`,'gold');
   Save.write();
   modal(`<div class="kicker">${esc(reason||'The final bell')}</div><div class="bigtxt" style="font-size:40px;text-align:center">${esc(L.tier.toUpperCase())}</div>
@@ -3962,6 +4117,10 @@ const ACT={
     Save.write();UI.render();
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },
+  press(el){const n=G.next;if(!n||n.press)return;const k=el.dataset.k;n.press=k;const f=G.world.f[n.offer.oppId];
+    if(k==='trash'){n.offer.purse=Math.round(n.offer.purse*1.08);news(`Press conference: you went at ${f.last} hard. Ticket sales jumped.`)}
+    else if(k==='respect')news(`Press conference: you praised ${f.last}. Fans and media liked it.`);else news(`Press conference: you kept it short and went back to the film room.`);
+    Save.write();Sfx.click();UI.render()},
   walk(){startFight(false)},
   simfight(){startFight(true)},
   resultdone(){
@@ -3982,8 +4141,9 @@ const ACT={
   hire(el){const k=el.dataset.k;G.trainer=k;news(`You hire ${TRAINERS[k].name}.`);if(TRAINERS[k].teach)toast(`${TRAINERS[k].name} can teach ${AB[TRAINERS[k].teach].name}. See Skills.`);Save.write();UI.render()},
   gym(el){G.gym=el.dataset.k;Save.write();UI.render()},
   staff(el){const k=el.dataset.k;G.staff[k]=!G.staff[k];Save.write();UI.render()},
-  toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
+  toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='coach'&&Settings.coach){Store.set('tr_coach',{});Store.set('tr_tips',{});toast('Coach tips will show again')}if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
   roundlen(el){Settings.roundLen=+el.dataset.s;saveSettings();UI.render()},
+  setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
   devgo(){UI.go('dev')},
   export(){
@@ -4367,7 +4527,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')&&!location
 function start(data){
   if(!$('#app')){const a=document.createElement('div');a.id='app';document.body.appendChild(a)}
   if(location.hash==='#dev'){Settings.dev=true;saveSettings()}
-  devBadge();
+  devBadge();applyTextSize();
   if(data&&data.G&&data.G.boxer){loadCareer(Save.migrate(data.G));UI.go(['fight','result','fightnight'].includes(data.screen)?'home':data.screen||'home')}
   else UI.go('title');
   initCloud();

@@ -615,6 +615,9 @@ class Render3D{
     const d=P.dmg||{};const key=[Math.round((d.swellL||0)*5),Math.round((d.swellR||0)*5),Math.round((d.cheek||0)*4),Math.round((P.cut||0)/12),Math.min(5,P.sweat||0)].join(',');
     if(key!==this.texKey){this.texKey=key;const c=u.head.userData.ctl;r3skinTex(this.oL,{dmg:d,cut:P.cut,sweat:P.sweat},c.texC);c.tex.needsUpdate=true}
   }
+  /* opponent glove position in 2D-canvas pixels, for tell symbols */
+  gloveScreen(hand){const u=this.opp.userData;const g=u.arms[hand==='L'?1:-1].glove;const v=g.getWorldPosition(new THREE.Vector3()).project(this.cam);
+    const f=this.f;return {x:(v.x*.5+.5)*f.W,y:(-v.y*.5+.5)*f.H}}
   posePlayer(){
     const f=this.f,p=f.p,W=f.W,H=f.H;
     for(const h of ['L','R']){const g=f.pG[h],G3=this.pg[h];if(g.init==null)continue;
