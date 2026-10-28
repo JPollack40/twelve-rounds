@@ -108,6 +108,8 @@ function settingsHTML(inCareer){
   return `<div class="col">
     ${tg('sound','Sound','Punches, bell and crowd, all synthesized.')}
     ${tg('haptics','Vibration','Buzz on big hits and knockdowns, where the browser allows it.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Vibration strength</b>
+    <div class="chips">${[[.5,'Light'],[1,'Normal'],[1.6,'Strong']].map(([v,l])=>`<button class="chip${(Settings.hapticStr??1)===v?' on':''}" data-act="setv" data-k="hapticStr" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${tg('slowmo','Knockdown slow motion','Slow motion on knockdowns.')}
     ${tg('hints','Fight hints','Show the how-to-fight card in practice and your first bout.')}
     ${tg('lefty','Swap control sides','Punches on the left thumb, defense on the right.')}
@@ -126,6 +128,8 @@ function settingsHTML(inCareer){
     ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
     ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
     ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Button layout</b><div class="muted" style="font-size:13px">Drag and resize fight buttons. The cover screen, inner screen and landscape each keep their own layout. Also in the pause menu.</div>
+    <div class="row" style="gap:6px"><button class="btn sm gold" data-act="arrange">Arrange fight buttons</button><button class="btn sm ghost" data-act="layoutreset">Reset all layouts</button></div></div>
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Fight button size</b>
     <div class="chips">${[[.85,'Small'],[1,'Normal'],[1.2,'Large'],[1.4,'Huge']].map(([v,l])=>`<button class="chip${(Settings.btnSize||1)===v?' on':''}" data-act="btnsize" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Round length</b><div class="muted" style="font-size:13px">Real seconds per round. The fight clock still reads as boxing time.</div>
@@ -302,7 +306,9 @@ function doCamp(kind){
 function showCampResult(r){
   UI.render();
   const lv=r.ups?`<p class="goldt"><b>LEVEL UP!</b> You're now level ${B().level}. Spend your points in Boxer and Skills.</p>`:'';
-  modal(`<div class="kicker">${CAMP[r.kind].name}${r.q!=null&&r.xp?` · ${Math.round(r.q*100)}%`:''}</div>${r.xp?`<p class="rec">+${r.xp} XP</p>`:''}${r.lines.length?`<p>${r.lines.map(esc).join('<br>')}</p>`:''}${lv}<p class="muted" style="font-size:13.5px">${G.next?`${G.next.weeksLeft} week${G.next.weeksLeft!==1?'s':''} until the fight.`:''}</p><button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>{if(r.ups)Sfx.great();UI.render();checkEvent()}});
+  const grade=r.q==null?'':r.q>=.9?'S':r.q>=.75?'A':r.q>=.6?'B':r.q>=.4?'C':'D';
+  const bars=(r.deltas||[]).map(([k,a,c])=>`<div class="stat" style="grid-template-columns:78px 1fr 64px"><span class="lbl">${STAT_NAME[k]}</span><div class="bar" style="position:relative"><i style="width:${a}%"></i><i style="position:absolute;left:${a}%;top:0;bottom:0;width:${c-a}%;background:var(--gold)"></i></div><span class="num goldt">${a} → ${c}</span></div>`).join('');
+  modal(`<div class="kicker">${CAMP[r.kind].name}${r.q!=null&&r.xp?` · ${Math.round(r.q*100)}%`:''}</div>${grade&&r.xp?`<div class="bigtxt" style="font-size:44px;text-align:center;color:${r.sloppy?'var(--bad)':'var(--gold)'}">${grade}</div>`:''}${r.pb?'<p class="goldt" style="text-align:center"><b>New personal best!</b></p>':''}${r.xp?`<p class="rec">+${r.xp} XP</p>`:''}${bars?`<div class="col" style="gap:6px;margin:6px 0">${bars}</div>`:''}${r.lines.length?`<p>${r.lines.filter(l=>!/^\+\d+ /.test(l)||!bars).map(esc).join('<br>')}</p>`:''}${lv}<p class="muted" style="font-size:13.5px">${G.next?`${G.next.weeksLeft} week${G.next.weeksLeft!==1?'s':''} until the fight.`:''}</p><button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>{if(r.ups)Sfx.great();UI.render();checkEvent()}});
   if(r.ups)Sfx.great();
 }
 
@@ -643,6 +649,12 @@ const ACT={
   staff(el){const k=el.dataset.k;G.staff[k]=!G.staff[k];Save.write();UI.render()},
   toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='coach'&&Settings.coach){Store.set('tr_coach',{});Store.set('tr_tips',{});toast('Coach tips will show again')}if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
   roundlen(el){Settings.roundLen=+el.dataset.s;saveSettings();UI.render()},
+  arrange(){Sfx.init();const look={skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f'};
+    const pc=G?playerCombat():{name:'You',first:'You',last:'You',stats:Object.fromEntries(STAT_KEYS.map(k=>[k,55])),look,stance:'orthodox',reach:71,abilities:['onetwo','secondwind'],mods:{}};
+    const oc={name:'Pad Man',first:'Pad',last:'Man',stats:statsFromRating(50,'boxerpuncher'),look:RNG.with(new Rng(5),()=>randomLook()),stance:'orthodox',reach:71,ai:deep(ARCH.boxerpuncher.ai),abilities:[]};
+    const F=new Fight({p:pc,o:oc,rounds:1,roundLen:60,diff:'champion',practice:true,corner:1,label:'Arrange',cheats:{freeze:true},onEnd:()=>{}});F.mount();
+    setTimeout(()=>F.editLayout({onDone:()=>{F.destroy();UI.render();toast('Layout saved')}}),300)},
+  layoutreset(){Settings.layouts={};saveSettings();toast('All button layouts reset')},
   setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
   devgo(){UI.go('dev')},

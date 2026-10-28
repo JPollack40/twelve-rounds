@@ -40,11 +40,11 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
 function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 
-function buzz(p){if(!Settings.haptics)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function buzz(p){if(!Settings.haptics)return;const k=Settings.hapticStr??1;if(Array.isArray(p))p=p.map((v,i)=>i%2?v:Math.round(v*k));else p=Math.round(p*k);try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 
 /* ================= synth audio (no files) ================= */
 const Sfx={

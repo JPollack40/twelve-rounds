@@ -288,11 +288,15 @@ function campResult(kind,q,auto){
     let xp=(kind==='spar'?110:55)+q*(kind==='spar'?150:95);xp*=boost*(auto?.7:1);
     out.xp=Math.round(xp);
     const tf=TRAINERS[G.trainer].focus;
+    const sloppy=!auto&&q<.4&&kind!=='spar';
     let g=q>=.85?2:q>=.6?1:(chance(q)?1:0);if(auto)g=chance(.45)?1:0;
     if(boost>=1.25&&chance(.35))g++;
     if(tf&&C.stat===tf)g++;
-    if(g){const got=gainStat(C.stat,g);if(got)out.lines.push(`+${got} ${STAT_NAME[C.stat]}`)}
-    if(chance(q*.45)){const got=gainStat(C.alt,1);if(got)out.lines.push(`+${got} ${STAT_NAME[C.alt]}`)}
+    out.deltas=[];
+    const gain=(k,n)=>{const before=b.stats[k];const got=gainStat(k,n);if(got){out.lines.push(`+${got} ${STAT_NAME[k]}`);out.deltas.push([k,before,b.stats[k]])}};
+    if(sloppy){out.xp=Math.round(out.xp*.5);out.lines.push('Sloppy session: no stat gain, and it wore you out. Drill it again or rest.');out.sloppy=true;n.fatigue+=6}
+    else{if(g)gain(C.stat,g);if(chance(q*.45))gain(C.alt,1)}
+    if(!auto){G.pb=G.pb||{};if(q>(G.pb[kind]||0)){if(G.pb[kind]!=null)out.pb=true;G.pb[kind]=q}out.best=G.pb[kind]}
     n.fatigue+=kind==='spar'?22:13;
     const ups=addXP(out.xp);out.ups=ups;
     if(kind==='spar'){n.scout=Math.min(2,n.scout+.5)}

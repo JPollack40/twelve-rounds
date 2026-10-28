@@ -200,6 +200,9 @@ table.t td.r,table.t th.r{text-align:right}
 .fstage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
 .fstage canvas.gl{z-index:0}
 .coachb{position:absolute;left:50%;bottom:5%;transform:translate(-50%,8px);z-index:4;max-width:min(92%,460px);padding:9px 14px;border-radius:10px;background:rgba(10,10,16,.86);border:2px solid var(--gold);color:#fff;font-family:var(--f-ui);font-weight:800;font-size:calc(15px*var(--bs,1));letter-spacing:.03em;text-align:center;pointer-events:none;opacity:0;transition:opacity .15s,transform .15s}
+.fight.editing .fb{outline:2px dashed rgba(255,255,255,.55);outline-offset:2px}
+.fight .fb.sel{outline:3px solid var(--gold)}
+.lyb{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:9;width:min(94%,480px);background:rgba(14,14,22,.94);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .coachb.on{opacity:1;transform:translate(-50%,0)}
 .tipb{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;width:min(92vw,520px);background:var(--panel2);border:1px solid var(--gold);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px #000a}
 .tipb p{margin:0;font-size:14.5px;flex:1}.tipb b{color:var(--gold)}
@@ -336,11 +339,11 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
 function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 
-function buzz(p){if(!Settings.haptics)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function buzz(p){if(!Settings.haptics)return;const k=Settings.hapticStr??1;if(Array.isArray(p))p=p.map((v,i)=>i%2?v:Math.round(v*k));else p=Math.round(p*k);try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
 
 /* ================= synth audio (no files) ================= */
 const Sfx={
@@ -942,11 +945,15 @@ function campResult(kind,q,auto){
     let xp=(kind==='spar'?110:55)+q*(kind==='spar'?150:95);xp*=boost*(auto?.7:1);
     out.xp=Math.round(xp);
     const tf=TRAINERS[G.trainer].focus;
+    const sloppy=!auto&&q<.4&&kind!=='spar';
     let g=q>=.85?2:q>=.6?1:(chance(q)?1:0);if(auto)g=chance(.45)?1:0;
     if(boost>=1.25&&chance(.35))g++;
     if(tf&&C.stat===tf)g++;
-    if(g){const got=gainStat(C.stat,g);if(got)out.lines.push(`+${got} ${STAT_NAME[C.stat]}`)}
-    if(chance(q*.45)){const got=gainStat(C.alt,1);if(got)out.lines.push(`+${got} ${STAT_NAME[C.alt]}`)}
+    out.deltas=[];
+    const gain=(k,n)=>{const before=b.stats[k];const got=gainStat(k,n);if(got){out.lines.push(`+${got} ${STAT_NAME[k]}`);out.deltas.push([k,before,b.stats[k]])}};
+    if(sloppy){out.xp=Math.round(out.xp*.5);out.lines.push('Sloppy session: no stat gain, and it wore you out. Drill it again or rest.');out.sloppy=true;n.fatigue+=6}
+    else{if(g)gain(C.stat,g);if(chance(q*.45))gain(C.alt,1)}
+    if(!auto){G.pb=G.pb||{};if(q>(G.pb[kind]||0)){if(G.pb[kind]!=null)out.pb=true;G.pb[kind]=q}out.best=G.pb[kind]}
     n.fatigue+=kind==='spar'?22:13;
     const ups=addXP(out.xp);out.ups=ups;
     if(kind==='spar'){n.scout=Math.min(2,n.scout+.5)}
@@ -2436,6 +2443,7 @@ class Fight{
     const sc=Math.min(w/335,h/430);this.sc=sc;this.ox=(w-400*sc)/2;this.oy=(h-430*sc)*.85;
     this.arena=buildArena(w,h,sc,this.ox,this.oy,{heat:this.mods.heat,seed:7,logo:this.cfg.logo,lite:!!this.r3d});
     this.r3d?.resize();
+    if(this.allBtns&&!this.editing)this.applyLayout();
   }
   /* ---------- input ---------- */
   bindInput(){
@@ -2452,7 +2460,7 @@ class Fight{
     this.kd=e=>{if(e.code==='Escape'){this.paused?this.resume():this.pause();return}const a=map[e.code];if(!a)return;e.preventDefault();if(e.repeat)return;this.input(a,true)};
     this.ku=e=>{const a=map[e.code];if(a)this.input(a,false)};
     window.addEventListener('keydown',this.kd);window.addEventListener('keyup',this.ku);
-    this.allBtns=btns;
+    this.allBtns=btns;this.applyLayout();
   }
   releaseAll(){this.held.block=false;this.held.body=false;this.allBtns?.forEach(b=>{b._held=false;b.classList.remove('on')});if(this.p.state==='block')this.p.state='idle'}
   input(a,on){
@@ -2823,7 +2831,7 @@ class Fight{
     this.phase='intro';this.phaseT=0;
     const r=this.round,last=r===this.cfg.rounds;
     this.ov.className='fov';
-    const hint=(this.round===1&&Settings.hints&&(this.cfg.tutorial||this.cfg.practice))?`<div class="card" style="max-width:420px;text-align:left;font-size:14px;pointer-events:none"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">How to fight</b><br>Watch the <b style="color:var(--gold)">glowing glove</b> and listen for the wind-up. Duck or slip straights. Slip <b>away</b> from the side a hook comes from. Never duck an uppercut. Punch when they miss or wind up. Their guard blocks head shots when high, so go to the <b>body</b>.</div>`:'';
+    const hint=(this.round===1&&Settings.hints&&(this.cfg.tutorial||this.cfg.practice))?`<div class="card" style="max-width:420px;text-align:left;font-size:14px;pointer-events:none"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">How to fight</b><br>Watch the <b style="color:var(--gold)">symbol over their glove</b> and listen for the wind-up. Dot or down-arrow: duck or slip. Curl: slip <b>away</b> from that side. Up-arrow uppercut: never duck it. Punch when they miss or wind up. Their guard blocks head shots when high, so go to the <b>body</b>.</div>`:'';
     this.ov.innerHTML=`<div class="bigtxt">${this.cfg.rounds===1?'SPARRING':last&&r>1?'FINAL ROUND':'ROUND '+r}</div>${this.introNote&&r===1?`<div class="pill red">${esc(this.introNote)}</div>`:''}${hint}`;
     Sfx.bell(1);
   }
@@ -2941,9 +2949,10 @@ class Fight{
     el.innerHTML=`<div class="box"><div class="bigtxt" style="font-size:44px;text-align:center">PAUSED</div>
       <button class="btn primary" id="pzr">Resume</button>
       <div class="row"><button class="btn grow" id="pzs">Sound: ${Settings.sound?'On':'Off'}</button><button class="btn grow" id="pzh">Vibration: ${Settings.haptics?'On':'Off'}</button></div>
+      <button class="btn" id="pzl">Arrange buttons</button>
       ${Settings.dev?`<button class="btn gold" id="pzf">⚑ Flag this moment</button>`:''}
       <div class="card flat" style="font-size:14px"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">Controls</b><br>
-      Straights (yellow glow): slip or duck. Hooks (orange): slip <b>away</b> from the glowing side, or duck. Uppercuts (red): slip, never duck.<br>
+      The symbol over their glove names the punch. Dot jab and down-arrow cross: slip or duck. Curl hook: slip <b>away</b> from that side, or duck. Up-arrow uppercut: slip, never duck.<br>
       Hold or tap <b>Body</b> right before a punch to go downstairs. Fill the meter by landing and dodging, then spend it on abilities.<br>
       Keyboard: J K U I punches, A S D dodge, Space block, Shift body, E clinch, 1-3 abilities.</div>
       <button class="btn ghost" id="pzq">${this.cfg.practice||this.cfg.sparring?'Leave session':'Quit fight (counts as a loss)'}</button></div>`;
@@ -2952,7 +2961,30 @@ class Fight{
     $('#pzs',el).onclick=e=>{Settings.sound=!Settings.sound;saveSettings();e.target.textContent='Sound: '+(Settings.sound?'On':'Off');if(Settings.sound){Sfx.init();Sfx.crowdStart()}else Sfx.crowdStop()};
     $('#pzh',el).onclick=e=>{Settings.haptics=!Settings.haptics;saveSettings();e.target.textContent='Vibration: '+(Settings.haptics?'On':'Off')};
     const pf=$('#pzf',el);if(pf)pf.onclick=()=>flagMoment(this,()=>{});
+    $('#pzl',el).onclick=()=>this.editLayout();
     let armed=false;$('#pzq',el).onclick=e=>{if(!armed){armed=true;e.target.textContent='Tap again to confirm';return}el.remove();this.paused=false;this.finish('o','RTD')};
+  }
+  /* custom button layouts: offsets and scale per button, saved per screen shape (cover / inner, portrait / landscape) */
+  layoutKey(){const w=innerWidth,h=innerHeight;return (w<600?'cover':'inner')+(w>h?'-land':'')}
+  applyLayout(){const L=((Settings.layouts||{})[this.layoutKey()])||{};for(const b of this.allBtns||[]){const v=L[b.dataset.a];b.style.transform=v?`translate(${v.x}px,${v.y}px) scale(${v.s||1})`:'';b.style.zIndex=v?7:''}}
+  editLayout(o={}){
+    this.editing=true;this.releaseAll();$('#pzov',this.el)?.remove();this.paused=true;if(this.ov){this.ov.className='fov';this.ov.innerHTML=''}
+    const key=this.layoutKey();const L=JSON.parse(JSON.stringify(((Settings.layouts||{})[key])||{}));let sel=null;
+    const set=b=>{const v=L[b.dataset.a];b.style.transform=v?`translate(${v.x}px,${v.y}px) scale(${v.s||1})`:'';b.style.zIndex=v?7:''};
+    const bar=document.createElement('div');bar.className='lyb';
+    bar.innerHTML=`<b class="ui" style="text-transform:uppercase;letter-spacing:.06em">Arrange buttons · ${key.startsWith('cover')?'cover screen':'inner screen'}${key.endsWith('land')?', landscape':''}</b><div class="muted" style="font-size:13px">Drag any button. Tap one, then make it bigger or smaller. Saved for this screen shape only.</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-l="-">Smaller</button><button class="btn sm" data-l="+">Bigger</button><button class="btn sm ghost" data-l="reset">Reset all</button><button class="btn sm primary" data-l="done">Done</button></div>`;
+    this.stage.appendChild(bar);this.el.classList.add('editing');
+    const onDown=e=>{const b=e.target.closest('.fb');if(!b)return;e.preventDefault();e.stopPropagation();sel=b;this.allBtns.forEach(x=>x.classList.toggle('sel',x===b));
+      const v=L[b.dataset.a]=L[b.dataset.a]||{x:0,y:0,s:1};const sx=e.clientX,sy=e.clientY,ox=v.x,oy=v.y;
+      const mv=ev=>{v.x=Math.round(ox+ev.clientX-sx);v.y=Math.round(oy+ev.clientY-sy);set(b)};const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up)};
+      addEventListener('pointermove',mv);addEventListener('pointerup',up)};
+    this.el.addEventListener('pointerdown',onDown,true);
+    bar.onclick=e=>{const k=e.target.dataset&&e.target.dataset.l;if(!k)return;
+      if(k==='+'||k==='-'){if(!sel){toast('Tap a button first');return}const v=L[sel.dataset.a]=L[sel.dataset.a]||{x:0,y:0,s:1};v.s=clamp(+((v.s||1)+(k==='+'?.1:-.1)).toFixed(2),.6,1.8);set(sel)}
+      if(k==='reset'){for(const id in L)delete L[id];this.allBtns.forEach(set)}
+      if(k==='done'){Settings.layouts=Settings.layouts||{};Settings.layouts[key]=L;saveSettings();this.el.removeEventListener('pointerdown',onDown,true);bar.remove();this.el.classList.remove('editing');
+        this.allBtns.forEach(x=>x.classList.remove('sel'));this.editing=false;this.applyLayout();if(o.onDone)o.onDone();else{this.paused=false;this.pause()}}};
   }
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
   snapshot(){
@@ -3492,7 +3524,7 @@ function runMinigame(kind,onDone){
     }
     if(S.msgT>0){ctx.globalAlpha=Math.min(1,S.msgT*3);ctx.font='26px "Alfa Slab One",Georgia';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#000';ctx.strokeText(S.msg,200,40+(.6-S.msgT)*-20+30);ctx.fillStyle=S.msgCol;ctx.fillText(S.msg,200,40+(.6-S.msgT)*-20+30);ctx.globalAlpha=1}
   };
-  ov.innerHTML=`<div class="card" style="max-width:380px;text-align:center;display:flex;flex-direction:column;gap:10px"><b class="ui" style="font-size:22px;text-transform:uppercase;letter-spacing:.06em">${M.title}</b><p>${M.how}</p><button class="btn primary" id="mgst">Start</button></div>`;
+  ov.innerHTML=`<div class="card" style="max-width:380px;text-align:center;display:flex;flex-direction:column;gap:10px"><b class="ui" style="font-size:22px;text-transform:uppercase;letter-spacing:.06em">${M.title}</b><p>${M.how}</p><p class="muted" style="font-size:13.5px">60% earns a stat point, 85% earns two. Under 40% the session is wasted.${G&&G.pb&&G.pb[kind]?` Your best: ${Math.round(G.pb[kind]*100)}%.`:''}</p><button class="btn primary" id="mgst">Start</button></div>`;
   $('#mgst',ov).onclick=()=>{ov.className='fov';ov.innerHTML='';running=true;t=0;last=performance.now()};
   last=performance.now();raf=requestAnimationFrame(loop);
   const cleanup=()=>window.removeEventListener('keydown',kd);
@@ -3608,6 +3640,8 @@ function settingsHTML(inCareer){
   return `<div class="col">
     ${tg('sound','Sound','Punches, bell and crowd, all synthesized.')}
     ${tg('haptics','Vibration','Buzz on big hits and knockdowns, where the browser allows it.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Vibration strength</b>
+    <div class="chips">${[[.5,'Light'],[1,'Normal'],[1.6,'Strong']].map(([v,l])=>`<button class="chip${(Settings.hapticStr??1)===v?' on':''}" data-act="setv" data-k="hapticStr" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${tg('slowmo','Knockdown slow motion','Slow motion on knockdowns.')}
     ${tg('hints','Fight hints','Show the how-to-fight card in practice and your first bout.')}
     ${tg('lefty','Swap control sides','Punches on the left thumb, defense on the right.')}
@@ -3626,6 +3660,8 @@ function settingsHTML(inCareer){
     ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
     ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
     ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Button layout</b><div class="muted" style="font-size:13px">Drag and resize fight buttons. The cover screen, inner screen and landscape each keep their own layout. Also in the pause menu.</div>
+    <div class="row" style="gap:6px"><button class="btn sm gold" data-act="arrange">Arrange fight buttons</button><button class="btn sm ghost" data-act="layoutreset">Reset all layouts</button></div></div>
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Fight button size</b>
     <div class="chips">${[[.85,'Small'],[1,'Normal'],[1.2,'Large'],[1.4,'Huge']].map(([v,l])=>`<button class="chip${(Settings.btnSize||1)===v?' on':''}" data-act="btnsize" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Round length</b><div class="muted" style="font-size:13px">Real seconds per round. The fight clock still reads as boxing time.</div>
@@ -3802,7 +3838,9 @@ function doCamp(kind){
 function showCampResult(r){
   UI.render();
   const lv=r.ups?`<p class="goldt"><b>LEVEL UP!</b> You're now level ${B().level}. Spend your points in Boxer and Skills.</p>`:'';
-  modal(`<div class="kicker">${CAMP[r.kind].name}${r.q!=null&&r.xp?` · ${Math.round(r.q*100)}%`:''}</div>${r.xp?`<p class="rec">+${r.xp} XP</p>`:''}${r.lines.length?`<p>${r.lines.map(esc).join('<br>')}</p>`:''}${lv}<p class="muted" style="font-size:13.5px">${G.next?`${G.next.weeksLeft} week${G.next.weeksLeft!==1?'s':''} until the fight.`:''}</p><button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>{if(r.ups)Sfx.great();UI.render();checkEvent()}});
+  const grade=r.q==null?'':r.q>=.9?'S':r.q>=.75?'A':r.q>=.6?'B':r.q>=.4?'C':'D';
+  const bars=(r.deltas||[]).map(([k,a,c])=>`<div class="stat" style="grid-template-columns:78px 1fr 64px"><span class="lbl">${STAT_NAME[k]}</span><div class="bar" style="position:relative"><i style="width:${a}%"></i><i style="position:absolute;left:${a}%;top:0;bottom:0;width:${c-a}%;background:var(--gold)"></i></div><span class="num goldt">${a} → ${c}</span></div>`).join('');
+  modal(`<div class="kicker">${CAMP[r.kind].name}${r.q!=null&&r.xp?` · ${Math.round(r.q*100)}%`:''}</div>${grade&&r.xp?`<div class="bigtxt" style="font-size:44px;text-align:center;color:${r.sloppy?'var(--bad)':'var(--gold)'}">${grade}</div>`:''}${r.pb?'<p class="goldt" style="text-align:center"><b>New personal best!</b></p>':''}${r.xp?`<p class="rec">+${r.xp} XP</p>`:''}${bars?`<div class="col" style="gap:6px;margin:6px 0">${bars}</div>`:''}${r.lines.length?`<p>${r.lines.filter(l=>!/^\+\d+ /.test(l)||!bars).map(esc).join('<br>')}</p>`:''}${lv}<p class="muted" style="font-size:13.5px">${G.next?`${G.next.weeksLeft} week${G.next.weeksLeft!==1?'s':''} until the fight.`:''}</p><button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>{if(r.ups)Sfx.great();UI.render();checkEvent()}});
   if(r.ups)Sfx.great();
 }
 
@@ -4143,6 +4181,12 @@ const ACT={
   staff(el){const k=el.dataset.k;G.staff[k]=!G.staff[k];Save.write();UI.render()},
   toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='coach'&&Settings.coach){Store.set('tr_coach',{});Store.set('tr_tips',{});toast('Coach tips will show again')}if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
   roundlen(el){Settings.roundLen=+el.dataset.s;saveSettings();UI.render()},
+  arrange(){Sfx.init();const look={skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f'};
+    const pc=G?playerCombat():{name:'You',first:'You',last:'You',stats:Object.fromEntries(STAT_KEYS.map(k=>[k,55])),look,stance:'orthodox',reach:71,abilities:['onetwo','secondwind'],mods:{}};
+    const oc={name:'Pad Man',first:'Pad',last:'Man',stats:statsFromRating(50,'boxerpuncher'),look:RNG.with(new Rng(5),()=>randomLook()),stance:'orthodox',reach:71,ai:deep(ARCH.boxerpuncher.ai),abilities:[]};
+    const F=new Fight({p:pc,o:oc,rounds:1,roundLen:60,diff:'champion',practice:true,corner:1,label:'Arrange',cheats:{freeze:true},onEnd:()=>{}});F.mount();
+    setTimeout(()=>F.editLayout({onDone:()=>{F.destroy();UI.render();toast('Layout saved')}}),300)},
+  layoutreset(){Settings.layouts={};saveSettings();toast('All button layouts reset')},
   setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
   devgo(){UI.go('dev')},

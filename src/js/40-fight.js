@@ -116,6 +116,7 @@ class Fight{
     const sc=Math.min(w/335,h/430);this.sc=sc;this.ox=(w-400*sc)/2;this.oy=(h-430*sc)*.85;
     this.arena=buildArena(w,h,sc,this.ox,this.oy,{heat:this.mods.heat,seed:7,logo:this.cfg.logo,lite:!!this.r3d});
     this.r3d?.resize();
+    if(this.allBtns&&!this.editing)this.applyLayout();
   }
   /* ---------- input ---------- */
   bindInput(){
@@ -132,7 +133,7 @@ class Fight{
     this.kd=e=>{if(e.code==='Escape'){this.paused?this.resume():this.pause();return}const a=map[e.code];if(!a)return;e.preventDefault();if(e.repeat)return;this.input(a,true)};
     this.ku=e=>{const a=map[e.code];if(a)this.input(a,false)};
     window.addEventListener('keydown',this.kd);window.addEventListener('keyup',this.ku);
-    this.allBtns=btns;
+    this.allBtns=btns;this.applyLayout();
   }
   releaseAll(){this.held.block=false;this.held.body=false;this.allBtns?.forEach(b=>{b._held=false;b.classList.remove('on')});if(this.p.state==='block')this.p.state='idle'}
   input(a,on){
@@ -503,7 +504,7 @@ class Fight{
     this.phase='intro';this.phaseT=0;
     const r=this.round,last=r===this.cfg.rounds;
     this.ov.className='fov';
-    const hint=(this.round===1&&Settings.hints&&(this.cfg.tutorial||this.cfg.practice))?`<div class="card" style="max-width:420px;text-align:left;font-size:14px;pointer-events:none"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">How to fight</b><br>Watch the <b style="color:var(--gold)">glowing glove</b> and listen for the wind-up. Duck or slip straights. Slip <b>away</b> from the side a hook comes from. Never duck an uppercut. Punch when they miss or wind up. Their guard blocks head shots when high, so go to the <b>body</b>.</div>`:'';
+    const hint=(this.round===1&&Settings.hints&&(this.cfg.tutorial||this.cfg.practice))?`<div class="card" style="max-width:420px;text-align:left;font-size:14px;pointer-events:none"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">How to fight</b><br>Watch the <b style="color:var(--gold)">symbol over their glove</b> and listen for the wind-up. Dot or down-arrow: duck or slip. Curl: slip <b>away</b> from that side. Up-arrow uppercut: never duck it. Punch when they miss or wind up. Their guard blocks head shots when high, so go to the <b>body</b>.</div>`:'';
     this.ov.innerHTML=`<div class="bigtxt">${this.cfg.rounds===1?'SPARRING':last&&r>1?'FINAL ROUND':'ROUND '+r}</div>${this.introNote&&r===1?`<div class="pill red">${esc(this.introNote)}</div>`:''}${hint}`;
     Sfx.bell(1);
   }
@@ -621,9 +622,10 @@ class Fight{
     el.innerHTML=`<div class="box"><div class="bigtxt" style="font-size:44px;text-align:center">PAUSED</div>
       <button class="btn primary" id="pzr">Resume</button>
       <div class="row"><button class="btn grow" id="pzs">Sound: ${Settings.sound?'On':'Off'}</button><button class="btn grow" id="pzh">Vibration: ${Settings.haptics?'On':'Off'}</button></div>
+      <button class="btn" id="pzl">Arrange buttons</button>
       ${Settings.dev?`<button class="btn gold" id="pzf">⚑ Flag this moment</button>`:''}
       <div class="card flat" style="font-size:14px"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">Controls</b><br>
-      Straights (yellow glow): slip or duck. Hooks (orange): slip <b>away</b> from the glowing side, or duck. Uppercuts (red): slip, never duck.<br>
+      The symbol over their glove names the punch. Dot jab and down-arrow cross: slip or duck. Curl hook: slip <b>away</b> from that side, or duck. Up-arrow uppercut: slip, never duck.<br>
       Hold or tap <b>Body</b> right before a punch to go downstairs. Fill the meter by landing and dodging, then spend it on abilities.<br>
       Keyboard: J K U I punches, A S D dodge, Space block, Shift body, E clinch, 1-3 abilities.</div>
       <button class="btn ghost" id="pzq">${this.cfg.practice||this.cfg.sparring?'Leave session':'Quit fight (counts as a loss)'}</button></div>`;
@@ -632,7 +634,30 @@ class Fight{
     $('#pzs',el).onclick=e=>{Settings.sound=!Settings.sound;saveSettings();e.target.textContent='Sound: '+(Settings.sound?'On':'Off');if(Settings.sound){Sfx.init();Sfx.crowdStart()}else Sfx.crowdStop()};
     $('#pzh',el).onclick=e=>{Settings.haptics=!Settings.haptics;saveSettings();e.target.textContent='Vibration: '+(Settings.haptics?'On':'Off')};
     const pf=$('#pzf',el);if(pf)pf.onclick=()=>flagMoment(this,()=>{});
+    $('#pzl',el).onclick=()=>this.editLayout();
     let armed=false;$('#pzq',el).onclick=e=>{if(!armed){armed=true;e.target.textContent='Tap again to confirm';return}el.remove();this.paused=false;this.finish('o','RTD')};
+  }
+  /* custom button layouts: offsets and scale per button, saved per screen shape (cover / inner, portrait / landscape) */
+  layoutKey(){const w=innerWidth,h=innerHeight;return (w<600?'cover':'inner')+(w>h?'-land':'')}
+  applyLayout(){const L=((Settings.layouts||{})[this.layoutKey()])||{};for(const b of this.allBtns||[]){const v=L[b.dataset.a];b.style.transform=v?`translate(${v.x}px,${v.y}px) scale(${v.s||1})`:'';b.style.zIndex=v?7:''}}
+  editLayout(o={}){
+    this.editing=true;this.releaseAll();$('#pzov',this.el)?.remove();this.paused=true;if(this.ov){this.ov.className='fov';this.ov.innerHTML=''}
+    const key=this.layoutKey();const L=JSON.parse(JSON.stringify(((Settings.layouts||{})[key])||{}));let sel=null;
+    const set=b=>{const v=L[b.dataset.a];b.style.transform=v?`translate(${v.x}px,${v.y}px) scale(${v.s||1})`:'';b.style.zIndex=v?7:''};
+    const bar=document.createElement('div');bar.className='lyb';
+    bar.innerHTML=`<b class="ui" style="text-transform:uppercase;letter-spacing:.06em">Arrange buttons · ${key.startsWith('cover')?'cover screen':'inner screen'}${key.endsWith('land')?', landscape':''}</b><div class="muted" style="font-size:13px">Drag any button. Tap one, then make it bigger or smaller. Saved for this screen shape only.</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" data-l="-">Smaller</button><button class="btn sm" data-l="+">Bigger</button><button class="btn sm ghost" data-l="reset">Reset all</button><button class="btn sm primary" data-l="done">Done</button></div>`;
+    this.stage.appendChild(bar);this.el.classList.add('editing');
+    const onDown=e=>{const b=e.target.closest('.fb');if(!b)return;e.preventDefault();e.stopPropagation();sel=b;this.allBtns.forEach(x=>x.classList.toggle('sel',x===b));
+      const v=L[b.dataset.a]=L[b.dataset.a]||{x:0,y:0,s:1};const sx=e.clientX,sy=e.clientY,ox=v.x,oy=v.y;
+      const mv=ev=>{v.x=Math.round(ox+ev.clientX-sx);v.y=Math.round(oy+ev.clientY-sy);set(b)};const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up)};
+      addEventListener('pointermove',mv);addEventListener('pointerup',up)};
+    this.el.addEventListener('pointerdown',onDown,true);
+    bar.onclick=e=>{const k=e.target.dataset&&e.target.dataset.l;if(!k)return;
+      if(k==='+'||k==='-'){if(!sel){toast('Tap a button first');return}const v=L[sel.dataset.a]=L[sel.dataset.a]||{x:0,y:0,s:1};v.s=clamp(+((v.s||1)+(k==='+'?.1:-.1)).toFixed(2),.6,1.8);set(sel)}
+      if(k==='reset'){for(const id in L)delete L[id];this.allBtns.forEach(set)}
+      if(k==='done'){Settings.layouts=Settings.layouts||{};Settings.layouts[key]=L;saveSettings();this.el.removeEventListener('pointerdown',onDown,true);bar.remove();this.el.classList.remove('editing');
+        this.allBtns.forEach(x=>x.classList.remove('sel'));this.editing=false;this.applyLayout();if(o.onDone)o.onDone();else{this.paused=false;this.pause()}}};
   }
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
   snapshot(){

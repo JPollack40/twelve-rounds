@@ -129,7 +129,7 @@ function runMinigame(kind,onDone){
     }
     if(S.msgT>0){ctx.globalAlpha=Math.min(1,S.msgT*3);ctx.font='26px "Alfa Slab One",Georgia';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#000';ctx.strokeText(S.msg,200,40+(.6-S.msgT)*-20+30);ctx.fillStyle=S.msgCol;ctx.fillText(S.msg,200,40+(.6-S.msgT)*-20+30);ctx.globalAlpha=1}
   };
-  ov.innerHTML=`<div class="card" style="max-width:380px;text-align:center;display:flex;flex-direction:column;gap:10px"><b class="ui" style="font-size:22px;text-transform:uppercase;letter-spacing:.06em">${M.title}</b><p>${M.how}</p><button class="btn primary" id="mgst">Start</button></div>`;
+  ov.innerHTML=`<div class="card" style="max-width:380px;text-align:center;display:flex;flex-direction:column;gap:10px"><b class="ui" style="font-size:22px;text-transform:uppercase;letter-spacing:.06em">${M.title}</b><p>${M.how}</p><p class="muted" style="font-size:13.5px">60% earns a stat point, 85% earns two. Under 40% the session is wasted.${G&&G.pb&&G.pb[kind]?` Your best: ${Math.round(G.pb[kind]*100)}%.`:''}</p><button class="btn primary" id="mgst">Start</button></div>`;
   $('#mgst',ov).onclick=()=>{ov.className='fov';ov.innerHTML='';running=true;t=0;last=performance.now()};
   last=performance.now();raf=requestAnimationFrame(loop);
   const cleanup=()=>window.removeEventListener('keydown',kd);

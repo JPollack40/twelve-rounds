@@ -1,4 +1,4 @@
-# Regression report 2026-10-28T17:52:47.308Z
+# Regression report 2026-10-28T18:03:44.794Z
 
 2 fights per matchup, 60 simulated careers, 14s.
 
@@ -11,21 +11,23 @@
 {
  "n": 60,
  "retireAgeMed": 38,
- "winsMed": 47,
- "lossesMed": 23,
+ "winsMed": 48,
+ "lossesMed": 24,
  "titlesMed": 1,
- "titlesAvg": 1.7,
+ "titlesAvg": 1.72,
  "champShare": 0.98,
  "undisputedShare": 0.08,
  "multiDivShare": 0,
- "legendsAvg": 1.42,
- "chaptersAvg": 1.05,
- "moneyMed": 38344054,
- "hofMed": 328,
+ "legendsAvg": 1.43,
+ "chaptersAvg": 1.03,
+ "moneyMed": 35092039,
+ "hofMed": 323,
  "tiers": {
-  "Hall of Famer": 24,
-  "Champion": 23,
-  "All-Time Great": 9,
+  "Champion": 22,
+  "Hall of Famer": 22,
+  "All-Time Great": 10,
+  "The Greatest of All Time": 1,
+  "Journeyman": 1,
   "Contender": 4
  },
  "forcedRetireShare": 0,
@@ -38,7 +40,7 @@
 | retireAgeMed | 38 | 31–40 | ✅ |
 | champShare | 0.98 | 0.4–1 | ✅ |
 | forcedRetireShare | 0 | 0–0.4 | ✅ |
-| chaptersAvg | 1.05 | 0.3–5 | ✅ |
-| legendsAvg | 1.42 | 0.2–6 | ✅ |
+| chaptersAvg | 1.03 | 0.3–5 | ✅ |
+| legendsAvg | 1.43 | 0.2–6 | ✅ |
 
 No page errors.

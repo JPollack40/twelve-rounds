@@ -46,7 +46,9 @@ division moves, left-handed layout, button sizes, compact calendar with quick ca
 | No legacy layer | Year-end awards (Fighter, Knockout, Upset of the Year), Hall of Fame classes for retired greats and for you, awards add to your legacy score |
 | Unexplained decline | One-time "Father Time" explainer: only Speed, Footwork and Stamina fade; skills never do |
 
-## Not done yet (candidates)
-- Drag-and-resize fight button layout per screen (cover vs inner).
-- Training drills that can be failed, with visible stat outcomes.
-- Haptics strength slider.
+## Second pass
+| Finding | Change |
+|---|---|
+| Players want to place controls (Dead Cells mobile) | Drag-and-resize button layout editor, from Settings or the pause menu; cover, inner and landscape each keep their own layout |
+| Training that doesn't matter (Fight Night Champion, Big Rumble) | Drills show grade targets up front; under 40% is a sloppy session with no gain and extra fatigue; result card shows the grade, before-and-after stat bars and personal bests |
+| Haptics slider (Game Accessibility Guidelines) | Vibration strength: Light, Normal, Strong |
