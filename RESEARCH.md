@@ -52,3 +52,5 @@ division moves, left-handed layout, button sizes, compact calendar with quick ca
 | Players want to place controls (Dead Cells mobile) | Drag-and-resize button layout editor, from Settings or the pause menu; cover, inner and landscape each keep their own layout |
 | Training that doesn't matter (Fight Night Champion, Big Rumble) | Drills show grade targets up front; under 40% is a sloppy session with no gain and extra fatigue; result card shows the grade, before-and-after stat bars and personal bests |
 | Haptics slider (Game Accessibility Guidelines) | Vibration strength: Light, Normal, Strong |
+| Fights that play out the same every time (Big Rumble, Undisputed) | Opponents adjust between rounds: they read a punch you lean on, protect the body after body work (opening the head), gamble when behind, cover up when hurt. The corner shows what changed |
+| Summary cards with records broken (OOTP, Retro Bowl) | Personal records: fastest stoppage, most punches landed, most perfect dodges, longest streak, biggest upset; new records show on the result screen and the Record screen |

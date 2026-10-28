@@ -1,5 +1,5 @@
 {
- "when": "2026-10-28T18:03:44.794Z",
+ "when": "2026-10-28T18:05:38.712Z",
  "fights": [],
  "careers": {
   "n": 60,
@@ -7,21 +7,19 @@
   "winsMed": 48,
   "lossesMed": 24,
   "titlesMed": 1,
-  "titlesAvg": 1.72,
-  "champShare": 0.98,
+  "titlesAvg": 1.7,
+  "champShare": 1,
   "undisputedShare": 0.08,
   "multiDivShare": 0,
   "legendsAvg": 1.43,
   "chaptersAvg": 1.03,
-  "moneyMed": 35092039,
-  "hofMed": 323,
+  "moneyMed": 37554706,
+  "hofMed": 329,
   "tiers": {
-   "Champion": 22,
-   "Hall of Famer": 22,
    "All-Time Great": 10,
-   "The Greatest of All Time": 1,
-   "Journeyman": 1,
-   "Contender": 4
+   "Hall of Famer": 23,
+   "Champion": 24,
+   "Contender": 3
   },
   "forcedRetireShare": 0,
   "dmgMed": 71
@@ -39,7 +37,7 @@
   },
   {
    "k": "champShare",
-   "v": 0.98,
+   "v": 1,
    "band": [
     0.4,
     1
@@ -74,5 +72,5 @@
    "ok": true
   }
  ],
- "seconds": 14
+ "seconds": 15
 }

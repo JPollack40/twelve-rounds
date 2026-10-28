@@ -544,6 +544,14 @@ function applyResult(o,res){
   }
   if(pro)checkStripped();
   if(prevRank&&pro){const nr=playerRank();out.rank=[prevRank,nr]}
+  // personal records
+  if(!o.sim){const R=G.records=G.records||{},P=res.stats.p;const nm=shortName(f);
+    const secs=(()=>{const m=/^(\d+):(\d+)/.exec(res.time||'');return m?(res.round-1)*180+(+m[1])*60+(+m[2]):null})();
+    if(win&&['KO','TKO'].includes(res.method)&&secs!=null&&(!R.fastKO||secs<R.fastKO.s)){if(R.fastKO)out.lines.push(`Record: fastest stoppage (round ${res.round}, ${res.time})`);R.fastKO={s:secs,opp:nm,round:res.round,time:res.time}}
+    if(P.landed>(R.mostLanded?.n||0)){if(R.mostLanded)out.lines.push(`Record: most punches landed (${P.landed})`);R.mostLanded={n:P.landed,opp:nm}}
+    if((P.perfect||0)>(R.perfect?.n||0)){if(R.perfect)out.lines.push(`Record: most perfect dodges (${P.perfect})`);R.perfect={n:P.perfect,opp:nm}}
+    if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
+    if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
   G.next=null;
   return out;
 }

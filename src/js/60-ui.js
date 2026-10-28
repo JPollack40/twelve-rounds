@@ -510,10 +510,15 @@ SCR.rankings=d=>{
 };
 
 /* ---------- record ---------- */
+function recordsCard(){const R=G.records||{};const rows=[
+  R.fastKO&&['Fastest stoppage',`Round ${R.fastKO.round}, ${R.fastKO.time}`,R.fastKO.opp],R.mostLanded&&['Most punches landed',R.mostLanded.n,R.mostLanded.opp],
+  R.perfect&&R.perfect.n&&['Most perfect dodges',R.perfect.n,R.perfect.opp],R.streak&&['Longest win streak',R.streak,''],R.upset&&['Biggest upset',`+${R.upset.gap} overall`,R.upset.opp]].filter(Boolean);
+  if(!rows.length)return '';
+  return `<div class="card"><h3>Personal records</h3><div class="tblw"><table class="t">${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="num goldt">${esc(String(r[1]))}</td><td class="muted">${esc(r[2]||'')}</td></tr>`).join('')}</table></div></div>`}
 SCR.record=()=>{
   const b=B(),h=[...G.history].reverse();
   const ch=CHAPTER_INFO.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
-  return shell('record','Record',`<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
+  return shell('record','Record',`${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
     <div class="card"><span class="lbl">Amateur</span><p class="rec num">${b.am.w}-${b.am.l}</p><p class="muted">${G.flags.am_gold_0?'Golden Gloves gold ':''}${G.flags.am_gold_1?'· National gold':''}</p></div>
     <div class="card"><span class="lbl">Titles</span><p class="rec num">${b.titleWins} won · ${b.defenses} defenses</p><p class="muted">${b.titleDivs.map(d=>DIVS[d].short).join(', ')||'None yet'}</p></div></div>
     <div class="card"><h3>Fight history</h3><div class="tblw"><table class="t"><tr><th>Date</th><th>Res</th><th>Opponent</th><th>Method</th><th>Fight</th></tr>

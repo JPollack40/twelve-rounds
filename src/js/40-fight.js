@@ -44,7 +44,7 @@ class Fight{
     this.p=mkC(cfg.p,'p');this.o=mkC(cfg.o,'o');this.p.foe=this.o;this.o.foe=this.p;this.o.sway=rand(0,6);
     this.round=1;this.clock=cfg.roundLen;this.phase='intro';this.phaseT=0;this.time=0;this.acc=0;this.stop=0;this.flashSil=0;
     this.fx=[];this.parts=[];this.texts=[];this.shake=0;this.flash=0;this.slow=0;this.paused=false;
-    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];this.hitBy={};this.roundStats=[];
+    this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];this.hitBy={};this.roundStats=[];this.rLand={};this.adjustNotes=[];
     const rob=Math.max(0,(cfg.robbery||0)-(cfg.press==='respect'?.15:0));
     this.judges=[0,1,2].map(()=>({agg:rand(-.35,.35),noise:.07+rob*.12,lean:rob?rand(0,rob*.18):0}));
     this.held={block:false,body:false};this.bodyT=0;this.count=null;this.res={seed:this.seed};this.cornerPick='breathe';
@@ -325,6 +325,7 @@ class Fight{
     else{d.hp-=dm;d.maxHp=Math.max(28,d.maxHp-dm*.15);
       if(d.side==='o'){const k=dm*.045;if(P.kind==='upper')d.dmg.cheek+=k*1.2;else if(side==='L')d.dmg.swellL+=k;else d.dmg.swellR+=k;d.dmg.cheek+=k*.4}}
     d.dmgTaken+=dm;d.hits++;
+    if(a.side==='p'){const k=pu.body?'body':pu.type;this.rLand[k]=(this.rLand[k]||0)+1}
     a.stats.landed++;a.rs.landed++;if(pu.type==='jab')a.stats.jabL++;else{a.stats.powL++;a.rs.pow++}if(pu.body)a.stats.bodyL++;
     a.stats.dmg+=dm;a.rs.score+=P.score+dm*.38;
     a.combo++;a.comboT=1.1;d.combo=0;
@@ -390,6 +391,19 @@ class Fight{
       if(chance((d.ai.counter||.3)*this.D.agg+(a.rep||0)*.15))d.pendingCounter=true;
     }
   }
+  /* between rounds the opponent adapts to what happened: reads your favourite punch, protects the body, gambles when behind, covers up when hurt */
+  oppAdjust(){
+    const o=this.o,ai=o.ai,L=this.rLand,notes=[];if(this.cfg.sparring||this.cheats.freeze||this.cheats.dummy)return notes;
+    const NM={jab:'jab',cross:'right hand',hook:'hook',upper:'uppercut'};ai.read=ai.read||{};
+    const heads=Object.entries(L).filter(([k])=>k!=='body'),tot=heads.reduce((a,[,v])=>a+v,0)+(L.body||0);
+    const top=heads.sort((a,b)=>b[1]-a[1])[0];
+    if(top&&top[1]>=5&&top[1]/tot>=.5&&!ai.read[top[0]]&&o.st.iq>=45){ai.read[top[0]]=1;notes.push(`They've started reading your ${NM[top[0]]}. Mix it up.`);this.log({ev:'adjust',k:'read',t:top[0]})}
+    if((L.body||0)>=4&&!ai.bodyAdj){ai.bodyAdj=1;ai.guard=['low','low','high'];notes.push('They are dropping their elbows to protect the body. The head is open now.');this.log({ev:'adjust',k:'body'})}
+    const margin=this.cards.reduce((s,c)=>s+(c[1]-c[0]),0)/3;
+    if(margin<=-2&&!ai.desperate){ai.desperate=1;ai.agg=Math.min(1,(ai.agg||.5)+.15);ai.combo=Math.min(1,(ai.combo||.4)+.1);notes.push('They know they are behind and will come out swinging. Expect openings to counter.');this.log({ev:'adjust',k:'desperate'})}
+    if(o.hp<o.maxHp*.35&&!ai.survive){ai.survive=1;ai.block=Math.min(.95,(ai.block||.4)+.15);notes.push('They are hurt and will cover up. Go to the body to pry the guard open.');this.log({ev:'adjust',k:'survive'})}
+    return notes;
+  }
   aiReact(pu,wind){
     const o=this.o;
     if(this.cheats.freeze)return;
@@ -398,7 +412,7 @@ class Fight{
     if(pu.opts?.instant)return;
     const covered=this.covers(o,{body:pu.body,type:pu.type});
     if(covered&&!chance((o.ai.dodge||.3)*.45))return;
-    let p=(.05+o.st.def*.005+o.st.iq*.003+(covered?0:.18)+(this.p.rep||0)*.12)*this.D.react*(1-(this.p.m.sneaky||0));
+    let p=(.05+o.st.def*.005+o.st.iq*.003+(covered?0:.18)+(this.p.rep||0)*.12+(o.ai.read&&!pu.body&&o.ai.read[pu.type]?.16:0))*this.D.react*(1-(this.p.m.sneaky||0));
     if(o.sta<25)p*=.6;if(this.cfg.sparring)p*=.75;
     if(!chance(clamp(p,0,.85)))return;
     const rt=clamp(.2-o.st.spd*.0012,.07,.2)/this.D.react;
@@ -535,6 +549,7 @@ class Fight{
     });
     this.roundCards.push(rc);this.roundStats.push({p:{l:P.landed,t:P.thrown,pw:P.pow,kd:P.kd,blk:(P.blockT||0)/this.cfg.roundLen},o:{l:O.landed,t:O.thrown,pw:O.pow,kd:O.kd,blk:(O.blockT||0)/this.cfg.roundLen},rc});
     this.log({ev:'round',cards:rc,p:{l:P.landed,t:P.thrown},o:{l:O.landed,t:O.thrown},php:+this.p.hp.toFixed(1),ohp:+this.o.hp.toFixed(1)});
+    this.adjustNotes=this.round<this.cfg.rounds?this.oppAdjust():[];this.rLand={};
     this.p.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};this.o.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};
     this.p.kd=0;this.o.kd=0;
   }
@@ -577,7 +592,7 @@ class Fight{
     const p=this.p,o=this.o,cq=this.cfg.corner||1;
     const est=this.cards.reduce((s,c)=>s+(c[0]-c[1]),0)/3;
     const tips=[];
-    if(o.guard==='high'||o.guard==='peek')tips.push('Their guard is high. Dig to the body and the head will open up.');
+    if((o.guard==='high'||o.guard==='peek')&&!o.ai.bodyAdj)tips.push('Their guard is high. Dig to the body and the head will open up.');
     if(o.guard==='low')tips.push('They keep their hands low. Jab the head, then dodge the counter.');
     if((o.ai.counter||0)>.5)tips.push('They want you to lead so they can counter. Make them miss first, then punish.');
     if((o.ai.agg||0)>.7)tips.push('They come forward non-stop. Slip and counter. Let them walk into it.');
@@ -593,6 +608,7 @@ class Fight{
     el.innerHTML=`<div class="box">
       <div class="row sp"><div class="kicker">Between rounds · ${this.round} of ${this.cfg.rounds} done</div><span class="pill">${esc(this.cfg.trainerName||'Your corner')}</span></div>
       ${this.roundBox()}
+      ${this.adjustNotes&&this.adjustNotes.length?`<div class="card flat" style="padding:8px 10px;border-color:var(--gold)"><span class="lbl">They're adjusting</span><div style="font-size:14px;margin-top:3px">${this.adjustNotes.map(esc).join('<br>')}</div></div>`:''}
       <div class="quote">${esc(cardLine)}<br>${esc(tips.slice(0,cq>=3?2:1).map(t=>'"'+t+'"').join(' '))}</div>
       <div class="grid2" style="gap:8px">${opts.map(o=>`<button class="copt${o[0]===this.cornerPick?' on':''}" data-c="${o[0]}"><b>${o[1]}</b><small>${o[2]}</small></button>`).join('')}</div>
       <div class="row"><button class="btn primary grow" id="nextRd">Round ${this.round+1}</button><button class="btn ghost sm" id="stool">${this.cfg.practice||this.cfg.sparring?'End session':'Retire on stool'}</button></div>
