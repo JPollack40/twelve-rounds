@@ -66,3 +66,18 @@ Fights show short broadcast captions (`CALLS` in `40-fight.js`) for counters, bi
 knockdowns, getting up and the ten-second warning. They are rate-limited, a bigger moment overrides a smaller one, and they use
 Math.random only, so the seeded fight simulation is untouched. Settings can turn them off. Any legend card in the Legends gallery
 offers an exhibition: pick your fighter (your career boxer, or a preset 80/88/95) and 3, 6 or 10 rounds. Nothing counts.
+
+## Rivalries and callouts
+Rivals are no longer fixed at career start. Every fighter carries "heat" with you (`G.heat`): fighting them (more for losses, close or
+stolen decisions and title fights), calling them out, demanding rematches and sitting within two places of you in the rankings all add
+heat; it cools every fight, faster when they fall 300+ points or 15+ places away or leave your division. The hottest fighter in your
+division (30+ heat, clearly ahead of the current rival) becomes your rival; a rivalry lasts at least 18 months unless it goes cold, and
+past rivalries are kept with their head-to-head records (rivalry wins in your legacy count all of them). The home screen shows who is
+heating up.
+
+After a win you choose whom to call out: the division's champions, your rival and contenders around you, each with honest odds. A
+champion answers contenders ranked 1–3 about 85% of the time, 4–5 about 65%, 6–10 about 30%, 11–15 about 10%, and almost never
+anyone ranked lower; contenders above you answer by rank gap, fighters below you almost always accept. Hype and existing bad blood nudge
+the odds. A turned-down callout may still come together later (a smaller chance on each new set of offers for six months). Callouts on
+champions become title or unification offers. Rematch demands after a loss also depend on how the fight went. Fight offers now include
+up to two ranked contenders just above you, so you can choose whom to climb past.

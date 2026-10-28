@@ -254,7 +254,9 @@ SCR.home=()=>{
   }
   const path=pathHTML();
   const rv=rivalF();
-  const rivalC=rv?`<div class="card col"><div class="row sp"><h3>Rival</h3><span class="pill red">Head to head ${G.rival.w}-${G.rival.l}</span></div>${oppCard(rv)}</div>`:'';
+  const hot=Object.entries(G.heat||{}).filter(([id,h])=>id!==rv?.id&&h>=10&&G.world.f[id]?.active&&G.world.f[id].div===B().div).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const hotH=hot.length?`<div class="muted" style="font-size:13px"><b>Bad blood brewing:</b> ${hot.map(([id,h])=>`${esc(shortName(G.world.f[id]))} <span class="dim">(${h>=RIVAL_MIN?'boiling':h>=18?'heated':'simmering'})</span>`).join(', ')}</div>`:'';
+  const rivalC=rv?`<div class="card col"><div class="row sp"><h3>Rival</h3><span class="pill red">Head to head ${G.rival.w}-${G.rival.l}</span></div>${oppCard(rv)}${hotH}</div>`:hotH&&G.phase==='pro'?`<div class="card col"><h3>Rivalries</h3><p class="muted" style="font-size:13.5px;margin:0">No rival right now. Fight, call people out, and someone will step up.</p>${hotH}</div>`:'';
   const nw=G.newsList.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:1px solid #262c4a;font-size:14px" class="${n.tone==='gold'?'goldt':n.tone==='red'?'':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('');
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
@@ -439,18 +441,19 @@ function coachNotes(res,win){
   return out.slice(0,3);
 }
 /* post-fight interview: one choice with a real consequence */
-function calloutTarget(beaten){const b=B(),d=b.div,rv=rivalF();
-  if(rv&&rv.active&&rv.div===d&&rv.id!==beaten.id)return rv;
-  const ch=Object.values(G.world.champs[d]||{}).map(id=>id&&id!=='P'?G.world.f[id]:null).find(f=>f&&f.active&&f.id!==beaten.id);
-  if(ch&&(playerRank()||99)<=10)return ch;
-  const r=ranking(d).filter(e=>e.id!=='P'&&e.id!==beaten.id&&!beltsOf(e.id,d).length).map(e=>e.f);const me=playerRank()||99;
-  return r.find((f,i)=>i+1<me)||r[0]||null}
+function rematchChance(f,res){const dec=!['KO','TKO','RTD','DQ'].includes(res.method);return clamp((res.robbery?.95:dec?(['SD','MD'].includes(res.method)?.8:.6):.4)+(heatOf(f.id)>=20?.08:0),0,.95)}
 function interviewOpts(){const {o,res}=UI.lastResult,f=G.world.f[o.oppId],win=res.winner==='p',dec=!['KO','TKO','RTD','DQ'].includes(res.method);
-  if(win){const t=calloutTarget(f);return [t&&{k:'callout',t:`Call out ${shortName(t)}`,fx:`Hype +4. ${shortName(t)} is offered to you next.`,id:t.id},{k:'team',t:'Thank your team',fx:'Your camp is fired up: your next camp starts with less fatigue.'},{k:'humble',t:'Stay humble',fx:'Purists respect it: +1 Ring IQ.'}].filter(Boolean)}
-  return [{k:'rematch',t:`Demand a rematch with ${f.last}`,fx:`${shortName(f)} is offered to you again next.`,id:f.id},{k:'noexcuse',t:'No excuses',fx:'Fans respect it: hype +2.'},dec&&{k:'judges',t:'Blame the judges',fx:'The media eats it up: hype +3. The purists roll their eyes.'}].filter(Boolean)}
+  if(win)return [{k:'team',t:'Thank your team',fx:'Your camp is fired up: your next camp starts with less fatigue.'},{k:'humble',t:'Stay humble',fx:'Purists respect it: +1 Ring IQ.'}];
+  const rp=rematchChance(f,res);
+  return [{k:'rematch',t:`Demand a rematch with ${f.last}`,fx:`${chanceLabel(rp)} (${Math.round(rp*100)}%) that ${f.last}'s team agrees.`,id:f.id,p:rp},{k:'noexcuse',t:'No excuses',fx:'Fans respect it: hype +2.'},dec&&{k:'judges',t:'Blame the judges',fx:'The media eats it up: hype +3. The purists roll their eyes.'}].filter(Boolean)}
+/* after a win, pick who to call out: champions, your rival and contenders around you, each with honest odds */
+function calloutHTML(f){const T=calloutTargets(f);if(!T.length)return '';const d=B().div;
+  return `<div class="lbl" style="margin-top:6px">Call someone out <span class="dim" style="text-transform:none;letter-spacing:0">(hype +4; a callout is a request, not a guarantee)</span></div>`+T.map(t=>{const p=calloutChance(t),bl=beltsOf(t.id,d),r=rankOf(t.id,d);
+    return `<button class="arch" data-act="interview" data-k="callout" data-id="${t.id}"${p<=0?' disabled style="opacity:.5"':''}><b>Call out ${esc(shortName(t))}</b><small>${bl.length?bl.join(' & ')+' champion':'#'+r}${t.rival?' · Rival':''}${t.legend?' · Legend':''} · ${recStr(t)} · <span style="font-weight:700;color:${p>=.5?'var(--gold)':p>=.08?'inherit':'#ff7a6e'}">${chanceLabel(p)}${p>0?` (${Math.round(p*100)}%)`:''}</span></small></button>`}).join('')}
 function interviewHTML(){const L=UI.lastResult;if(!L||L.o.amateur||G.phase!=='pro')return '';
   if(L.iv)return `<div class="card flat"><span class="lbl">Post-fight interview</span><p style="margin:6px 0 0">${esc(L.iv)}</p></div>`;
-  return `<div class="card col"><span class="lbl">Post-fight interview</span><p class="muted" style="margin:2px 0 4px">The microphone is in your face. What do you say?</p>${interviewOpts().map(c=>`<button class="arch" data-act="interview" data-k="${c.k}"><b>${esc(c.t)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}
+  const win=L.res.winner==='p';
+  return `<div class="card col"><span class="lbl">Post-fight interview</span><p class="muted" style="margin:2px 0 4px">The microphone is in your face. What do you say?</p>${win?calloutHTML(G.world.f[L.o.oppId]):''}${win?'<div class="lbl" style="margin-top:6px">Or</div>':''}${interviewOpts().map(c=>`<button class="arch" data-act="interview" data-k="${c.k}"><b>${esc(c.t)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}
 SCR.result=()=>{
   const {o,res,sum}=UI.lastResult,f=G.world.f[o.oppId],b=B();
   const win=res.winner==='p',draw=res.winner==='draw';
@@ -725,11 +728,17 @@ const ACT={
     else if(k==='respect')news(`Press conference: you praised ${f.last}. Fans and media liked it.`);else news(`Press conference: you kept it short and went back to the film room.`);
     Save.write();Sfx.click();UI.render()},
   walk(){startFight(false)},
-  interview(el){const L=UI.lastResult;if(!L||L.iv)return;const c=interviewOpts().find(x=>x.k===el.dataset.k);if(!c)return;const b=B();
-    if(c.k==='callout'){b.hype=Math.min(100,b.hype+4);G.callout=c.id;const t=G.world.f[c.id];news(`You call out ${shortName(t)} after the fight.`,'gold');L.iv=`You called out ${shortName(t)}. Expect the offer.`}
+  interview(el){const L=UI.lastResult;if(!L||L.iv)return;const b=B();
+    if(el.dataset.k==='callout'){const t=calloutTargets(G.world.f[L.o.oppId]).find(x=>x.id===el.dataset.id);if(!t)return;const p=calloutChance(t);
+      b.hype=Math.min(100,b.hype+4);addHeat(t.id,12);
+      if(chance(p)){G.callout=t.id;G.calloutLater=null;news(`You call out ${shortName(t)} after the fight. ${t.last}'s team accepts.`,'gold');L.iv=`You called out ${shortName(t)}, and ${t.last}'s team accepted. Expect the offer.`}
+      else{G.callout=null;G.calloutLater=p>=.2?{id:t.id,p:p*.45,until:G.week+26}:null;news(`You call out ${shortName(t)} after the fight. ${t.last}'s team isn't biting${p>=.2?' yet':''}.`);
+        L.iv=`You called out ${shortName(t)}. ${t.last}'s team isn't biting${p>=.2?' yet: keep winning and it could still come together':'. You need to climb higher before they take you seriously'}.`}
+      Save.write();UI.render();return}
+    const c=interviewOpts().find(x=>x.k===el.dataset.k);if(!c)return;
     if(c.k==='team'){G.flags.teamBoost=1;L.iv='You thanked your team. They will be fired up for camp.'}
     if(c.k==='humble'){gainStat('iq',1);L.iv='You kept it humble. +1 Ring IQ.'}
-    if(c.k==='rematch'){G.callout=c.id;L.iv=`You demanded a rematch with ${G.world.f[c.id].last}. Expect the offer.`}
+    if(c.k==='rematch'){const t=G.world.f[c.id];addHeat(c.id,10);if(chance(c.p)){G.callout=c.id;L.iv=`You demanded a rematch, and ${t.last}'s team agreed. Expect the offer.`}else{G.callout=null;L.iv=`You demanded a rematch. ${t.last}'s team says you'll have to earn it.`}}
     if(c.k==='noexcuse'){b.hype=Math.min(100,b.hype+2);L.iv='No excuses. The fans respect it.'}
     if(c.k==='judges'){b.hype=Math.min(100,b.hype+3);news('You blast the judges on live TV.','red');L.iv='You blamed the judges. The clip goes viral.'}
     Save.write();Sfx.click();UI.render()},

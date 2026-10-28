@@ -178,7 +178,7 @@ function newCareer(o){
   const rv=makeFighter(natural,Math.max(40,playerOvr()+1),o.age,{arch:counterArch(o.arch)});
   rv.rival=true;rv.pts=60;rv.w=rv.l=rv.d=rv.ko=0;rv.pro=false;rv.edge=rand(0,4);
   G.world.f[rv.id]=rv;G.world.divs[natural].push(rv.id);rv.active=false;
-  G.rival={id:rv.id,w:0,l:0,met:0,lastMet:-99};
+  G.rival={id:rv.id,w:0,l:0,met:0,lastMet:-99,since:0};G.heat={[rv.id]:60};
   news(`${o.first} ${o.last} walks into Delgado's Basement Gym. Pops Delgado agrees to train you.`);
   news(`Across town, ${shortName(rv)} is also making noise in the amateurs. Pops says: "That kid wants what you want."`,'red');
   startAmateur(0);
@@ -186,6 +186,60 @@ function newCareer(o){
 }
 function counterArch(a){return {outboxer:'swarmer',slugger:'counter',swarmer:'outboxer',counter:'slugger',boxerpuncher:pick(['slugger','swarmer','counter'])}[a]}
 function rivalF(){return G.rival?G.world.f[G.rival.id]:null}
+/* ---------- rivalries: every fighter carries "heat" with you. Fights, close or stolen decisions, losses, callouts and living next to
+   each other in the rankings build it; it cools every fight, faster when they fall behind you or leave the division. The hottest
+   fighter in your division becomes your rival, so a rival who can't keep pace is replaced by someone who can. ---------- */
+const RIVAL_MIN=30;
+function heatOf(id){return (G.heat||{})[id]||0}
+function addHeat(id,v){if(!id||id==='P'||!G.world.f[id])return;const H=G.heat=G.heat||{};H[id]=Math.min(150,(H[id]||0)+v)}
+function rivalTick(f,res,o){
+  const b=B(),d=b.div,H=G.heat=G.heat||{};
+  for(const id in H){const x=G.world.f[id];if(!x||!x.active){delete H[id];continue}
+    let k=x.rival?.93:.88;if(x.div!==d)k*=.7;if(Math.abs((x.pts||0)-b.pts)>300)k*=.8;else if(Math.abs(rankOf(id,d)-(playerRank()||99))>15)k*=.85;H[id]*=k;if(H[id]<1)delete H[id]}
+  if(f&&f.id&&!o.amateur){const win=res.winner==='p',loss=res.winner==='o',ko=['KO','TKO','RTD','DQ'].includes(res.method);
+    let h=8;if(loss)h+=ko?18:14;if(win&&!ko)h+=5;if(win&&ko)h-=4;if(res.robbery)h+=25;if(['SD','MD'].includes(res.method)||res.winner==='draw')h+=10;if(o.title)h+=6;
+    addHeat(f.id,h)}
+  const rk=ranking(d),my=rk.findIndex(e=>e.id==='P');
+  if(my>=0)rk.forEach((e,i)=>{if(e.id==='P')return;if(Math.abs(i-my)<=2)addHeat(e.id,3);if(my<=6&&beltsOf(e.id,d).length)addHeat(e.id,3)});
+  rivalPick();
+}
+function rivalPick(){
+  const H=G.heat||{},b=B(),cur=rivalF();
+  if(cur&&!cur.active){news(`${shortName(cur)} retires. Your rivalry is over: ${G.rival.w}-${G.rival.l} head to head.`,'red');endRival();}
+  const now=rivalF(),curH=now?heatOf(now.id):0;
+  let best=null,bh=0;for(const id in H){const x=G.world.f[id];if(!x||!x.active||x.div!==b.div||x.id===now?.id)continue;if(H[id]>bh){bh=H[id];best=x}}
+  // a rivalry lasts at least eighteen months unless it has gone cold or they left the division; a challenger must clearly burn hotter
+  const settled=now&&now.div===b.div&&curH>=10&&G.week-(G.rival.since||0)<78;
+  if(best&&!settled&&bh>=RIVAL_MIN&&bh>=curH+18)setRival(best);
+}
+function endRival(){const old=rivalF();if(!old)return;old.rival=false;(G.rivalHist=G.rivalHist||[]).push({id:old.id,name:fullName(old),w:G.rival.w,l:G.rival.l,from:G.rival.since||0,to:G.week});G.rival=null}
+function setRival(f){
+  const old=rivalF();if(old){news(`Your rivalry with ${shortName(old)} has cooled (${G.rival.w}-${G.rival.l} head to head).`);endRival()}
+  f.rival=true;f.edge=f.edge||0;const h=G.history.filter(x=>x.pro&&x.oppId===f.id);
+  G.rival={id:f.id,w:h.filter(x=>x.res==='W').length,l:h.filter(x=>x.res==='L').length,met:h.length,lastMet:h.length?h[h.length-1].w:-99,since:G.week};
+  const q=h.some(x=>x.res==='L')?pick(['"I beat you once. I\'ll do it again."','"You know who owns you."']):h.some(x=>x.robbery)?pick(['"The judges saw it right. Cry about it."']):h.length?pick(['"Run it back. This time there\'s no doubt."','"That night still keeps me up. Not anymore."']):pick(['"Everybody keeps saying your name. Say mine."','"There\'s only room for one of us at the top."','"I\'m coming for everything you have."']);
+  news(`Bad blood: ${fullName(f)} (${recStr(f)}) is your new rival. ${q}`,'red');
+}
+function rivalryWins(){return (G.rival?.w||0)+(G.rivalHist||[]).reduce((s,r)=>s+r.w,0)}
+/* ---------- callouts: a request, not a guarantee. The champion only answers contenders who have earned it ---------- */
+function calloutChance(t){
+  const b=B(),d=b.div,me=playerRank()||99,tr=rankOf(t.id,d),champ=beltsOf(t.id,d).length>0,mine=beltsOf('P',d).length>0;
+  let p;
+  if(champ)p=mine?.75:me<=3?.85:me<=5?.65:me<=10?.3:me<=15?.1:me<=25?.03:0;
+  else if(t.rival)p=.85;
+  else if(tr>me)p=.9;
+  else{const gap=me-tr;p=gap<=2?.8:gap<=5?.6:gap<=10?.3:gap<=20?.08:.02}
+  if(p>0)p+=clamp((b.hype-40)*.002,-.06,.08)+(heatOf(t.id)>=20?.06:0);
+  if(champ&&!mine&&me>15)p=Math.min(p,.04);
+  return clamp(p,0,.95)}
+function chanceLabel(p){return p>=.75?'Likely':p>=.5?'Good chance':p>=.25?'Possible':p>=.08?'Long shot':p>0?'Very unlikely':'No chance'}
+function calloutTargets(beaten){
+  const b=B(),d=b.div,me=playerRank()||99,seen=new Set([beaten?.id]),out=[];
+  const add=f=>{if(f&&f.active&&f.div===d&&!seen.has(f.id)){seen.add(f.id);out.push(f)}};
+  BODIES.forEach(x=>{const id=G.world.champs[d][x.k];if(id&&id!=='P')add(G.world.f[id])});
+  const rv=rivalF();if(rv)add(rv);
+  ranking(d).forEach((e,i)=>{if(e.id!=='P'&&i+1>=me-10&&i+1<=me+2&&!beltsOf(e.id,d).length)add(e.f)});
+  return out.slice(0,8)}
 
 /* ---------- news ---------- */
 function news(t,tone){G.newsList.unshift({w:G.week,t:gtxt(t),tone:tone||''});if(G.newsList.length>80)G.newsList.length=80}
@@ -256,7 +310,11 @@ function genOffers(){
   if(rv)used.add(rv.id);
   const myBelts=beltsOf('P',d);
   // a callout or rematch demanded in the post-fight interview
-  if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);offers.push(mkOffer(cf,'grudge',cf.id===(last&&last.oppId)?'Rematch':'Callout Fight',cf.id===(last&&last.oppId)?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`))}}
+  const later=G.calloutLater;if(!G.callout&&later){if(G.week>later.until)G.calloutLater=null;else if(chance(later.p)){G.callout=later.id;G.calloutLater=null;news(`${shortName(G.world.f[later.id])}'s team calls back. The fight you asked for is on the table.`,'gold')}}
+  if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);const re=cf.id===(last&&last.oppId),cb=beltsOf(cf.id,d);
+    const desc=re?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`;
+    offers.push(cb.length?(myBelts.length?mkOffer(cf,'unify','Callout: Unification',desc,{title:{belts:[...myBelts,...cb],unify:true}}):mkOffer(cf,'world','Callout: World Title',desc+` For the ${cb.join(' & ')} title.`,{title:{belts:cb}}))
+      :mkOffer(cf,'grudge',re?'Rematch':'Callout Fight',desc))}}
   // chapters first
   for(const ch of CHAPTERS){if(ch.circ&&ch.circ!==(G.circuit||'m'))continue;if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
@@ -270,6 +328,8 @@ function genOffers(){
     if(mom<0)offers.push(mkOffer(pickOpp(me-110,used,d),'prove','Prove-It Fight','Coming off a loss. Nobody gives you a big fight until you show you still belong.'));
     else offers.push(mkOffer(pickOpp(me-90,used,d),'tuneup','Tune-Up','A winnable fight to stay busy and sharp.'));
     offers.push(mkOffer(pickOpp(me+(mom>=2?60:mom>=0?25:-50),used,d),'level','Matched Fight','An even fight at your level.'));
+    // ranked contenders just above you: pick who to climb past
+    if(rank<=40&&mom>=0&&b.record.w>=3){ranking(d).forEach((e,i)=>{const r=i+1;if(e.id!=='P'&&r<rank&&r>=rank-5&&!used.has(e.id)&&!beltsOf(e.id,d).length&&offers.filter(x=>x&&x.type==='ranked').length<2){used.add(e.id);offers.push(mkOffer(e.f,'ranked',`Ranked Contender #${r}`,`A fighter ranked above you. Beat them and you take their place.`))}})}
     if(mom>=.5||b.record.w>=3){
       const jump=(mom>=3.5?260:mom>=2?170:110)*(pr?pr.step:1);
       offers.push(mkOffer(pickOpp(me+jump,used,d),'stepup',mom>=3.5?'Fast-Track Fight':'Step-Up Fight',mom>=3.5?'Your streak has the whole division talking. A win here skips you up the ladder.':'A bigger name and a bigger purse. Win and you jump the rankings.'));
@@ -290,7 +350,7 @@ function genOffers(){
   if(last&&(last.res==='L'||last.robbery)&&G.world.f[last.oppId]?.active&&G.world.f[last.oppId].div===d&&!last.rematched){
     const f=G.world.f[last.oppId];offers.push(mkOffer(f,'rematch','Rematch',last.robbery?'Everyone saw the robbery. The commission ordered an immediate rematch.':'Your rematch clause kicks in. Get it back.',{rematchOf:last.id}));
   }
-  G.offers=offers.filter(Boolean).slice(0,5);
+  G.offers=offers.filter(Boolean).slice(0,6);
   return G.offers;
 }
 
@@ -581,6 +641,7 @@ function applyResult(o,res){
   if(b.injuries.some(i=>i.id==='retina')&&o.foughtHurt&&chance(.3)){G.flags.forceRetire='Your retina detached again in the fight. The commission will not license you.'}
   // rival / legends
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
+  if(pro&&G.phase==='pro')rivalTick(f,res,o);
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}
   // rematch tracking
   if(o.rematchOf){const h=G.history.find(x=>x.id===o.rematchOf);if(h)h.rematched=true}
@@ -685,7 +746,7 @@ function legacy(){
     ['Pro wins',r.w*2],['Knockouts',r.ko],['Losses',-r.l*3],
     ['World titles won',b.titleWins*25],['Title defenses',b.defenses*10],['Undisputed reigns',b.undisputed*60],
     ['Multi-division champion',Math.max(0,b.titleDivs.length-1)*40],['Legends beaten',b.legendsBeaten.length*15],
-    ['Story chapters',G.chapters.length*20],['Rivalry wins',(G.rival?.w||0)*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
+    ['Story chapters',G.chapters.length*20],['Rivalry wins',rivalryWins()*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
     ['Amateur gold',(G.flags.am_gold_0?5:0)+(G.flags.am_gold_1?10:0)],
   ];
   const aw=b.awards||[];parts.push(['Fighter of the Year',aw.filter(x=>x==='foy').length*20],['Knockout of the Year',aw.filter(x=>x==='koy').length*10],['Upset of the Year',aw.filter(x=>x==='uoy').length*8]);

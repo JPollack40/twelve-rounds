@@ -110,7 +110,7 @@ const EVENTS=[
     choices:[{t:'Rest up',fx:()=>{addInjury(pick(['knee','ribs','shoulder']),true);return 'You\'ll need time to heal.'}}]},
   {id:'callout',w:4,cond:()=>rivalF()?.active&&G.phase==='pro',title:'Rival Callout',
     text:()=>`${fullName(rivalF())} (${recStr(rivalF())}) grabs a microphone at a press conference: "${pick(['Everybody knows I\'m the real one from our city.','I beat you in the gym when we were kids and I\'ll do it again.','You\'re a paper champion waiting to be torn.','Stop ducking me.'])}"`,
-    choices:[{t:'Fire back',fx:()=>{B().hype=Math.min(100,B().hype+6);rivalF().edge+=1;G.rival.lastMet-=10;return 'The crowd eats it up. Hype +6. The rivalry heats up.'}},{t:'Stay quiet',fx:()=>{gainStat('iq',1);return 'You let your fists talk. +1 Ring IQ.'}}]},
+    choices:[{t:'Fire back',fx:()=>{B().hype=Math.min(100,B().hype+6);rivalF().edge+=1;addHeat(rivalF().id,8);G.rival.lastMet-=10;return 'The crowd eats it up. Hype +6. The rivalry heats up.'}},{t:'Stay quiet',fx:()=>{gainStat('iq',1);return 'You let your fists talk. +1 Ring IQ.'}}]},
   {id:'parade',w:2,cond:()=>G.phase==='pro'&&B().streak>=3,title:'Hometown Hero',
     text:()=>`${B().home} throws you a parade. Kids are shadowboxing on every corner.`,
     choices:[{t:'Soak it in',fx:()=>{B().hype=Math.min(100,B().hype+8);return 'Hype +8.'}}]},

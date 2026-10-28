@@ -15,7 +15,7 @@ const Save={
   },
   migrate(g){
     if(!g||!g.boxer||!g.world)return null;
-    g.v=g.v||1;g.flags=g.flags||{};g.chapters=g.chapters||[];g.circuit=g.circuit||'m';
+    g.v=g.v||1;g.flags=g.flags||{};g.chapters=g.chapters||[];g.circuit=g.circuit||'m';if(g.rival&&!g.heat)g.heat={[g.rival.id]:40};
     if(g.seed==null){g.seed=RNG.seed();g.rng={career:g.seed,world:(g.seed^0x5bd1e995)>>>0}}
     delete g._rng;
     // inked renderer: give older fighters and the boxer their face/body traits (hash-based, no RNG draws)
