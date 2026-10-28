@@ -597,6 +597,42 @@ const LEGEND_VIS={
   tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
+/* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
+const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
+const GEAR=[
+  {id:'g_std',slot:'gloves',name:'Standard 10 oz',desc:'Reliable sparring-weight gloves.',price:0},
+  {id:'g_pillow',slot:'gloves',name:'Pillow 12 oz',desc:'Extra foam: your guard absorbs more, your punches carry less.',price:2500,unlock:{level:3},fx:{def:3,pow:-2},look:{gloveTape:'#f4efe3'}},
+  {id:'g_puncher',slot:'gloves',name:"Puncher's 8 oz",desc:'Horsehair padding. Every shot lands harder, and so do theirs through your guard.',price:12000,unlock:{level:6},fx:{pow:3,def:-2},look:{gloveTape:'#161616'}},
+  {id:'g_speed',slot:'gloves',name:'Featherweight laces',desc:'Light, fast, a little soft on impact.',price:22000,unlock:{level:8},fx:{spd:2,pow:-1},look:{gloveTape:'#f0be48'}},
+  {id:'g_pro',slot:'gloves',name:'Pro lace-ups',desc:'Custom-fitted fight gloves.',price:45000,unlock:{level:12},fx:{pow:1,spd:1},look:{gloveTape:'#f4efe3'}},
+  {id:'g_stone',slot:'gloves',name:'Hands of Stone',desc:'Worn by the man you beat. Brutal and heavy.',price:40000,unlock:{legend:'durante'},fx:{pow:4,spd:-1},look:{gloves:'#7a1f1f',gloveTape:'#161616'}},
+  {id:'g_belt',slot:'gloves',name:'Championship gold',desc:'Gold-taped gloves for a world champion.',price:120000,unlock:{title:1},fx:{pow:1,def:1},look:{gloveTape:'#f0be48'}},
+  {id:'t_std',slot:'trunks',name:'Plain satin',desc:'Your colors, nothing else.',price:0,look:{trunkPat:'solid'}},
+  {id:'t_stripe',slot:'trunks',name:'Classic side stripes',desc:'Two stripes down each leg.',price:1500,look:{trunkPat:'stripe'}},
+  {id:'t_panel',slot:'trunks',name:'Contrast panels',desc:'Trim-colored side panels.',price:4000,unlock:{level:4},look:{trunkPat:'panel'}},
+  {id:'t_mesh',slot:'trunks',name:'Breathable mesh',desc:'Lighter and cooler under the lights.',price:15000,unlock:{level:7},fx:{sta:2},look:{trunkPat:'panel'}},
+  {id:'t_flame',slot:'trunks',name:'Flames',desc:'For fighters who want to be noticed.',price:9000,unlock:{wins:5},look:{trunkPat:'flame'}},
+  {id:'t_star',slot:'trunks',name:'Stars',desc:'A crowd favorite.',price:20000,unlock:{wins:12},look:{trunkPat:'star'}},
+  {id:'t_champ',slot:'trunks',name:'Championship trunks',desc:'Black and gold, with your name on the band.',price:90000,unlock:{title:1},look:{trunkPat:'stripe',trunks:'#161616',trim:'#f0be48'}},
+  {id:'s_std',slot:'shoes',name:'High-top boots',desc:'Standard ankle support.',price:0},
+  {id:'s_low',slot:'shoes',name:'Low-cut speed boots',desc:'Lighter on your feet, less support late in fights.',price:6000,unlock:{level:5},fx:{foot:2,sta:-1},look:{shoes:'#f4efe3'}},
+  {id:'s_grip',slot:'shoes',name:'Grip soles',desc:'Planted feet put your legs into every punch.',price:18000,unlock:{level:9},fx:{pow:1,foot:1},look:{shoes:'#161616'}},
+  {id:'s_ankle',slot:'shoes',name:'Ankle-lock boots',desc:'Stable base, steadier defense.',price:9000,unlock:{level:6},fx:{def:1},look:{shoes:'#7a1f1f'}},
+  {id:'m_std',slot:'mg',name:'Boil-and-bite',desc:'Gets the job done.',price:0,look:{mg:'#f3efe6'}},
+  {id:'m_custom',slot:'mg',name:'Custom-molded',desc:'Fitted by a dentist. Your jaw takes shots better.',price:5000,unlock:{level:4},fx:{chin:2},look:{mg:'#2f6fe2'}},
+  {id:'m_breathe',slot:'mg',name:'Breathe-easy',desc:'Open airway design. More gas in the tank.',price:12000,unlock:{level:6},fx:{sta:2},look:{mg:'#2e9e5b'}},
+  {id:'m_gel',slot:'mg',name:'Double gel',desc:'Thick and protective, harder to breathe through.',price:26000,unlock:{level:10},fx:{chin:3,sta:-1},look:{mg:'#d8392f'}},
+  {id:'m_gold',slot:'mg',name:'Gold grill',desc:'Pure flash. The crowd loves it.',price:60000,unlock:{wins:20},look:{mg:'#f0be48'},hype:1},
+  {id:'w_std',slot:'wraps',name:'Gauze and tape',desc:'Standard wraps.',price:0},
+  {id:'w_tight',slot:'wraps',name:'Tight tape job',desc:'Knuckles packed hard.',price:3000,unlock:{level:3},fx:{pow:1}},
+  {id:'w_pro',slot:'wraps',name:"Cutman's wraps",desc:'Wrapped by a professional: firm and safe.',price:14000,unlock:{level:8},fx:{pow:1,def:1}},
+  {id:'r_none',slot:'robe',name:'No robe',desc:'Just walk out.',price:0},
+  {id:'r_satin',slot:'robe',name:'Satin robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
+  {id:'r_hood',slot:'robe',name:"Hooded fighter's robe",desc:'+2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood'}},
+  {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
+  {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
+];
+const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',
@@ -777,8 +813,29 @@ function weightInfo(div){
   r.miss*=(1-red);r.diff=d;
   return r;
 }
+/* ---------- gear ---------- */
+function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none'},seen:[]};return b.gear}
+function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
+  if(u.level&&b.level<u.level)return {ok:false,why:`Reach level ${u.level}`};
+  if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};
+  if(u.title&&!b.titleWins)return {ok:false,why:'Win a world title'};
+  if(u.amgold&&!(G.flags.am_gold_0||G.flags.am_gold_1))return {ok:false,why:'Win amateur gold'};
+  if(u.legend&&!b.legendsBeaten.includes(u.legend)){const L=LEGEND_BY[u.legend];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
+  return {ok:true}}
+function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
+function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
+function gearHype(){return gearEquipped().reduce((s,g)=>s+(g.hype||0),0)}
+function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});return L}
+function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<g.price)return `You need ${money(g.price)}`;
+  b.money-=g.price;st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
+function equipGear(id){const g=GEAR_BY[id],st=gearState();if(!g||!st.owned.includes(id))return false;st.eq[g.slot]=id;return true}
+/* free unlocks (price 0 with a condition) are granted; newly purchasable items are announced once */
+function gearCheckUnlocks(lines){const st=gearState();st.seen=st.seen||[];const fresh=[];
+  for(const g of GEAR){if(!g.unlock||st.seen.includes(g.id))continue;if(gearUnlock(g).ok){st.seen.push(g.id);if(!g.price&&!st.owned.includes(g.id))st.owned.push(g.id);fresh.push(g)}}
+  if(fresh.length){const t=`New in the Locker: ${fresh.map(g=>g.name).join(', ')}.`;news(t,'gold');lines&&lines.push(t)}return fresh.length}
 function effectiveStats(){
   const b=B(),s=Object.assign({},b.stats),w=weightInfo()||{pow:1,chin:1,spd:1,sta:1};
+  const gm=gearMods();for(const k in gm)if(s[k]!=null)s[k]+=gm[k];
   s.pow*=w.pow;s.chin*=w.chin;s.spd*=w.spd;s.sta*=w.sta;
   s.chin-=b.damage*.22;
   for(const inj of b.injuries){const e=INJ[inj.id].eff;for(const k in e)if(s[k]!=null)s[k]*=e[k]}
@@ -1134,7 +1191,7 @@ function oppCombat(f,o={}){
 }
 function playerCombat(){
   const b=B();
-  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:b.look,height:b.height,arch:b.arch,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
+  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:playerLook(),height:b.height,arch:b.arch,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
 }
 function ptsDelta(my,opp,win,ko,title){
   if(win){let g=20+clamp((opp-my)*.13,-14,70)+(ko?8:0)+(title?70:0);if(opp<my-160)g*=.5;return Math.round(clamp(g,4,150))}
@@ -1195,7 +1252,7 @@ function applyResult(o,res){
     if(G.promoter){G.promoter.left--;if(loss)G.promoter.losses=(G.promoter.losses||0)+1;else if(win)G.promoter.losses=0}
   }
   // hype
-  let hy=win?(ko?6:3):loss?-6:0;if(o.title&&win)hy+=15;if(f.legend&&win)hy+=10;if(res.kdFor&&res.kdAgainst)hy+=4;
+  let hy=win?(ko?6:3)+gearHype():loss?-6:0;if(o.title&&win)hy+=15;if(f.legend&&win)hy+=10;if(res.kdFor&&res.kdAgainst)hy+=4;
   b.hype=clamp(b.hype+hy,0,100);
   // damage & injuries
   const dur=skillMods().durable||0;
@@ -1260,6 +1317,7 @@ function applyResult(o,res){
     if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
     if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
   checkGoals('fight',{res,win,ko,o,f},out.lines);
+  gearCheckUnlocks(out.lines);
   G.next=null;
   return out;
 }
@@ -1876,10 +1934,21 @@ function r3skinTex(L,o={},cv){
   return c;
 }
 function r3spriteTex(){if(R3D._spr)return R3D._spr;const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,245,225,1)');g.addColorStop(.3,'rgba(255,240,210,.35)');g.addColorStop(1,'rgba(255,240,210,0)');x.fillStyle=g;x.fillRect(0,0,128,128);R3D._spr=new THREE.CanvasTexture(c);R3D._spr.userData.keep=1;return R3D._spr}
-function r3teethTex(){if(R3D._teeth)return R3D._teeth;const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.fillStyle='#f3efe6';x.fillRect(0,0,256,64);
+function r3teethTex(mg){const key='teeth'+(mg||'');if(R3D._c[key])return R3D._c[key];const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.fillStyle=mg||'#f3efe6';x.fillRect(0,0,256,64);
   x.strokeStyle='#2a1c1c';x.lineWidth=3;x.beginPath();x.moveTo(0,32);x.lineTo(256,32);x.stroke();x.lineWidth=2.5;for(let i=1;i<10;i++){const px=i*25.6;x.beginPath();x.moveTo(px,4);x.lineTo(px+1,30);x.moveTo(px+3,34);x.lineTo(px+2,60);x.stroke()}
   x.fillStyle='rgba(60,30,30,.35)';x.fillRect(0,0,22,64);x.fillRect(234,0,22,64);
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.userData.keep=1;return R3D._teeth=t}
+  if(mg&&mg!=='#f3efe6'){x.fillStyle='rgba(255,255,255,.35)';x.fillRect(0,6,256,6);x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,0,256,64*0+3)}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.userData.keep=1;return R3D._c[key]=t}
+/* trunks: base colour plus a pattern in the trim colour. Lathe UVs: u wraps from the front (0) round the body, v runs up */
+function r3trunkTex(col,trim,pat){const k='tr'+col+trim+pat;if(R3D._c[k])return R3D._c[k];const W=512,H=256;const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const cs=new THREE.Color(col).getStyle(),ts=new THREE.Color(trim).getStyle();x.fillStyle=cs;x.fillRect(0,0,W,H);x.fillStyle=ts;
+  if(pat==='stripe'){for(const u of [.25,.75])for(const o of [-.022,.022])x.fillRect((u+o)*W-5,0,10,H)}
+  else if(pat==='panel'){for(const u of [.25,.75])x.fillRect((u-.045)*W,0,.09*W,H)}
+  else if(pat==='flame'){const r=new Rng(7);for(let i=0;i<22;i++){const cx=i/22*W,h=H*(.35+r.next()*.3),w=W/22*1.3;x.beginPath();x.moveTo(cx-w/2,H);x.quadraticCurveTo(cx-w*.6,H-h*.5,cx+w*.1,H-h);x.quadraticCurveTo(cx+w*.05,H-h*.45,cx+w/2,H);x.fill()}
+    x.fillStyle='rgba(255,220,120,.55)';for(let i=0;i<22;i++){const cx=i/22*W+6,h=H*.18;x.beginPath();x.moveTo(cx-6,H);x.quadraticCurveTo(cx-4,H-h*.6,cx+2,H-h);x.quadraticCurveTo(cx+2,H-h*.4,cx+7,H);x.fill()}}
+  else if(pat==='star'){const r=new Rng(3);const star=(cx,cy,R)=>{x.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*.45:R;x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}x.closePath();x.fill()};for(let i=0;i<26;i++)star(r.next()*W,20+r.next()*(H-40),9+r.next()*7)}
+  if(pat!=='solid'){x.fillStyle='rgba(0,0,0,.18)';x.fillRect(0,0,W,6)}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=4;t.userData.keep=1;return R3D._c[k]=t}
 function r3bandTex(col,trim,text){const c=document.createElement('canvas');c.width=1024;c.height=64;const x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,1024,64);
   x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,0,1024,5);x.fillRect(0,59,1024,5);
   if(text){x.font='bold 30px "Alfa Slab One",Georgia,serif';x.textAlign='center';x.textBaseline='middle';const w=Math.min(300,x.measureText(text).width+30);
@@ -1896,6 +1965,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
+    trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -1938,7 +2008,7 @@ function r3head(L){
     const ml=r3mesh(r3strand(arc(-.553,.3,-.004,.012),.0045,.0045,20,6,true),inkM,{ol:false});g.add(ml);ctl.mline=ml;
     const mp=S(0,-.555,0);
     const cav=r3mesh(new THREE.SphereGeometry(.07,16,12),r3flat(0x2a0d0d),{ol:false});cav.position.copy(S(0,-.555,-.026));cav.scale.set(1.15,.01,.5);g.add(cav);ctl.cav=cav;
-    const tr=.13;const teeth=r3mesh(new THREE.CylinderGeometry(tr,tr,.036,24,1,true,-.42,.84),new THREE.MeshBasicMaterial({map:r3teethTex()}),{ol:false});
+    const tr=.13;const teeth=r3mesh(new THREE.CylinderGeometry(tr,tr,.036,24,1,true,-.42,.84),new THREE.MeshBasicMaterial({map:r3teethTex(L.mg)}),{ol:false});
     teeth.position.set(mp.x,mp.y,mp.z-tr+.009);teeth.visible=false;g.add(teeth);ctl.teeth=teeth}
   // ears (cauliflower = swollen, lumpy)
   const cauli=L.ear==='cauliflower';
@@ -2104,7 +2174,7 @@ function r3boxer(L,opt={}){
   const spine=new THREE.Group();spine.position.y=.08;pelvis.add(spine);
   const H=P.hip*m,Wa=P.waist*m,bel=P.belly?.035:0;
   const torso=r3mesh(r3torsoGeo(P,m),r3cel(0xffffff,r3torsoInk(L.skin,!!P.ribs,!!P.belly)),{olw:.0046});torso.position.y=.72*TS;spine.add(torso);
-  const trunkM=r3cel(L.trunks,null,true);
+  const trunkM=r3cel(0xffffff,r3trunkTex(L.trunks,L.trim,L.trunkPat),true);
   const trunks=r3mesh(r3lathe([[0,.04],[.235*H,.04],[.27*H,-.06],[.285*H,-.2],[.29*H,-.3],[0,-.3]],1.14,.84*P.depth/.72,40),trunkM,{olw:.0048});trunks.position.y=-.02;pelvis.add(trunks);
   const bandR=.25*Math.max(H,Wa+bel*2);const band=r3mesh(new THREE.CylinderGeometry(bandR,bandR*.98,.1,48,1,true),r3cel(0xffffff,r3bandTex(new THREE.Color(L.trim).getStyle(),new THREE.Color(L.trunks).getStyle(),L.band),true),{olw:.0042});
   band.scale.set(1.15,1,.86*P.depth/.72);band.position.y=.03;pelvis.add(band);
@@ -2125,7 +2195,7 @@ function r3boxer(L,opt={}){
     const fk=m*P.fore;
     elbow.add(r3mesh(r3muscle(.43*al,(t,a)=>fk*(.082-.034*Math.pow(t,1.15)+.026*r3g(t,.22,.15)*r3ang(a,s*1.1,.6)+.012*r3g(t,.28,.2)*r3ang(a,-s*1.6,.7))*(1+.14*t*(Math.abs(Math.sin(a))-.5)),{seg:14,rad:22,cap:4,ck:.7}),skinM,{olw:.0042}));
     const glove=new THREE.Group();glove.position.y=-.47*al;glove.scale.setScalar(1.18);elbow.add(glove);
-    const gm=r3leather(L.gloves);r3glove(glove,gm,s,-1);
+    const gm=r3leather(L.gloves);r3glove(glove,gm,s,-1,L.gloveTape);
     arms[s]={sh,elbow,glove,gm,L1:.44*al,L2:.47*al+.02};
   }
   const legs={};
@@ -2135,7 +2205,7 @@ function r3boxer(L,opt={}){
     const sleeve=r3mesh(r3lathe([[0,.14],[.15*lk*1.15,.14],[.185*lk*1.12,.02],[.19*lk*1.1,-.1],[.19*lk*1.08,-.2*ll],[0,-.2*ll]],1,1.1,32),trunkM,{olw:.0045});hip.add(sleeve);
     const knee=new THREE.Group();knee.position.y=-.44*ll;hip.add(knee);
     knee.add(r3mesh(r3muscle(.37*ll,(t,a)=>lk*(.09-.038*t+.042*r3g(t,.27,.13)*r3ang(a,Math.PI,1)+.014*r3g(t,.36,.13)*r3ang(a,Math.PI+s*.9,.5)-.008*r3ang(a,0,.4)),{seg:14,rad:22,cap:4,ck:.6}),skinM,{olw:.0045}));
-    const bootC=new THREE.Color(L.trim).lerp(new THREE.Color(0x2a2426),.35);
+    const bootC=L.shoes?new THREE.Color(L.shoes):new THREE.Color(L.trim).lerp(new THREE.Color(0x2a2426),.35);
     const boot=r3mesh(r3lathe([[0,0],[.088,0],[.094,-.1],[.09,-.2],[.1,-.28],[0,-.28]],1,1.05,32),r3cel(0xffffff,r3bootTex(bootC.getStyle()),true),{olw:.0042});boot.position.y=-.37*ll+.1;knee.add(boot);
     const foot=r3mesh(r3muscle(.26,(t,a)=>(.055+.012*Math.sin(t*Math.PI))*(1+.35*Math.abs(Math.sin(a)))*(1-.2*r3ang(a,Math.PI,.5)),{seg:8,rad:16,cap:4,ck:.5}),r3cel(bootC.getHex(),null,true),{olw:.0038});
     foot.rotation.x=-Math.PI/2;foot.position.set(0,-.37*ll-.15,-.07);knee.add(foot);
@@ -2148,12 +2218,12 @@ function r3boxer(L,opt={}){
   return root;
 }
 /* glove: padded mitt (wider across the knuckles than deep), sculpted thumb, taped cuff. side s; dir -1 = fist toward -y (rig), +1 = toward +y */
-function r3glove(gl,gm,s,dir){
+function r3glove(gl,gm,s,dir,tape){
   const g=new THREE.Group();if(dir>0)g.rotation.z=Math.PI;gl.add(g);
   const mitt=r3mesh(r3muscle(.24,(t,a)=>(.098+.062*Math.sin(Math.min(1,t*1.5)*Math.PI/2)-.008*t)*(1+.1*Math.pow(Math.sin(a),2))*(1-.1*Math.pow(Math.cos(a),2))*(1+.06*r3ang(a,0,.5)*r3g(t,.8,.15)),{seg:12,rad:28,cap:6,ck:.75}),gm,{olw:.0042});mitt.position.y=.08;g.add(mitt);
   const thumb=r3mesh(r3muscle(.15,(t,a)=>.044-.01*t,{seg:6,rad:14,cap:4,ck:.8}),gm,{olw:.0032});thumb.position.set(s*.105,.06,.06);thumb.rotation.set(-.35,0,s*-.18);g.add(thumb);
   const cuff=r3mesh(new THREE.CylinderGeometry(.092,.1,.12,28),r3cel(0xf3efe6,null,true),{olw:.004});cuff.position.y=.15;g.add(cuff);
-  const st=r3mesh(new THREE.CylinderGeometry(.095,.102,.026,28,1,true),r3cel(0x1d1517,null,true),{ol:false});st.position.y=.13;g.add(st);
+  const st=r3mesh(new THREE.CylinderGeometry(.095,.102,.026,28,1,true),r3cel(new THREE.Color(tape||'#1d1517').getHex(),null,true),{ol:false});st.position.y=.13;g.add(st);
 }
 /* two-bone IK: aim shoulder and elbow so the glove reaches target (world); elbow bends toward pole */
 const _v=[0,1,2,3,4,5,6,7,8].map(()=>new THREE.Vector3()),_q=[0,1,2].map(()=>new THREE.Quaternion()),_DOWN=new THREE.Vector3(0,-1,0);
@@ -2283,7 +2353,7 @@ class Render3D{
     this.oppFlash=new THREE.Sprite(new THREE.SpriteMaterial({map:r3spriteTex(),blending:THREE.AdditiveBlending,depthWrite:false,opacity:0}));this.oppFlash.scale.set(1.2,1.2,1);this.scene.add(this.oppFlash);
     this.pg={};const gm=r3leather(this.pL.gloves);
     const foreM=r3cel(this.pL.skin);
-    for(const h of ['L','R']){const s=h==='L'?-1:1;const gl=new THREE.Group();r3glove(gl,gm,-s,1);
+    for(const h of ['L','R']){const s=h==='L'?-1:1;const gl=new THREE.Group();r3glove(gl,gm,-s,1,this.pL.gloveTape);
       r3outline(gl);gl.scale.setScalar(.9);this.cam.add(gl);
       // forearm: a unit-length limb stretched each frame from the glove's cuff back to a shoulder point below the screen
       const fore=r3mesh(r3limb(1,t=>(.085+.025*Math.sin(t*Math.PI*.8))/(1),1,1),foreM,{olw:.004});r3outline(fore);this.cam.add(fore);
@@ -3643,6 +3713,7 @@ const TIPS={
   team:'Better trainers mean bigger camp gains and smarter corners between rounds. A cutman keeps cuts from ending fights.',
   legacy:'Titles, defenses, big wins and legends beaten all build your Hall of Fame case.',
   halloffame:'Retired greats are inducted here each year. Build a career that earns you a plaque.',
+  locker:'Some gear is pure style. Some trades one stat for another. Check the pills before you buy.',
 };
 function showTip(s){try{$$('.tipb').forEach(e=>e.remove());if(!Settings.coach||UI.silent||!TIPS[s]||!G)return;const seen=Store.get('tr_tips')||{};if(seen[s])return;seen[s]=1;Store.set('tr_tips',seen);
   const el=document.createElement('div');el.className='tipb';el.innerHTML=`<p><b>Coach:</b> ${esc(TIPS[s])}</p><button class="btn sm gold">Got it</button>`;el.querySelector('button').onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),9000)}catch(e){}}
@@ -3663,7 +3734,7 @@ function beltsHTML(){const bl=playerBelts();let h=bl.map(b=>`<span class="belt" 
 function rankLabel(){if(G.phase!=='pro')return G.phase==='retired'?'Retired':'Amateur';const r=playerRank();const bl=beltsOf('P',B().div);return bl.length?`Champion · ${DIVS[B().div].name}`:`#${r} ${DIVS[B().div].name}`}
 function profileHTML(){
   const b=B(),age=ageOf(b.born),need=xpNeed(b.level);
-  return `<div class="prof"><img src="${portrait(b.look)}" alt=""><div class="grow">
+  return `<div class="prof"><img src="${portrait(playerLook())}" alt=""><div class="grow">
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
     <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${beltsHTML()}</div>
@@ -3672,7 +3743,7 @@ function profileHTML(){
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
 }
 const NAV=[
-  ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['skills','Skills','Skill tree'],
+  ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['locker','Locker','Gear & kit'],['skills','Skills','Skill tree'],
   ['division','Division','Weight class'],['team','Team','Promoter, trainer'],['rankings','Rankings','Divisions & belts'],['record','Record','History & chapters'],
   ['news','News','The boxing wire'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
 ];
@@ -3958,7 +4029,7 @@ SCR.fightnight=()=>{
     <div class="topbar"><button class="btn sm back" data-go="home">◀</button><div class="t">Fight night</div>${o.venue?`<span class="pill">${esc(o.venue)}</span>`:''}</div>
     ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(ch.intro)}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
     <div class="card col"><div class="kicker" style="text-align:center">${esc(o.label)} · ${o.rounds} rounds${o.title&&!o.title.regional?' · '+o.title.belts.join(' / ')+' '+DIVS[b.div].name+' title':''}</div>
-      <div class="vsrow"><div><img src="${portrait(b.look)}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
+      <div class="vsrow"><div><img src="${portrait(playerLook())}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
       <div class="tape">${row('Record',`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''}`,recStr(f))}${row('Age',ageOf(b.born),ageOf(f.born),cmp(ageOf(f.born),ageOf(b.born)))}
       ${row('Height',ftIn(b.height),ftIn(f.height),cmp(b.height,f.height))}${row('Reach',b.reach+'″',f.reach+'″',cmp(b.reach,f.reach))}
       ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',DIVS[b.div].lb+' lb',DIVS[b.div].lb+' lb')}</div>
@@ -4215,6 +4286,22 @@ SCR.halloffame=()=>{
   const awT=aw.length?`<div class="tblw"><table class="t"><tr><th>Year</th><th>Award</th><th>Winner</th></tr>${aw.map(a=>`<tr${a.player?' class="goldt"':''}><td class="num">${a.year}</td><td>${esc(a.type)}</td><td>${esc(a.who)}</td></tr>`).join('')}</table></div>`:'<p class="muted">The first awards are handed out at the end of your first full year.</p>';
   const hT=hof.length?`<div class="tblw"><table class="t"><tr><th>Class</th><th>Inductee</th><th>Record</th><th>Division</th></tr>${hof.map(h=>`<tr${h.player?' class="goldt"':''}><td class="num">${h.year}</td><td>${esc(h.name)}</td><td class="num">${esc(h.rec)}${h.ko!=null?' ('+h.ko+' KO)':''}</td><td>${esc(DIVS[h.div]?.name||'')}</td></tr>`).join('')}</table></div>`:'<p class="muted">No one has been inducted yet. Great fighters join the year after they retire.</p>';
   return shell('legacy','Hall of Fame',`<h2 class="sec">Hall of Fame</h2><div class="card">${hT}</div><h2 class="sec">Year-end awards</h2><div class="card">${awT}</div>`)};
+SCR.locker=()=>{
+  gearCheckUnlocks();const b=B(),st=gearState(),gm=gearMods(),hy=gearHype();
+  const fxPills=fx=>Object.entries(fx||{}).map(([k,v])=>`<span class="pill ${v>0?'gold':'red'}" style="font-size:11px">${v>0?'+':''}${v} ${STAT_NAME[k]}</span>`).join(' ');
+  const sumTxt=Object.keys(gm).length||hy?`${fxPills(gm)}${hy?` <span class="pill gold" style="font-size:11px">+${hy} hype per win</span>`:''}`:'<span class="muted">No stat effects. Pure style.</span>';
+  const prev=R3P.ok()?`<img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;display:block;margin:0 auto">`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
+  const sw=(k,arr)=>arr.map(c=>`<button class="sw${b.look[k]===c?' on':''}" style="background:${c}" data-act="recolor" data-k="${k}" data-v="${c}" aria-label="${k} ${c}"></button>`).join('');
+  const item=g=>{const own=st.owned.includes(g.id),eq=st.eq[g.slot]===g.id,u=gearUnlock(g);
+    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=g.price?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=g.price?'':'disabled'}>${g.price?money(g.price):'Free'}</button>`;
+    const locked=!own&&!u.ok;
+    return `<div class="card flat" style="padding:10px;${eq?'border-color:var(--gold)':''}${locked?';opacity:.62':''}"><div class="row sp" style="align-items:flex-start;gap:10px"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${esc(g.name)}</b>
+      <div class="muted" style="font-size:13px">${esc(g.desc)}</div><div class="row" style="gap:4px;margin-top:4px;flex-wrap:wrap">${fxPills(g.fx)}${g.hype?` <span class="pill gold" style="font-size:11px">+${g.hype} hype per win</span>`:''}</div>${locked?`<div style="margin-top:6px">${act}</div>`:''}</div>${locked?'':act}</div></div>`};
+  const slots=Object.entries(GEAR_SLOTS).map(([k,l])=>`<h2 class="sec">${l}</h2><div class="col" style="gap:6px">${GEAR.filter(g=>g.slot===k).map(item).join('')}</div>`).join('');
+  return shell('locker','Locker',`<div class="grid2" style="align-items:start"><div class="card col">${prev}<div><span class="lbl">Kit effects</span><div class="row" style="gap:4px;flex-wrap:wrap;margin-top:4px">${sumTxt}</div></div>
+    <div class="muted" style="font-size:13px">Money: <b class="goldt">${money(b.money)}</b>. Gear effects stack, up to five points per stat either way.</div></div>
+    <div class="card col"><h3>Colors</h3><div class="field"><span class="lbl">Trunks</span><div class="chips">${sw('trunks',COLORS)}</div></div><div class="field"><span class="lbl">Trim</span><div class="chips">${sw('trim',COLORS)}</div></div><div class="field"><span class="lbl">Gloves</span><div class="chips">${sw('gloves',COLORS)}</div></div>
+    <div class="muted" style="font-size:13px">Recoloring is free. Signature gear keeps its own colors.</div></div></div>${slots}`)};
 SCR.settings=()=>shell('settings','Settings',`<h2 class="sec">Settings</h2>${settingsHTML(true)}`);
 
 /* ---------- retire ---------- */
@@ -4344,6 +4431,9 @@ const ACT={
     const F=new Fight({p:pc,o:oc,rounds:1,roundLen:60,diff:'champion',practice:true,corner:1,label:'Arrange',cheats:{freeze:true},onEnd:()=>{}});F.mount();
     setTimeout(()=>F.editLayout({onDone:()=>{F.destroy();UI.render();toast('Layout saved')}}),300)},
   layoutreset(){Settings.layouts={};saveSettings();toast('All button layouts reset')},
+  gearbuy(el){const r=buyGear(el.dataset.id);if(r){toast(r);return}Sfx.cash?Sfx.cash():Sfx.good();Save.write();UI.render()},
+  gearequip(el){if(equipGear(el.dataset.id)){Sfx.click();Save.write();UI.render()}},
+  recolor(el){B().look[el.dataset.k]=el.dataset.v;Save.write();UI.render()},
   setdiff(el){const k=el.dataset.k;if(!DIFF[k]||G.diff===k)return;G.diff=k;news(`Difficulty changed to ${DIFF[k].name}.`);Save.write();toast(`${DIFF[k].name}: ${DIFF[k].desc}`);UI.render()},
   setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
@@ -4670,9 +4760,10 @@ const Save={
     for(const f of Object.values(g.world.f||{}))fillLook(f);
     const bl=g.boxer.look=g.boxer.look||{};if(!bl.bt)bl.bt={lean:'lanky',medium:'athletic',stocky:'brawler'}[g.boxer.build]||'athletic';
     for(const [k,v] of [['nose','straight'],['scar','none'],['ear','normal'],['expr','stern']])if(!bl[k])bl[k]=v;if(bl.fs==null)bl.fs=hashStr(g.boxer.first+g.boxer.last)%10000;if(!bl.band)bl.band=(g.boxer.last||'').toUpperCase().slice(0,10);
+    if(!g.boxer.gear){const G0=G;G=g;try{gearState()}finally{G=G0}}
     return g;
   },
-  summary(){const b=G.boxer;return {name:b.first+' '+b.last,look:b.look,line:`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} · ${G.phase==='pro'?DIVS[b.div].name:G.phase==='retired'?'Retired':'Amateur'} · Level ${b.level} · ${dateStr()}`}},
+  summary(){const b=G.boxer;return {name:b.first+' '+b.last,look:playerLook(),line:`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} · ${G.phase==='pro'?DIVS[b.div].name:G.phase==='retired'?'Retired':'Amateur'} · Level ${b.level} · ${dateStr()}`}},
   serialize(){syncRng();const r=G._rng;delete G._rng;const s=JSON.stringify(G);if(r)G._rng=r;return s},
   write(){
     if(!G)return;

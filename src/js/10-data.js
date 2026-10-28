@@ -158,6 +158,42 @@ const LEGEND_VIS={
   tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
+/* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
+const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
+const GEAR=[
+  {id:'g_std',slot:'gloves',name:'Standard 10 oz',desc:'Reliable sparring-weight gloves.',price:0},
+  {id:'g_pillow',slot:'gloves',name:'Pillow 12 oz',desc:'Extra foam: your guard absorbs more, your punches carry less.',price:2500,unlock:{level:3},fx:{def:3,pow:-2},look:{gloveTape:'#f4efe3'}},
+  {id:'g_puncher',slot:'gloves',name:"Puncher's 8 oz",desc:'Horsehair padding. Every shot lands harder, and so do theirs through your guard.',price:12000,unlock:{level:6},fx:{pow:3,def:-2},look:{gloveTape:'#161616'}},
+  {id:'g_speed',slot:'gloves',name:'Featherweight laces',desc:'Light, fast, a little soft on impact.',price:22000,unlock:{level:8},fx:{spd:2,pow:-1},look:{gloveTape:'#f0be48'}},
+  {id:'g_pro',slot:'gloves',name:'Pro lace-ups',desc:'Custom-fitted fight gloves.',price:45000,unlock:{level:12},fx:{pow:1,spd:1},look:{gloveTape:'#f4efe3'}},
+  {id:'g_stone',slot:'gloves',name:'Hands of Stone',desc:'Worn by the man you beat. Brutal and heavy.',price:40000,unlock:{legend:'durante'},fx:{pow:4,spd:-1},look:{gloves:'#7a1f1f',gloveTape:'#161616'}},
+  {id:'g_belt',slot:'gloves',name:'Championship gold',desc:'Gold-taped gloves for a world champion.',price:120000,unlock:{title:1},fx:{pow:1,def:1},look:{gloveTape:'#f0be48'}},
+  {id:'t_std',slot:'trunks',name:'Plain satin',desc:'Your colors, nothing else.',price:0,look:{trunkPat:'solid'}},
+  {id:'t_stripe',slot:'trunks',name:'Classic side stripes',desc:'Two stripes down each leg.',price:1500,look:{trunkPat:'stripe'}},
+  {id:'t_panel',slot:'trunks',name:'Contrast panels',desc:'Trim-colored side panels.',price:4000,unlock:{level:4},look:{trunkPat:'panel'}},
+  {id:'t_mesh',slot:'trunks',name:'Breathable mesh',desc:'Lighter and cooler under the lights.',price:15000,unlock:{level:7},fx:{sta:2},look:{trunkPat:'panel'}},
+  {id:'t_flame',slot:'trunks',name:'Flames',desc:'For fighters who want to be noticed.',price:9000,unlock:{wins:5},look:{trunkPat:'flame'}},
+  {id:'t_star',slot:'trunks',name:'Stars',desc:'A crowd favorite.',price:20000,unlock:{wins:12},look:{trunkPat:'star'}},
+  {id:'t_champ',slot:'trunks',name:'Championship trunks',desc:'Black and gold, with your name on the band.',price:90000,unlock:{title:1},look:{trunkPat:'stripe',trunks:'#161616',trim:'#f0be48'}},
+  {id:'s_std',slot:'shoes',name:'High-top boots',desc:'Standard ankle support.',price:0},
+  {id:'s_low',slot:'shoes',name:'Low-cut speed boots',desc:'Lighter on your feet, less support late in fights.',price:6000,unlock:{level:5},fx:{foot:2,sta:-1},look:{shoes:'#f4efe3'}},
+  {id:'s_grip',slot:'shoes',name:'Grip soles',desc:'Planted feet put your legs into every punch.',price:18000,unlock:{level:9},fx:{pow:1,foot:1},look:{shoes:'#161616'}},
+  {id:'s_ankle',slot:'shoes',name:'Ankle-lock boots',desc:'Stable base, steadier defense.',price:9000,unlock:{level:6},fx:{def:1},look:{shoes:'#7a1f1f'}},
+  {id:'m_std',slot:'mg',name:'Boil-and-bite',desc:'Gets the job done.',price:0,look:{mg:'#f3efe6'}},
+  {id:'m_custom',slot:'mg',name:'Custom-molded',desc:'Fitted by a dentist. Your jaw takes shots better.',price:5000,unlock:{level:4},fx:{chin:2},look:{mg:'#2f6fe2'}},
+  {id:'m_breathe',slot:'mg',name:'Breathe-easy',desc:'Open airway design. More gas in the tank.',price:12000,unlock:{level:6},fx:{sta:2},look:{mg:'#2e9e5b'}},
+  {id:'m_gel',slot:'mg',name:'Double gel',desc:'Thick and protective, harder to breathe through.',price:26000,unlock:{level:10},fx:{chin:3,sta:-1},look:{mg:'#d8392f'}},
+  {id:'m_gold',slot:'mg',name:'Gold grill',desc:'Pure flash. The crowd loves it.',price:60000,unlock:{wins:20},look:{mg:'#f0be48'},hype:1},
+  {id:'w_std',slot:'wraps',name:'Gauze and tape',desc:'Standard wraps.',price:0},
+  {id:'w_tight',slot:'wraps',name:'Tight tape job',desc:'Knuckles packed hard.',price:3000,unlock:{level:3},fx:{pow:1}},
+  {id:'w_pro',slot:'wraps',name:"Cutman's wraps",desc:'Wrapped by a professional: firm and safe.',price:14000,unlock:{level:8},fx:{pow:1,def:1}},
+  {id:'r_none',slot:'robe',name:'No robe',desc:'Just walk out.',price:0},
+  {id:'r_satin',slot:'robe',name:'Satin robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
+  {id:'r_hood',slot:'robe',name:"Hooded fighter's robe",desc:'+2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood'}},
+  {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
+  {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
+];
+const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',

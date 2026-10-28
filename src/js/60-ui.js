@@ -21,6 +21,7 @@ const TIPS={
   team:'Better trainers mean bigger camp gains and smarter corners between rounds. A cutman keeps cuts from ending fights.',
   legacy:'Titles, defenses, big wins and legends beaten all build your Hall of Fame case.',
   halloffame:'Retired greats are inducted here each year. Build a career that earns you a plaque.',
+  locker:'Some gear is pure style. Some trades one stat for another. Check the pills before you buy.',
 };
 function showTip(s){try{$$('.tipb').forEach(e=>e.remove());if(!Settings.coach||UI.silent||!TIPS[s]||!G)return;const seen=Store.get('tr_tips')||{};if(seen[s])return;seen[s]=1;Store.set('tr_tips',seen);
   const el=document.createElement('div');el.className='tipb';el.innerHTML=`<p><b>Coach:</b> ${esc(TIPS[s])}</p><button class="btn sm gold">Got it</button>`;el.querySelector('button').onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),9000)}catch(e){}}
@@ -41,7 +42,7 @@ function beltsHTML(){const bl=playerBelts();let h=bl.map(b=>`<span class="belt" 
 function rankLabel(){if(G.phase!=='pro')return G.phase==='retired'?'Retired':'Amateur';const r=playerRank();const bl=beltsOf('P',B().div);return bl.length?`Champion · ${DIVS[B().div].name}`:`#${r} ${DIVS[B().div].name}`}
 function profileHTML(){
   const b=B(),age=ageOf(b.born),need=xpNeed(b.level);
-  return `<div class="prof"><img src="${portrait(b.look)}" alt=""><div class="grow">
+  return `<div class="prof"><img src="${portrait(playerLook())}" alt=""><div class="grow">
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
     <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${beltsHTML()}</div>
@@ -50,7 +51,7 @@ function profileHTML(){
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
 }
 const NAV=[
-  ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['skills','Skills','Skill tree'],
+  ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['locker','Locker','Gear & kit'],['skills','Skills','Skill tree'],
   ['division','Division','Weight class'],['team','Team','Promoter, trainer'],['rankings','Rankings','Divisions & belts'],['record','Record','History & chapters'],
   ['news','News','The boxing wire'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
 ];
@@ -336,7 +337,7 @@ SCR.fightnight=()=>{
     <div class="topbar"><button class="btn sm back" data-go="home">◀</button><div class="t">Fight night</div>${o.venue?`<span class="pill">${esc(o.venue)}</span>`:''}</div>
     ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(ch.intro)}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
     <div class="card col"><div class="kicker" style="text-align:center">${esc(o.label)} · ${o.rounds} rounds${o.title&&!o.title.regional?' · '+o.title.belts.join(' / ')+' '+DIVS[b.div].name+' title':''}</div>
-      <div class="vsrow"><div><img src="${portrait(b.look)}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
+      <div class="vsrow"><div><img src="${portrait(playerLook())}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
       <div class="tape">${row('Record',`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''}`,recStr(f))}${row('Age',ageOf(b.born),ageOf(f.born),cmp(ageOf(f.born),ageOf(b.born)))}
       ${row('Height',ftIn(b.height),ftIn(f.height),cmp(b.height,f.height))}${row('Reach',b.reach+'″',f.reach+'″',cmp(b.reach,f.reach))}
       ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',DIVS[b.div].lb+' lb',DIVS[b.div].lb+' lb')}</div>
@@ -593,6 +594,22 @@ SCR.halloffame=()=>{
   const awT=aw.length?`<div class="tblw"><table class="t"><tr><th>Year</th><th>Award</th><th>Winner</th></tr>${aw.map(a=>`<tr${a.player?' class="goldt"':''}><td class="num">${a.year}</td><td>${esc(a.type)}</td><td>${esc(a.who)}</td></tr>`).join('')}</table></div>`:'<p class="muted">The first awards are handed out at the end of your first full year.</p>';
   const hT=hof.length?`<div class="tblw"><table class="t"><tr><th>Class</th><th>Inductee</th><th>Record</th><th>Division</th></tr>${hof.map(h=>`<tr${h.player?' class="goldt"':''}><td class="num">${h.year}</td><td>${esc(h.name)}</td><td class="num">${esc(h.rec)}${h.ko!=null?' ('+h.ko+' KO)':''}</td><td>${esc(DIVS[h.div]?.name||'')}</td></tr>`).join('')}</table></div>`:'<p class="muted">No one has been inducted yet. Great fighters join the year after they retire.</p>';
   return shell('legacy','Hall of Fame',`<h2 class="sec">Hall of Fame</h2><div class="card">${hT}</div><h2 class="sec">Year-end awards</h2><div class="card">${awT}</div>`)};
+SCR.locker=()=>{
+  gearCheckUnlocks();const b=B(),st=gearState(),gm=gearMods(),hy=gearHype();
+  const fxPills=fx=>Object.entries(fx||{}).map(([k,v])=>`<span class="pill ${v>0?'gold':'red'}" style="font-size:11px">${v>0?'+':''}${v} ${STAT_NAME[k]}</span>`).join(' ');
+  const sumTxt=Object.keys(gm).length||hy?`${fxPills(gm)}${hy?` <span class="pill gold" style="font-size:11px">+${hy} hype per win</span>`:''}`:'<span class="muted">No stat effects. Pure style.</span>';
+  const prev=R3P.ok()?`<img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;display:block;margin:0 auto">`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
+  const sw=(k,arr)=>arr.map(c=>`<button class="sw${b.look[k]===c?' on':''}" style="background:${c}" data-act="recolor" data-k="${k}" data-v="${c}" aria-label="${k} ${c}"></button>`).join('');
+  const item=g=>{const own=st.owned.includes(g.id),eq=st.eq[g.slot]===g.id,u=gearUnlock(g);
+    const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=g.price?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=g.price?'':'disabled'}>${g.price?money(g.price):'Free'}</button>`;
+    const locked=!own&&!u.ok;
+    return `<div class="card flat" style="padding:10px;${eq?'border-color:var(--gold)':''}${locked?';opacity:.62':''}"><div class="row sp" style="align-items:flex-start;gap:10px"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${esc(g.name)}</b>
+      <div class="muted" style="font-size:13px">${esc(g.desc)}</div><div class="row" style="gap:4px;margin-top:4px;flex-wrap:wrap">${fxPills(g.fx)}${g.hype?` <span class="pill gold" style="font-size:11px">+${g.hype} hype per win</span>`:''}</div>${locked?`<div style="margin-top:6px">${act}</div>`:''}</div>${locked?'':act}</div></div>`};
+  const slots=Object.entries(GEAR_SLOTS).map(([k,l])=>`<h2 class="sec">${l}</h2><div class="col" style="gap:6px">${GEAR.filter(g=>g.slot===k).map(item).join('')}</div>`).join('');
+  return shell('locker','Locker',`<div class="grid2" style="align-items:start"><div class="card col">${prev}<div><span class="lbl">Kit effects</span><div class="row" style="gap:4px;flex-wrap:wrap;margin-top:4px">${sumTxt}</div></div>
+    <div class="muted" style="font-size:13px">Money: <b class="goldt">${money(b.money)}</b>. Gear effects stack, up to five points per stat either way.</div></div>
+    <div class="card col"><h3>Colors</h3><div class="field"><span class="lbl">Trunks</span><div class="chips">${sw('trunks',COLORS)}</div></div><div class="field"><span class="lbl">Trim</span><div class="chips">${sw('trim',COLORS)}</div></div><div class="field"><span class="lbl">Gloves</span><div class="chips">${sw('gloves',COLORS)}</div></div>
+    <div class="muted" style="font-size:13px">Recoloring is free. Signature gear keeps its own colors.</div></div></div>${slots}`)};
 SCR.settings=()=>shell('settings','Settings',`<h2 class="sec">Settings</h2>${settingsHTML(true)}`);
 
 /* ---------- retire ---------- */
@@ -722,6 +739,9 @@ const ACT={
     const F=new Fight({p:pc,o:oc,rounds:1,roundLen:60,diff:'champion',practice:true,corner:1,label:'Arrange',cheats:{freeze:true},onEnd:()=>{}});F.mount();
     setTimeout(()=>F.editLayout({onDone:()=>{F.destroy();UI.render();toast('Layout saved')}}),300)},
   layoutreset(){Settings.layouts={};saveSettings();toast('All button layouts reset')},
+  gearbuy(el){const r=buyGear(el.dataset.id);if(r){toast(r);return}Sfx.cash?Sfx.cash():Sfx.good();Save.write();UI.render()},
+  gearequip(el){if(equipGear(el.dataset.id)){Sfx.click();Save.write();UI.render()}},
+  recolor(el){B().look[el.dataset.k]=el.dataset.v;Save.write();UI.render()},
   setdiff(el){const k=el.dataset.k;if(!DIFF[k]||G.diff===k)return;G.diff=k;news(`Difficulty changed to ${DIFF[k].name}.`);Save.write();toast(`${DIFF[k].name}: ${DIFF[k].desc}`);UI.render()},
   setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},

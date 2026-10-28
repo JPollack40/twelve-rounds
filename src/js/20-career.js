@@ -111,8 +111,29 @@ function weightInfo(div){
   r.miss*=(1-red);r.diff=d;
   return r;
 }
+/* ---------- gear ---------- */
+function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none'},seen:[]};return b.gear}
+function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
+  if(u.level&&b.level<u.level)return {ok:false,why:`Reach level ${u.level}`};
+  if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};
+  if(u.title&&!b.titleWins)return {ok:false,why:'Win a world title'};
+  if(u.amgold&&!(G.flags.am_gold_0||G.flags.am_gold_1))return {ok:false,why:'Win amateur gold'};
+  if(u.legend&&!b.legendsBeaten.includes(u.legend)){const L=LEGEND_BY[u.legend];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
+  return {ok:true}}
+function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
+function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
+function gearHype(){return gearEquipped().reduce((s,g)=>s+(g.hype||0),0)}
+function playerLook(){const b=B();const L=Object.assign({},b.look);for(const g of gearEquipped())Object.assign(L,g.look||{});return L}
+function buyGear(id){const g=GEAR_BY[id],st=gearState(),b=B();if(!g||st.owned.includes(id))return 'owned';const u=gearUnlock(g);if(!u.ok)return u.why;if(b.money<g.price)return `You need ${money(g.price)}`;
+  b.money-=g.price;st.owned.push(id);st.eq[g.slot]=id;news(`You buy ${g.name}.`);return ''}
+function equipGear(id){const g=GEAR_BY[id],st=gearState();if(!g||!st.owned.includes(id))return false;st.eq[g.slot]=id;return true}
+/* free unlocks (price 0 with a condition) are granted; newly purchasable items are announced once */
+function gearCheckUnlocks(lines){const st=gearState();st.seen=st.seen||[];const fresh=[];
+  for(const g of GEAR){if(!g.unlock||st.seen.includes(g.id))continue;if(gearUnlock(g).ok){st.seen.push(g.id);if(!g.price&&!st.owned.includes(g.id))st.owned.push(g.id);fresh.push(g)}}
+  if(fresh.length){const t=`New in the Locker: ${fresh.map(g=>g.name).join(', ')}.`;news(t,'gold');lines&&lines.push(t)}return fresh.length}
 function effectiveStats(){
   const b=B(),s=Object.assign({},b.stats),w=weightInfo()||{pow:1,chin:1,spd:1,sta:1};
+  const gm=gearMods();for(const k in gm)if(s[k]!=null)s[k]+=gm[k];
   s.pow*=w.pow;s.chin*=w.chin;s.spd*=w.spd;s.sta*=w.sta;
   s.chin-=b.damage*.22;
   for(const inj of b.injuries){const e=INJ[inj.id].eff;for(const k in e)if(s[k]!=null)s[k]*=e[k]}
@@ -468,7 +489,7 @@ function oppCombat(f,o={}){
 }
 function playerCombat(){
   const b=B();
-  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:b.look,height:b.height,arch:b.arch,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
+  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:playerLook(),height:b.height,arch:b.arch,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
 }
 function ptsDelta(my,opp,win,ko,title){
   if(win){let g=20+clamp((opp-my)*.13,-14,70)+(ko?8:0)+(title?70:0);if(opp<my-160)g*=.5;return Math.round(clamp(g,4,150))}
@@ -529,7 +550,7 @@ function applyResult(o,res){
     if(G.promoter){G.promoter.left--;if(loss)G.promoter.losses=(G.promoter.losses||0)+1;else if(win)G.promoter.losses=0}
   }
   // hype
-  let hy=win?(ko?6:3):loss?-6:0;if(o.title&&win)hy+=15;if(f.legend&&win)hy+=10;if(res.kdFor&&res.kdAgainst)hy+=4;
+  let hy=win?(ko?6:3)+gearHype():loss?-6:0;if(o.title&&win)hy+=15;if(f.legend&&win)hy+=10;if(res.kdFor&&res.kdAgainst)hy+=4;
   b.hype=clamp(b.hype+hy,0,100);
   // damage & injuries
   const dur=skillMods().durable||0;
@@ -594,6 +615,7 @@ function applyResult(o,res){
     if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
     if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
   checkGoals('fight',{res,win,ko,o,f},out.lines);
+  gearCheckUnlocks(out.lines);
   G.next=null;
   return out;
 }

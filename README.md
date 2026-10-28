@@ -30,3 +30,9 @@ Characters are data: body type (lanky, athletic, brawler, anvil), nose (straight
 game face (grit, stern, calm, cocky), hair (incl. mohawk, spiky, shaggy, curly) and a face-shape seed. Legends get
 homage traits from `LEGEND_VIS`; the named roster (Basilio, Spike, Rocco "The Anvil") lives in `SIGNATURES`.
 Portraits and the creator preview render through the same rig (`R3P`), with the 2D portrait as fallback.
+
+## Gear and the Locker
+Six slots (gloves, trunks, shoes, mouthguard, wraps, walkout robe), defined in `GEAR` in `src/js/10-data.js`.
+Items unlock by level, pro wins, a world title, amateur gold or beating a specific legend, then cost money.
+Stat effects (`fx`) apply in `effectiveStats()` and are capped at ±5 per stat; robes add hype per win.
+Cosmetics merge into the boxer's look via `playerLook()`: trunk patterns, glove tape, shoe colour, mouthguard colour.

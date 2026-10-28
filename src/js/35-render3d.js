@@ -149,10 +149,21 @@ function r3skinTex(L,o={},cv){
   return c;
 }
 function r3spriteTex(){if(R3D._spr)return R3D._spr;const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,245,225,1)');g.addColorStop(.3,'rgba(255,240,210,.35)');g.addColorStop(1,'rgba(255,240,210,0)');x.fillStyle=g;x.fillRect(0,0,128,128);R3D._spr=new THREE.CanvasTexture(c);R3D._spr.userData.keep=1;return R3D._spr}
-function r3teethTex(){if(R3D._teeth)return R3D._teeth;const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.fillStyle='#f3efe6';x.fillRect(0,0,256,64);
+function r3teethTex(mg){const key='teeth'+(mg||'');if(R3D._c[key])return R3D._c[key];const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.fillStyle=mg||'#f3efe6';x.fillRect(0,0,256,64);
   x.strokeStyle='#2a1c1c';x.lineWidth=3;x.beginPath();x.moveTo(0,32);x.lineTo(256,32);x.stroke();x.lineWidth=2.5;for(let i=1;i<10;i++){const px=i*25.6;x.beginPath();x.moveTo(px,4);x.lineTo(px+1,30);x.moveTo(px+3,34);x.lineTo(px+2,60);x.stroke()}
   x.fillStyle='rgba(60,30,30,.35)';x.fillRect(0,0,22,64);x.fillRect(234,0,22,64);
-  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.userData.keep=1;return R3D._teeth=t}
+  if(mg&&mg!=='#f3efe6'){x.fillStyle='rgba(255,255,255,.35)';x.fillRect(0,6,256,6);x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,0,256,64*0+3)}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.userData.keep=1;return R3D._c[key]=t}
+/* trunks: base colour plus a pattern in the trim colour. Lathe UVs: u wraps from the front (0) round the body, v runs up */
+function r3trunkTex(col,trim,pat){const k='tr'+col+trim+pat;if(R3D._c[k])return R3D._c[k];const W=512,H=256;const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const cs=new THREE.Color(col).getStyle(),ts=new THREE.Color(trim).getStyle();x.fillStyle=cs;x.fillRect(0,0,W,H);x.fillStyle=ts;
+  if(pat==='stripe'){for(const u of [.25,.75])for(const o of [-.022,.022])x.fillRect((u+o)*W-5,0,10,H)}
+  else if(pat==='panel'){for(const u of [.25,.75])x.fillRect((u-.045)*W,0,.09*W,H)}
+  else if(pat==='flame'){const r=new Rng(7);for(let i=0;i<22;i++){const cx=i/22*W,h=H*(.35+r.next()*.3),w=W/22*1.3;x.beginPath();x.moveTo(cx-w/2,H);x.quadraticCurveTo(cx-w*.6,H-h*.5,cx+w*.1,H-h);x.quadraticCurveTo(cx+w*.05,H-h*.45,cx+w/2,H);x.fill()}
+    x.fillStyle='rgba(255,220,120,.55)';for(let i=0;i<22;i++){const cx=i/22*W+6,h=H*.18;x.beginPath();x.moveTo(cx-6,H);x.quadraticCurveTo(cx-4,H-h*.6,cx+2,H-h);x.quadraticCurveTo(cx+2,H-h*.4,cx+7,H);x.fill()}}
+  else if(pat==='star'){const r=new Rng(3);const star=(cx,cy,R)=>{x.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*.45:R;x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}x.closePath();x.fill()};for(let i=0;i<26;i++)star(r.next()*W,20+r.next()*(H-40),9+r.next()*7)}
+  if(pat!=='solid'){x.fillStyle='rgba(0,0,0,.18)';x.fillRect(0,0,W,6)}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;t.anisotropy=4;t.userData.keep=1;return R3D._c[k]=t}
 function r3bandTex(col,trim,text){const c=document.createElement('canvas');c.width=1024;c.height=64;const x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,1024,64);
   x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,0,1024,5);x.fillRect(0,59,1024,5);
   if(text){x.font='bold 30px "Alfa Slab One",Georgia,serif';x.textAlign='center';x.textBaseline='middle';const w=Math.min(300,x.measureText(text).width+30);
@@ -169,6 +180,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
+    trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -211,7 +223,7 @@ function r3head(L){
     const ml=r3mesh(r3strand(arc(-.553,.3,-.004,.012),.0045,.0045,20,6,true),inkM,{ol:false});g.add(ml);ctl.mline=ml;
     const mp=S(0,-.555,0);
     const cav=r3mesh(new THREE.SphereGeometry(.07,16,12),r3flat(0x2a0d0d),{ol:false});cav.position.copy(S(0,-.555,-.026));cav.scale.set(1.15,.01,.5);g.add(cav);ctl.cav=cav;
-    const tr=.13;const teeth=r3mesh(new THREE.CylinderGeometry(tr,tr,.036,24,1,true,-.42,.84),new THREE.MeshBasicMaterial({map:r3teethTex()}),{ol:false});
+    const tr=.13;const teeth=r3mesh(new THREE.CylinderGeometry(tr,tr,.036,24,1,true,-.42,.84),new THREE.MeshBasicMaterial({map:r3teethTex(L.mg)}),{ol:false});
     teeth.position.set(mp.x,mp.y,mp.z-tr+.009);teeth.visible=false;g.add(teeth);ctl.teeth=teeth}
   // ears (cauliflower = swollen, lumpy)
   const cauli=L.ear==='cauliflower';
@@ -377,7 +389,7 @@ function r3boxer(L,opt={}){
   const spine=new THREE.Group();spine.position.y=.08;pelvis.add(spine);
   const H=P.hip*m,Wa=P.waist*m,bel=P.belly?.035:0;
   const torso=r3mesh(r3torsoGeo(P,m),r3cel(0xffffff,r3torsoInk(L.skin,!!P.ribs,!!P.belly)),{olw:.0046});torso.position.y=.72*TS;spine.add(torso);
-  const trunkM=r3cel(L.trunks,null,true);
+  const trunkM=r3cel(0xffffff,r3trunkTex(L.trunks,L.trim,L.trunkPat),true);
   const trunks=r3mesh(r3lathe([[0,.04],[.235*H,.04],[.27*H,-.06],[.285*H,-.2],[.29*H,-.3],[0,-.3]],1.14,.84*P.depth/.72,40),trunkM,{olw:.0048});trunks.position.y=-.02;pelvis.add(trunks);
   const bandR=.25*Math.max(H,Wa+bel*2);const band=r3mesh(new THREE.CylinderGeometry(bandR,bandR*.98,.1,48,1,true),r3cel(0xffffff,r3bandTex(new THREE.Color(L.trim).getStyle(),new THREE.Color(L.trunks).getStyle(),L.band),true),{olw:.0042});
   band.scale.set(1.15,1,.86*P.depth/.72);band.position.y=.03;pelvis.add(band);
@@ -398,7 +410,7 @@ function r3boxer(L,opt={}){
     const fk=m*P.fore;
     elbow.add(r3mesh(r3muscle(.43*al,(t,a)=>fk*(.082-.034*Math.pow(t,1.15)+.026*r3g(t,.22,.15)*r3ang(a,s*1.1,.6)+.012*r3g(t,.28,.2)*r3ang(a,-s*1.6,.7))*(1+.14*t*(Math.abs(Math.sin(a))-.5)),{seg:14,rad:22,cap:4,ck:.7}),skinM,{olw:.0042}));
     const glove=new THREE.Group();glove.position.y=-.47*al;glove.scale.setScalar(1.18);elbow.add(glove);
-    const gm=r3leather(L.gloves);r3glove(glove,gm,s,-1);
+    const gm=r3leather(L.gloves);r3glove(glove,gm,s,-1,L.gloveTape);
     arms[s]={sh,elbow,glove,gm,L1:.44*al,L2:.47*al+.02};
   }
   const legs={};
@@ -408,7 +420,7 @@ function r3boxer(L,opt={}){
     const sleeve=r3mesh(r3lathe([[0,.14],[.15*lk*1.15,.14],[.185*lk*1.12,.02],[.19*lk*1.1,-.1],[.19*lk*1.08,-.2*ll],[0,-.2*ll]],1,1.1,32),trunkM,{olw:.0045});hip.add(sleeve);
     const knee=new THREE.Group();knee.position.y=-.44*ll;hip.add(knee);
     knee.add(r3mesh(r3muscle(.37*ll,(t,a)=>lk*(.09-.038*t+.042*r3g(t,.27,.13)*r3ang(a,Math.PI,1)+.014*r3g(t,.36,.13)*r3ang(a,Math.PI+s*.9,.5)-.008*r3ang(a,0,.4)),{seg:14,rad:22,cap:4,ck:.6}),skinM,{olw:.0045}));
-    const bootC=new THREE.Color(L.trim).lerp(new THREE.Color(0x2a2426),.35);
+    const bootC=L.shoes?new THREE.Color(L.shoes):new THREE.Color(L.trim).lerp(new THREE.Color(0x2a2426),.35);
     const boot=r3mesh(r3lathe([[0,0],[.088,0],[.094,-.1],[.09,-.2],[.1,-.28],[0,-.28]],1,1.05,32),r3cel(0xffffff,r3bootTex(bootC.getStyle()),true),{olw:.0042});boot.position.y=-.37*ll+.1;knee.add(boot);
     const foot=r3mesh(r3muscle(.26,(t,a)=>(.055+.012*Math.sin(t*Math.PI))*(1+.35*Math.abs(Math.sin(a)))*(1-.2*r3ang(a,Math.PI,.5)),{seg:8,rad:16,cap:4,ck:.5}),r3cel(bootC.getHex(),null,true),{olw:.0038});
     foot.rotation.x=-Math.PI/2;foot.position.set(0,-.37*ll-.15,-.07);knee.add(foot);
@@ -421,12 +433,12 @@ function r3boxer(L,opt={}){
   return root;
 }
 /* glove: padded mitt (wider across the knuckles than deep), sculpted thumb, taped cuff. side s; dir -1 = fist toward -y (rig), +1 = toward +y */
-function r3glove(gl,gm,s,dir){
+function r3glove(gl,gm,s,dir,tape){
   const g=new THREE.Group();if(dir>0)g.rotation.z=Math.PI;gl.add(g);
   const mitt=r3mesh(r3muscle(.24,(t,a)=>(.098+.062*Math.sin(Math.min(1,t*1.5)*Math.PI/2)-.008*t)*(1+.1*Math.pow(Math.sin(a),2))*(1-.1*Math.pow(Math.cos(a),2))*(1+.06*r3ang(a,0,.5)*r3g(t,.8,.15)),{seg:12,rad:28,cap:6,ck:.75}),gm,{olw:.0042});mitt.position.y=.08;g.add(mitt);
   const thumb=r3mesh(r3muscle(.15,(t,a)=>.044-.01*t,{seg:6,rad:14,cap:4,ck:.8}),gm,{olw:.0032});thumb.position.set(s*.105,.06,.06);thumb.rotation.set(-.35,0,s*-.18);g.add(thumb);
   const cuff=r3mesh(new THREE.CylinderGeometry(.092,.1,.12,28),r3cel(0xf3efe6,null,true),{olw:.004});cuff.position.y=.15;g.add(cuff);
-  const st=r3mesh(new THREE.CylinderGeometry(.095,.102,.026,28,1,true),r3cel(0x1d1517,null,true),{ol:false});st.position.y=.13;g.add(st);
+  const st=r3mesh(new THREE.CylinderGeometry(.095,.102,.026,28,1,true),r3cel(new THREE.Color(tape||'#1d1517').getHex(),null,true),{ol:false});st.position.y=.13;g.add(st);
 }
 /* two-bone IK: aim shoulder and elbow so the glove reaches target (world); elbow bends toward pole */
 const _v=[0,1,2,3,4,5,6,7,8].map(()=>new THREE.Vector3()),_q=[0,1,2].map(()=>new THREE.Quaternion()),_DOWN=new THREE.Vector3(0,-1,0);
@@ -556,7 +568,7 @@ class Render3D{
     this.oppFlash=new THREE.Sprite(new THREE.SpriteMaterial({map:r3spriteTex(),blending:THREE.AdditiveBlending,depthWrite:false,opacity:0}));this.oppFlash.scale.set(1.2,1.2,1);this.scene.add(this.oppFlash);
     this.pg={};const gm=r3leather(this.pL.gloves);
     const foreM=r3cel(this.pL.skin);
-    for(const h of ['L','R']){const s=h==='L'?-1:1;const gl=new THREE.Group();r3glove(gl,gm,-s,1);
+    for(const h of ['L','R']){const s=h==='L'?-1:1;const gl=new THREE.Group();r3glove(gl,gm,-s,1,this.pL.gloveTape);
       r3outline(gl);gl.scale.setScalar(.9);this.cam.add(gl);
       // forearm: a unit-length limb stretched each frame from the glove's cuff back to a shoulder point below the screen
       const fore=r3mesh(r3limb(1,t=>(.085+.025*Math.sin(t*Math.PI*.8))/(1),1,1),foreM,{olw:.004});r3outline(fore);this.cam.add(fore);

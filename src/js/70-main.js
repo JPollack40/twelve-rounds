@@ -22,9 +22,10 @@ const Save={
     for(const f of Object.values(g.world.f||{}))fillLook(f);
     const bl=g.boxer.look=g.boxer.look||{};if(!bl.bt)bl.bt={lean:'lanky',medium:'athletic',stocky:'brawler'}[g.boxer.build]||'athletic';
     for(const [k,v] of [['nose','straight'],['scar','none'],['ear','normal'],['expr','stern']])if(!bl[k])bl[k]=v;if(bl.fs==null)bl.fs=hashStr(g.boxer.first+g.boxer.last)%10000;if(!bl.band)bl.band=(g.boxer.last||'').toUpperCase().slice(0,10);
+    if(!g.boxer.gear){const G0=G;G=g;try{gearState()}finally{G=G0}}
     return g;
   },
-  summary(){const b=G.boxer;return {name:b.first+' '+b.last,look:b.look,line:`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} · ${G.phase==='pro'?DIVS[b.div].name:G.phase==='retired'?'Retired':'Amateur'} · Level ${b.level} · ${dateStr()}`}},
+  summary(){const b=G.boxer;return {name:b.first+' '+b.last,look:playerLook(),line:`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} · ${G.phase==='pro'?DIVS[b.div].name:G.phase==='retired'?'Retired':'Amateur'} · Level ${b.level} · ${dateStr()}`}},
   serialize(){syncRng();const r=G._rng;delete G._rng;const s=JSON.stringify(G);if(r)G._rng=r;return s},
   write(){
     if(!G)return;
