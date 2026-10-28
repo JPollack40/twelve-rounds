@@ -1,5 +1,5 @@
 {
- "when": "2026-10-28T21:41:55.371Z",
+ "when": "2026-10-28T21:50:10.774Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -170,6 +170,23 @@
    "avgAcc": 0.58,
    "avgOppAcc": 0.68,
    "results": "p:KOR6 p:KOR5 p:KOR6 p:KOR4 p:KOR3"
+  },
+  {
+   "id": "daily_40_days",
+   "why": "daily challenge is winnable but not trivial",
+   "band": [
+    0.2,
+    0.9
+   ],
+   "winRate": 0.725,
+   "n": 40,
+   "kos": 0,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 0,
+   "avgAcc": 0,
+   "avgOppAcc": 0,
+   "results": "496 1431 463 2327 1408 1990 2414 1470 2598 1293 2502 2472 1456 2017 2386 356 2132 722 1296 2402 577 1880 2505 2350 531 1413 392 389 1788 632 1978 2376 2092 1329 1895 459 1996 561 1956 2297"
   }
  ],
  "careers": {
@@ -178,28 +195,28 @@
   "winsMed": 47,
   "lossesMed": 22,
   "titlesMed": 2,
-  "titlesAvg": 1.81,
-  "champShare": 0.97,
+  "titlesAvg": 1.77,
+  "champShare": 0.99,
   "undisputedShare": 0.06,
   "multiDivShare": 0,
   "legendsAvg": 1.44,
-  "chaptersAvg": 1.06,
-  "moneyMed": 39276015,
+  "chaptersAvg": 1.05,
+  "moneyMed": 40094184,
   "womenN": 166,
-  "womenChampShare": 0.99,
+  "womenChampShare": 1,
   "womenLegendsAvg": 1.29,
   "crossCircuitLegends": 0,
-  "hofMed": 342,
+  "hofMed": 347,
   "tiers": {
-   "Hall of Famer": 244,
-   "All-Time Great": 69,
-   "Champion": 154,
+   "Hall of Famer": 218,
+   "All-Time Great": 86,
+   "Champion": 164,
    "Contender": 28,
-   "Journeyman": 4,
-   "The Greatest of All Time": 1
+   "Journeyman": 2,
+   "The Greatest of All Time": 2
   },
   "forcedRetireShare": 0,
-  "dmgMed": 69
+  "dmgMed": 70
  },
  "errors": [],
  "careerChecks": [
@@ -214,7 +231,7 @@
   },
   {
    "k": "champShare",
-   "v": 0.97,
+   "v": 0.99,
    "band": [
     0.4,
     1
@@ -232,7 +249,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1.06,
+   "v": 1.05,
    "band": [
     0.3,
     5
@@ -250,7 +267,7 @@
   },
   {
    "k": "womenChampShare",
-   "v": 0.99,
+   "v": 1,
    "band": [
     0.4,
     1

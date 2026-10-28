@@ -43,3 +43,9 @@ champions and 12 legends inspired by the greats of women's boxing (homages with 
 plus two named roster fighters and two story chapters (The Undercard, Headliners). Divisions run Flyweight to Heavyweight (175+ lb).
 Fighter text is written once and pronouns are swapped for the women's world (`gtxt`). In the renderer, `look.fem` gives a women's frame,
 a sports top, a softer inked face, and ponytail, bun and twin-braid hair (also available to everyone).
+
+## Daily challenge and Legends gallery
+The title screen offers one seeded fight a day (`src/js/62-daily.js`): a legend from either circuit plus a twist (heat, small gloves,
+short notice, two-round sprint). Everyone gets the same fight on the same date. Score, 0–3 gloves, best-of-day and a win streak are kept
+on the device; "Copy result" shares a one-line summary. The Legends screen (title screen and career menu) lists every legend in both
+circuits with portrait, homage, scouting report and signature move, and marks the ones beaten in the current career.

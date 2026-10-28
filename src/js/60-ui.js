@@ -53,7 +53,7 @@ function profileHTML(){
 const NAV=[
   ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['locker','Locker','Gear & kit'],['skills','Skills','Skill tree'],
   ['division','Division','Weight class'],['team','Team','Promoter, trainer'],['rankings','Rankings','Divisions & belts'],['record','Record','History & chapters'],
-  ['news','News','The boxing wire'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
+  ['news','News','The boxing wire'],['legends','Legends','The greats'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
 ];
 function navHTML(active){
   const b=B();const dot={boxer:b.statPts>0,skills:b.skillPts>0&&SKILLS.some(s=>canBuySkill(s)),fight:!!G.next||G.offers.length>0};
@@ -81,7 +81,8 @@ SCR.title=()=>{
     <div class="title-hero"><div class="logo" id="logo" data-act="logotap">TWELVE<span>ROUNDS</span></div><p class="muted" style="max-width:34ch">A boxing career, from the Golden Gloves to the Hall of Fame.</p></div>
     <div class="col">${slots.map(({n,s})=>s?`<div class="card slot"><img src="${portrait(s.look)}" alt=""><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${esc(s.name)}</b><div class="muted num" style="font-size:13.5px">${esc(s.line)}</div></div><button class="btn primary" data-act="load" data-n="${n}">Continue</button></div>`
       :`<div class="card slot"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Empty slot ${n}</b><div class="muted" style="font-size:13.5px">Start a new career</div></div><button class="btn gold" data-act="new" data-n="${n}">New career</button></div>`).join('')}</div>
-    <div class="row">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
+    <button class="card slot" data-act="daily" style="text-align:left;cursor:pointer;border-color:var(--gold)"><div class="grow"><b class="ui goldt" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Daily challenge #${dailyNo()}</b><div class="muted" style="font-size:13.5px">${(()=>{const S=dailySpec(),b=dailyState().best[S.n];return `${esc(S.L.first)} “${esc(S.L.nick)}” ${esc(S.L.last)} · ${esc(S.tw.name)}${b?' · best '+b.score:''}`})()}</div></div><span class="pill gold">Fight</span></button>
+    <div class="row">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="legends">Legends</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
     <p class="dim" style="font-size:12.5px;text-align:center">${esc(Save.status())}</p>
   </div></div>`;
 };

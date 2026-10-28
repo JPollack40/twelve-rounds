@@ -45,6 +45,12 @@ const MATCHUPS=[
    out.fights.push({id:M.id,why:M.why,band:M.band,winRate:wins,n:r.length,kos,koed,ok,avgLanded:+(r.reduce((s,x)=>s+x.pl,0)/r.length).toFixed(1),avgAcc:+(r.reduce((s,x)=>s+(x.pt?x.pl/x.pt:0),0)/r.length).toFixed(2),avgOppAcc:+(r.reduce((s,x)=>s+(x.ot?x.ol/x.ot:0),0)/r.length).toFixed(2),results:r.map(x=>x.w+':'+x.m+'R'+x.rd).join(' ')});
    process.stdout.write(`${ok?'ok  ':'FAIL'} ${M.id.padEnd(22)} win ${(wins*100).toFixed(0).padStart(3)}% band ${M.band.map(x=>x*100).join('-')}  KO for/against ${kos}/${koed}\n`);
  }
+ // daily challenge: 40 consecutive days with the human bot, 88-rated, must stay winnable but not trivial
+ if(!NOFIGHTS){const d=await p.evaluate(()=>{const out=[];for(let n=1;n<=40;n++){const S=dailySpec(n);const {o}=dailyOpp(S);
+     const F=new Fight({p:dailyMe(S),o,rounds:S.rounds,roundLen:45,diff:'champion',corner:3,seed:S.seed,headless:true,practice:true,mods:Object.assign({},S.tw.mods||{}),onEnd(){}});if(S.tw.k==='hurt')F.p.hp=70;
+     const r=F.headless(BOTS.human(new Rng(S.seed^0x77)));out.push({w:r.winner==='p',sc:dailyScore(r,S.rounds).score})}return out});
+   const wr=d.filter(x=>x.w).length/d.length,ok=wr>=.2&&wr<=.9;out.fights.push({id:'daily_40_days',why:'daily challenge is winnable but not trivial',band:[.2,.9],winRate:wr,n:d.length,kos:0,koed:0,ok,avgLanded:0,avgAcc:0,avgOppAcc:0,results:d.map(x=>x.sc).join(' ')});
+   process.stdout.write(`${ok?'ok  ':'FAIL'} ${'daily_40_days'.padEnd(22)} win ${(wr*100).toFixed(0).padStart(3)}% band 20-90\n`)}
  // careers
  let C=[];
  for(let batch=0;batch<NC&&!NOCAREERS;batch+=25){C=C.concat(await p.evaluate(([b0,NC])=>{
