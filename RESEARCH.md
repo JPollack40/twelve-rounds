@@ -62,3 +62,12 @@ division moves, left-handed layout, button sizes, compact calendar with quick ca
 | Progression that feels "linear, vanilla, unrewarding" (Undisputed) | Career goals: three short-term targets at a time (knockouts, streaks, body work, rankings, titles, legends, rival), with XP and hype rewards |
 | Communicate growth (stat deltas, history) | Overall rating and ranking-point charts on the Record screen, one measure per chart, tap a point for that fight |
 | Career beats with dialogue | Your rival reacts to your big wins and losses in the news, with spacing and variety |
+
+## Third pass
+| Finding | Change |
+|---|---|
+| Losing feels meaningless when you are back in title contention right away (Undisputed player feedback, 2025; [Steam discussions](https://steamcommunity.com/app/1451190/discussions/0/583876246978517929)) | Back of the line: after a loss, title-shot offers and champion callouts wait until you win again. A robbery costs nothing, a split or majority decision one win, a clear decision two, a stoppage three. The path card, result screen and the show say how many wins you need |
+| Career modes lack personality; fans want a boxing show covering title changes, rising fighters and retirements (Fight Night Round 5 wishlist, [N4G](https://n4g.com/?p=354927)) | Saturday Night Boxing: a monthly studio show with headlines, the fighters rising in your division, the pound-for-pound top five with movement, and a host's take on your career |
+| Players care about standing beyond their own division (Fight Night Champion legacy, [Game Informer](https://gameinformer.com/b/news/archive/2010/12/09/fight-night-champion-career-mode-explained)) | Pound-for-pound top 10 across all divisions (rating, belts, record, titles), shown on Rankings and your profile, with news when you enter the top 10 or reach #1 and a Pound-for-Pound King trophy |
+| Career and story content grows repetitive after a few fights (World Championship Boxing Manager 2 reviews, [The Xbox Hub](https://www.thexboxhub.com/world-championship-boxing-manager-2-review/)) | Rivals now change with the career, callouts are a choice with odds, and offers include ranked contenders to climb past (shipped just before this pass) |
+| Training that is simulated rather than played (Undisputed reviews, [PSU](https://www.psu.com/reviews/undisputed-review-ps5/)) | Already covered: camp drills are played, graded and failable |

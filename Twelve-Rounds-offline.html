@@ -973,12 +973,25 @@ function setRival(f){
   const q=h.some(x=>x.res==='L')?pick(['"I beat you once. I\'ll do it again."','"You know who owns you."']):h.some(x=>x.robbery)?pick(['"The judges saw it right. Cry about it."']):h.length?pick(['"Run it back. This time there\'s no doubt."','"That night still keeps me up. Not anymore."']):pick(['"Everybody keeps saying your name. Say mine."','"There\'s only room for one of us at the top."','"I\'m coming for everything you have."']);
   news(`Bad blood: ${fullName(f)} (${recStr(f)}) is your new rival. ${q}`,'red');
 }
+/* ---------- back of the line: after a loss, title shots and champion callouts wait until you win your way back.
+   A robbery costs nothing, a split or majority decision one win, a clear decision two, a stoppage three ---------- */
+function titleLock(){
+  const H=G.history.filter(h=>h.pro);let wins=0,i=H.length-1;for(;i>=0&&H[i].res!=='L';i--)if(H[i].res==='W')wins++;
+  if(i<0)return 0;const L=H[i];const need=L.robbery?0:['SD','MD'].includes(L.method)?1:['KO','TKO','RTD','DQ'].includes(L.method)?3:2;
+  return Math.max(0,need-wins)}
+/* ---------- pound for pound: the best fighters in the world regardless of weight ---------- */
+function p4pScore(f){const titles=f.titles||0,bl=beltsOf(f.id,f.div).length;return f.rating+bl*4+(bl===4?6:0)+Math.min(10,Math.max(-6,(f.w-2*f.l)*.15))+titles*1.5+(f.legend?2:0)}
+function p4pList(n=10){
+  const L=Object.values(G.world.f).filter(f=>f.active&&f.pro!==false&&!f.amateur).map(f=>({id:f.id,f,s:p4pScore(f)}));
+  if(G.phase==='pro'){const b=B(),bl=beltsOf('P',b.div).length;L.push({id:'P',f:null,s:playerOvr()+bl*4+(bl===4?6:0)+Math.min(10,Math.max(-6,(b.record.w-2*b.record.l)*.15))+b.titleWins*1.5+b.defenses*.4})}
+  return L.sort((a,c)=>c.s-a.s).slice(0,n)}
+function p4pRank(){const i=p4pList(10).findIndex(e=>e.id==='P');return i<0?null:i+1}
 function rivalryWins(){return (G.rival?.w||0)+(G.rivalHist||[]).reduce((s,r)=>s+r.w,0)}
 /* ---------- callouts: a request, not a guarantee. The champion only answers contenders who have earned it ---------- */
 function calloutChance(t){
   const b=B(),d=b.div,me=playerRank()||99,tr=rankOf(t.id,d),champ=beltsOf(t.id,d).length>0,mine=beltsOf('P',d).length>0;
   let p;
-  if(champ)p=mine?.75:me<=3?.85:me<=5?.65:me<=10?.3:me<=15?.1:me<=25?.03:0;
+  if(champ)p=(mine?.75:me<=3?.85:me<=5?.65:me<=10?.3:me<=15?.1:me<=25?.03:0)*(!mine&&titleLock()?.15:1);
   else if(t.rival)p=.85;
   else if(tr>me)p=.9;
   else{const gap=me-tr;p=gap<=2?.8:gap<=5?.6:gap<=10?.3:gap<=20?.08:.02}
@@ -1087,7 +1100,7 @@ function genOffers(){
       const jump=(mom>=3.5?260:mom>=2?170:110)*(pr?pr.step:1);
       offers.push(mkOffer(pickOpp(me+jump,used,d),'stepup',mom>=3.5?'Fast-Track Fight':'Step-Up Fight',mom>=3.5?'Your streak has the whole division talking. A win here skips you up the ladder.':'A bigger name and a bigger purse. Win and you jump the rankings.'));
     }
-    const titleOK=(rank<=3)||(rank<=6&&mom>=2)||(pr&&pr.title>=1.5&&rank<=10&&mom>=1.5);
+    const titleOK=!titleLock()&&((rank<=3)||(rank<=6&&mom>=2)||(pr&&pr.title>=1.5&&rank<=10&&mom>=1.5));
     if(titleOK){
       const champs=BODIES.map(x=>({k:x.k,id:G.world.champs[d][x.k]})).filter(x=>x.id&&x.id!=='P');
       if(champs.length){const c=pick(champs);const cf=G.world.f[c.id];if(cf&&!used.has(cf.id)){used.add(cf.id);const bl=beltsOf(cf.id,d);offers.unshift(mkOffer(cf,'world',rank<=3?'Mandatory Title Shot':'World Title Shot',`For the ${bl.join(' & ')} ${DIVS[d].name} title${bl.length>1?'s':''}.`,{title:{belts:bl}}))}}
@@ -1175,6 +1188,7 @@ function advanceWeeks(n,inCamp){
     b.injuries.forEach(x=>x.wk--);b.injuries=b.injuries.filter(x=>x.wk>0);
     worldWeek();
     if(ageOf(b.born)>oldAge)birthday();
+    showTick();
   }
 }
 function birthday(){
@@ -1395,6 +1409,8 @@ function applyResult(o,res){
   // rival / legends
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
+  if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
+  if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}
   // rematch tracking
   if(o.rematchOf){const h=G.history.find(x=>x.id===o.rematchOf);if(h)h.rematched=true}
@@ -1523,6 +1539,35 @@ function keyDrills(f){
   if(!out.length)out.push(['spar','An even matchup: live sparring.']);
   const seen=new Set();return out.filter(x=>!seen.has(x[0])&&seen.add(x[0])).slice(0,2);
 }
+/* ================= "Saturday Night Boxing": a monthly studio show that recaps the world =================
+   Every four weeks of a pro career: headlines since the last show, the fighters rising in your division, the pound-for-pound top five
+   with movement, and where you stand. Built from the world's own state; no RNG is used, so simulations are unaffected. */
+const SHOW_HOSTS=['Teddy Marsh','Lorna Pike','Big Al Rooney','Dee Castell'];
+function showTick(){
+  if(G.phase!=='pro')return;const S=G.show;if(S&&G.week-S.week<4)return;
+  const b=B(),d=b.div,since=S?S.week:G.week-4,snap=G.showSnap||{pts:{},p4p:[]};
+  const heads=G.newsList.filter(n=>n.w>since&&/title|retires|upset|beats|pound|rival|Bad blood|Hall of Fame/i.test(n.t)&&!/^You call out/.test(n.t)).slice(0,4).map(n=>n.t);
+  const risers=ranking(d).filter(e=>e.id!=='P'&&e.f&&snap.pts[e.id]!=null).map(e=>({id:e.id,name:shortName(e.f),gain:Math.round(e.f.pts-snap.pts[e.id]),rank:rankOf(e.id,d)})).filter(x=>x.gain>0).sort((a,c)=>c.gain-a.gain).slice(0,3);
+  const p4p=p4pList(5).map((e,i)=>{const was=snap.p4p.indexOf(e.id);return {id:e.id,name:e.id==='P'?`${b.first} ${b.last}`:shortName(e.f),div:e.id==='P'?b.div:e.f.div,mv:was<0?'new':was-i}});
+  const n=(S?S.n:0)+1,host=SHOW_HOSTS[n%SHOW_HOSTS.length];
+  const you={rank:playerRank(),prev:snap.rank||null,p4p:p4pRank(),lock:titleLock(),belts:beltsOf('P',d)};
+  G.show={week:G.week,n,host,heads,risers,p4p,you,seen:false};
+  G.showSnap={pts:Object.fromEntries(ranking(d).filter(e=>e.id!=='P').map(e=>[e.id,e.f.pts])),p4p:p4pList(10).map(e=>e.id),rank:you.rank};
+}
+function showTake(S){const y=S.you,b=B();
+  if(y.belts.length)return `"${b.last} is the champion, and everybody else in this division is fighting for second place until somebody proves otherwise."`;
+  if(y.lock)return `"After that loss, ${b.last} has to go back and earn it. ${y.lock} more win${y.lock>1?'s':''} and we're talking titles again."`;
+  if(y.rank&&y.rank<=3)return `"${b.last} is knocking on the door. Somebody with a belt has to answer it."`;
+  if(y.prev&&y.rank&&y.rank<y.prev)return `"${b.last} is moving: #${y.prev} to #${y.rank} since we last talked. Keep an eye on that."`;
+  if(y.rank&&y.rank<=15)return `"${b.last} is in the mix, but the top of this division is a different animal."`;
+  return `"${b.last} is still a name for the hardcore fans. One big win changes that."`}
+function showHTML(full){const S=G.show;if(!S)return '';const mv=m=>m==='new'?'<span class="goldt">new</span>':m>0?`<span class="good">▲${m}</span>`:m<0?`<span class="bad">▼${-m}</span>`:'<span class="dim">–</span>';
+  return `<div class="card col" style="gap:8px;border-color:var(--gold)"><div class="row sp"><div><div class="kicker">Saturday Night Boxing · Episode ${S.n}</div><b class="ui" style="font-size:18px;text-transform:uppercase">The month in boxing</b></div><span class="pill">${dateStr(S.week)}</span></div>
+    ${S.heads.length?`<div><span class="lbl">Headlines</span>${S.heads.map(h=>`<div style="font-size:14px;margin-top:4px">• ${esc(h)}</div>`).join('')}</div>`:''}
+    ${S.risers.length?`<div><span class="lbl">On the rise in ${DIVS[B().div].name}</span>${S.risers.map(r=>`<div style="font-size:14px;margin-top:3px">${esc(r.name)} <span class="dim">#${r.rank}</span> <span class="good num">+${r.gain} pts</span></div>`).join('')}</div>`:''}
+    ${full?`<div><span class="lbl">Pound for pound</span>${S.p4p.map((p,i)=>`<div style="font-size:14px;margin-top:3px" class="${p.id==='P'?'goldt':''}">${i+1}. ${esc(p.name)} <span class="dim">${DIVS[p.div].short}</span> ${mv(p.mv)}</div>`).join('')}</div>`:''}
+    <div style="font-size:14px"><span class="lbl">${esc(S.host)} on you</span><div style="margin-top:3px;font-style:italic">${esc(showTake(S))}</div></div>
+    ${full?'':'<button class="btn sm" data-act="showseen" style="align-self:flex-start">Watch the full show</button>'}</div>`}
 /* ================= story chapters (homages to boxing history) ================= */
 function champsIn(d){return BODIES.map(x=>G.world.champs[d][x.k]).filter(id=>id&&id!=='P').map(id=>G.world.f[id]).filter(Boolean)}
 const CHAPTERS=[
@@ -4080,7 +4125,7 @@ function profileHTML(){
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
     <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${isW()?'<span class="pill">Women\'s circuit</span>':''}${beltsHTML()}</div>
-    <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
+    <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}${G.phase==='pro'&&p4pRank()?` · <span class="goldt">P4P #${p4pRank()}</span>`:''}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
     <dt>Overall</dt><dd class="num">${playerOvr()}</dd><dt>Money</dt><dd class="num">${money(b.money)}</dd><dt>Age</dt><dd class="num">${age} · ${dateStr()}</dd></dl>
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
 }
@@ -4295,7 +4340,7 @@ SCR.home=()=>{
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
   ensureGoals();const goals=(G.goals||[]).length?`<div class="card"><h3>Goals</h3><div class="col" style="gap:6px;margin-top:6px">${G.goals.map(g=>{const d=GOALS.find(x=>x.id===g.id);return d?`<div class="row sp"><span>${esc(d.t)}</span><span class="pill gold">+${d.xp} XP</span></div>`:''}).join('')}</div></div>`:'';
-  return shell('home','Home',`${prof}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
+  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
 };
 function pathHTML(){
   const b=B();
@@ -4305,6 +4350,7 @@ function pathHTML(){
   let goal,need;
   if(bl.length===4){goal='Undisputed. Defend it, or move divisions and chase more history.';}
   else if(bl.length){goal=`Champion. Unify the remaining ${4-bl.length} belt${4-bl.length>1?'s':''} or defend.`}
+  else if(titleLock()){const n=titleLock();goal=`Back of the line after that loss. Win ${n} more fight${n>1?'s':''} and title shots come back.`}
   else if(r<=3){goal='Mandatory challenger: a title shot is on the table.'}
   else if(r<=6){goal='Win while on a roll and promoters will offer a title shot.'}
   else if(r<=15){goal='Ranked. Reach the top 6 to get title-shot offers.'}
@@ -4593,9 +4639,13 @@ function promotersModal(){
 /* ---------- rankings ---------- */
 SCR.rankings=d=>{
   d=d??(G?B().div:0);
+  const tabs=`<div class="chips">${DIVS.map((x,i)=>`<button class="chip${i===d?' on':''}" data-go="rankings" data-arg="${i}">${x.short}</button>`).join('')}<button class="chip${d===99?' on':''}" data-go="rankings" data-arg="99">P4P</button></div>`;
+  if(d===99){const L=p4pList(10);return shell('rankings','Rankings',`${tabs}<h2 class="sec">Pound for pound</h2><p class="muted" style="font-size:13.5px">The best fighters in the world regardless of weight: rating, belts, record and titles won.</p>
+    <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th>Division</th><th class="r">Record</th></tr>${L.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',b.div).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td>${DIVS[b.div].short}</td><td class="r">${b.record.w}-${b.record.l}</td></tr>`}
+      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,f.div).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td>${DIVS[f.div].short}</td><td class="r">${recStr(f)}</td></tr>`}).join('')}</table></div>`)}
   const list=ranking(d).slice(0,25),ch=G.world.champs[d];
   const champs=BODIES.map(x=>{const id=ch[x.k];return `<div class="card flat" style="padding:10px"><span class="belt">${x.k}</span><div style="margin-top:6px;font-weight:600">${id==='P'?'You':id?esc(shortName(G.world.f[id])):'Vacant'}</div><div class="dim" style="font-size:11.5px">${x.name}</div></div>`}).join('');
-  return shell('rankings','Rankings',`<div class="chips">${DIVS.map((x,i)=>`<button class="chip${i===d?' on':''}" data-go="rankings" data-arg="${i}">${x.short}</button>`).join('')}</div>
+  return shell('rankings','Rankings',`${tabs}
     <h2 class="sec">${DIVS[d].name}</h2><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${champs}</div>
     <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th class="r">Record</th><th class="r">OVR</th><th class="r">Pts</th></tr>
     ${list.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${b.record.w}-${b.record.l}</td><td class="r">${playerOvr()}</td><td class="r">${b.pts}</td></tr>`}
@@ -4635,7 +4685,7 @@ SCR.record=()=>{
     ${h.map(x=>`<tr><td class="num">${dateStr(x.w)}</td><td class="${x.res==='W'?'good':x.res==='L'?'bad':''}"><b>${x.res}</b></td><td>${esc(x.opp)} <span class="dim">(${esc(x.oppRec)})</span></td><td>${x.method}${['KO','TKO','RTD'].includes(x.method)?' R'+x.round:''}</td><td>${esc(x.label||'')}${x.title?' <span class="belt">'+esc(x.title)+'</span>':''}${x.pro?'':' <span class="pill">Am</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No fights yet.</td></tr>'}</table></div></div>
     <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${chI.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
 };
-SCR.news=()=>shell('news','News',`<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`);
+SCR.news=()=>{if(G.show)G.show.seen=true;return shell('news','News',`${showHTML(true)}<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`)};
 
 /* ---------- legacy ---------- */
 SCR.legacy=()=>{
@@ -4747,6 +4797,7 @@ const ACT={
   turnpro(){turnPro();G.next=null;Save.write();UI.render();promotersModal()},
   promoters(){promotersModal()},
   accept(el){const o=G.offers[+el.dataset.i];if(!o)return;acceptOffer(o);Save.write();Sfx.good();UI.go('camp');setTimeout(()=>checkEvent(),200)},
+  showseen(){if(G.show)G.show.seen=true;UI.go('news')},
   wait(){advanceWeeks(2);G.offers=[];genOffers();Save.write();UI.render();toast('Two weeks pass. New offers are in.');checkEvent()},
   restheal(){const w=Math.max(...B().injuries.map(i=>i.wk));advanceWeeks(w);G.offers=[];genOffers();Save.write();UI.render();toast(`${w} weeks of rest. You're healthy.`)},
   camp(el){doCamp(el.dataset.k)},
@@ -4953,6 +5004,7 @@ const TROPHIES=[
   {id:'unbeaten',name:'Perfect Record',desc:'Start your pro career 20-0.',fight:()=>B().record.w>=20&&!B().record.l&&!B().record.d},
   {id:'rival',name:'Settled',desc:'Beat your rival three times.',fight:()=>(G.rival?.w||0)>=3},
   {id:'chapters',name:'Storyteller',desc:'Complete three story chapters in one career.',fight:()=>G.chapters.length>=3},
+  {id:'p4p',name:'Pound-for-Pound King',desc:'Be ranked the best fighter in the world, pound for pound.',fight:()=>p4pRank()===1},
   {id:'women',name:'Trailblazer',desc:"Win a world title in women's boxing.",fight:()=>isW()&&B().titleWins>0},
   {id:'men',name:'Lineal',desc:"Win a world title in men's boxing.",fight:()=>!isW()&&B().titleWins>0},
   {id:'hof',name:'Canastota',desc:'Retire as a Hall of Famer.',retire:L=>L.score>=300},

@@ -81,3 +81,8 @@ anyone ranked lower; contenders above you answer by rank gap, fighters below you
 the odds. A turned-down callout may still come together later (a smaller chance on each new set of offers for six months). Callouts on
 champions become title or unification offers. Rematch demands after a loss also depend on how the fight went. Fight offers now include
 up to two ranked contenders just above you, so you can choose whom to climb past.
+
+## Back of the line, pound for pound, Saturday Night Boxing
+After a loss, title shots and champion callouts wait until you win again (`titleLock`: robbery 0, split/majority 1, clear decision 2,
+stoppage 3). A pound-for-pound top 10 spans all divisions (`p4pList`). Every four weeks of a pro career a studio show
+(`src/js/22-show.js`) recaps headlines, risers in your division, P4P movement and a host's take on you; it uses no RNG.

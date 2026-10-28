@@ -220,12 +220,25 @@ function setRival(f){
   const q=h.some(x=>x.res==='L')?pick(['"I beat you once. I\'ll do it again."','"You know who owns you."']):h.some(x=>x.robbery)?pick(['"The judges saw it right. Cry about it."']):h.length?pick(['"Run it back. This time there\'s no doubt."','"That night still keeps me up. Not anymore."']):pick(['"Everybody keeps saying your name. Say mine."','"There\'s only room for one of us at the top."','"I\'m coming for everything you have."']);
   news(`Bad blood: ${fullName(f)} (${recStr(f)}) is your new rival. ${q}`,'red');
 }
+/* ---------- back of the line: after a loss, title shots and champion callouts wait until you win your way back.
+   A robbery costs nothing, a split or majority decision one win, a clear decision two, a stoppage three ---------- */
+function titleLock(){
+  const H=G.history.filter(h=>h.pro);let wins=0,i=H.length-1;for(;i>=0&&H[i].res!=='L';i--)if(H[i].res==='W')wins++;
+  if(i<0)return 0;const L=H[i];const need=L.robbery?0:['SD','MD'].includes(L.method)?1:['KO','TKO','RTD','DQ'].includes(L.method)?3:2;
+  return Math.max(0,need-wins)}
+/* ---------- pound for pound: the best fighters in the world regardless of weight ---------- */
+function p4pScore(f){const titles=f.titles||0,bl=beltsOf(f.id,f.div).length;return f.rating+bl*4+(bl===4?6:0)+Math.min(10,Math.max(-6,(f.w-2*f.l)*.15))+titles*1.5+(f.legend?2:0)}
+function p4pList(n=10){
+  const L=Object.values(G.world.f).filter(f=>f.active&&f.pro!==false&&!f.amateur).map(f=>({id:f.id,f,s:p4pScore(f)}));
+  if(G.phase==='pro'){const b=B(),bl=beltsOf('P',b.div).length;L.push({id:'P',f:null,s:playerOvr()+bl*4+(bl===4?6:0)+Math.min(10,Math.max(-6,(b.record.w-2*b.record.l)*.15))+b.titleWins*1.5+b.defenses*.4})}
+  return L.sort((a,c)=>c.s-a.s).slice(0,n)}
+function p4pRank(){const i=p4pList(10).findIndex(e=>e.id==='P');return i<0?null:i+1}
 function rivalryWins(){return (G.rival?.w||0)+(G.rivalHist||[]).reduce((s,r)=>s+r.w,0)}
 /* ---------- callouts: a request, not a guarantee. The champion only answers contenders who have earned it ---------- */
 function calloutChance(t){
   const b=B(),d=b.div,me=playerRank()||99,tr=rankOf(t.id,d),champ=beltsOf(t.id,d).length>0,mine=beltsOf('P',d).length>0;
   let p;
-  if(champ)p=mine?.75:me<=3?.85:me<=5?.65:me<=10?.3:me<=15?.1:me<=25?.03:0;
+  if(champ)p=(mine?.75:me<=3?.85:me<=5?.65:me<=10?.3:me<=15?.1:me<=25?.03:0)*(!mine&&titleLock()?.15:1);
   else if(t.rival)p=.85;
   else if(tr>me)p=.9;
   else{const gap=me-tr;p=gap<=2?.8:gap<=5?.6:gap<=10?.3:gap<=20?.08:.02}
@@ -334,7 +347,7 @@ function genOffers(){
       const jump=(mom>=3.5?260:mom>=2?170:110)*(pr?pr.step:1);
       offers.push(mkOffer(pickOpp(me+jump,used,d),'stepup',mom>=3.5?'Fast-Track Fight':'Step-Up Fight',mom>=3.5?'Your streak has the whole division talking. A win here skips you up the ladder.':'A bigger name and a bigger purse. Win and you jump the rankings.'));
     }
-    const titleOK=(rank<=3)||(rank<=6&&mom>=2)||(pr&&pr.title>=1.5&&rank<=10&&mom>=1.5);
+    const titleOK=!titleLock()&&((rank<=3)||(rank<=6&&mom>=2)||(pr&&pr.title>=1.5&&rank<=10&&mom>=1.5));
     if(titleOK){
       const champs=BODIES.map(x=>({k:x.k,id:G.world.champs[d][x.k]})).filter(x=>x.id&&x.id!=='P');
       if(champs.length){const c=pick(champs);const cf=G.world.f[c.id];if(cf&&!used.has(cf.id)){used.add(cf.id);const bl=beltsOf(cf.id,d);offers.unshift(mkOffer(cf,'world',rank<=3?'Mandatory Title Shot':'World Title Shot',`For the ${bl.join(' & ')} ${DIVS[d].name} title${bl.length>1?'s':''}.`,{title:{belts:bl}}))}}
@@ -422,6 +435,7 @@ function advanceWeeks(n,inCamp){
     b.injuries.forEach(x=>x.wk--);b.injuries=b.injuries.filter(x=>x.wk>0);
     worldWeek();
     if(ageOf(b.born)>oldAge)birthday();
+    showTick();
   }
 }
 function birthday(){
@@ -642,6 +656,8 @@ function applyResult(o,res){
   // rival / legends
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
+  if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
+  if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}
   // rematch tracking
   if(o.rematchOf){const h=G.history.find(x=>x.id===o.rematchOf);if(h)h.rematched=true}

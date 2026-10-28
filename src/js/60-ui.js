@@ -46,7 +46,7 @@ function profileHTML(){
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
     <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${isW()?'<span class="pill">Women\'s circuit</span>':''}${beltsHTML()}</div>
-    <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
+    <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}${G.phase==='pro'&&p4pRank()?` · <span class="goldt">P4P #${p4pRank()}</span>`:''}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
     <dt>Overall</dt><dd class="num">${playerOvr()}</dd><dt>Money</dt><dd class="num">${money(b.money)}</dd><dt>Age</dt><dd class="num">${age} · ${dateStr()}</dd></dl>
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
 }
@@ -261,7 +261,7 @@ SCR.home=()=>{
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
   ensureGoals();const goals=(G.goals||[]).length?`<div class="card"><h3>Goals</h3><div class="col" style="gap:6px;margin-top:6px">${G.goals.map(g=>{const d=GOALS.find(x=>x.id===g.id);return d?`<div class="row sp"><span>${esc(d.t)}</span><span class="pill gold">+${d.xp} XP</span></div>`:''}).join('')}</div></div>`:'';
-  return shell('home','Home',`${prof}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
+  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
 };
 function pathHTML(){
   const b=B();
@@ -271,6 +271,7 @@ function pathHTML(){
   let goal,need;
   if(bl.length===4){goal='Undisputed. Defend it, or move divisions and chase more history.';}
   else if(bl.length){goal=`Champion. Unify the remaining ${4-bl.length} belt${4-bl.length>1?'s':''} or defend.`}
+  else if(titleLock()){const n=titleLock();goal=`Back of the line after that loss. Win ${n} more fight${n>1?'s':''} and title shots come back.`}
   else if(r<=3){goal='Mandatory challenger: a title shot is on the table.'}
   else if(r<=6){goal='Win while on a roll and promoters will offer a title shot.'}
   else if(r<=15){goal='Ranked. Reach the top 6 to get title-shot offers.'}
@@ -559,9 +560,13 @@ function promotersModal(){
 /* ---------- rankings ---------- */
 SCR.rankings=d=>{
   d=d??(G?B().div:0);
+  const tabs=`<div class="chips">${DIVS.map((x,i)=>`<button class="chip${i===d?' on':''}" data-go="rankings" data-arg="${i}">${x.short}</button>`).join('')}<button class="chip${d===99?' on':''}" data-go="rankings" data-arg="99">P4P</button></div>`;
+  if(d===99){const L=p4pList(10);return shell('rankings','Rankings',`${tabs}<h2 class="sec">Pound for pound</h2><p class="muted" style="font-size:13.5px">The best fighters in the world regardless of weight: rating, belts, record and titles won.</p>
+    <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th>Division</th><th class="r">Record</th></tr>${L.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',b.div).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td>${DIVS[b.div].short}</td><td class="r">${b.record.w}-${b.record.l}</td></tr>`}
+      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,f.div).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td>${DIVS[f.div].short}</td><td class="r">${recStr(f)}</td></tr>`}).join('')}</table></div>`)}
   const list=ranking(d).slice(0,25),ch=G.world.champs[d];
   const champs=BODIES.map(x=>{const id=ch[x.k];return `<div class="card flat" style="padding:10px"><span class="belt">${x.k}</span><div style="margin-top:6px;font-weight:600">${id==='P'?'You':id?esc(shortName(G.world.f[id])):'Vacant'}</div><div class="dim" style="font-size:11.5px">${x.name}</div></div>`}).join('');
-  return shell('rankings','Rankings',`<div class="chips">${DIVS.map((x,i)=>`<button class="chip${i===d?' on':''}" data-go="rankings" data-arg="${i}">${x.short}</button>`).join('')}</div>
+  return shell('rankings','Rankings',`${tabs}
     <h2 class="sec">${DIVS[d].name}</h2><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${champs}</div>
     <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th class="r">Record</th><th class="r">OVR</th><th class="r">Pts</th></tr>
     ${list.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${b.record.w}-${b.record.l}</td><td class="r">${playerOvr()}</td><td class="r">${b.pts}</td></tr>`}
@@ -601,7 +606,7 @@ SCR.record=()=>{
     ${h.map(x=>`<tr><td class="num">${dateStr(x.w)}</td><td class="${x.res==='W'?'good':x.res==='L'?'bad':''}"><b>${x.res}</b></td><td>${esc(x.opp)} <span class="dim">(${esc(x.oppRec)})</span></td><td>${x.method}${['KO','TKO','RTD'].includes(x.method)?' R'+x.round:''}</td><td>${esc(x.label||'')}${x.title?' <span class="belt">'+esc(x.title)+'</span>':''}${x.pro?'':' <span class="pill">Am</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No fights yet.</td></tr>'}</table></div></div>
     <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${chI.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
 };
-SCR.news=()=>shell('news','News',`<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`);
+SCR.news=()=>{if(G.show)G.show.seen=true;return shell('news','News',`${showHTML(true)}<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`)};
 
 /* ---------- legacy ---------- */
 SCR.legacy=()=>{
@@ -713,6 +718,7 @@ const ACT={
   turnpro(){turnPro();G.next=null;Save.write();UI.render();promotersModal()},
   promoters(){promotersModal()},
   accept(el){const o=G.offers[+el.dataset.i];if(!o)return;acceptOffer(o);Save.write();Sfx.good();UI.go('camp');setTimeout(()=>checkEvent(),200)},
+  showseen(){if(G.show)G.show.seen=true;UI.go('news')},
   wait(){advanceWeeks(2);G.offers=[];genOffers();Save.write();UI.render();toast('Two weeks pass. New offers are in.');checkEvent()},
   restheal(){const w=Math.max(...B().injuries.map(i=>i.wk));advanceWeeks(w);G.offers=[];genOffers();Save.write();UI.render();toast(`${w} weeks of rest. You're healthy.`)},
   camp(el){doCamp(el.dataset.k)},
