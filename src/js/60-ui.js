@@ -120,6 +120,7 @@ function settingsHTML(inCareer){
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Vibration strength</b>
     <div class="chips">${[[.5,'Light'],[1,'Normal'],[1.6,'Strong']].map(([v,l])=>`<button class="chip${(Settings.hapticStr??1)===v?' on':''}" data-act="setv" data-k="hapticStr" data-v="${v}">${l}</button>`).join('')}</div></div>
     ${tg('slowmo','Knockdown slow motion','Slow motion on knockdowns.')}
+    ${tg('replay','Knockout replays','A slow-motion replay of the finishing knockdown before the result. Tap to skip.')}
     ${tg('hints','Fight hints','Show the how-to-fight card in practice and your first bout.')}
     ${tg('lefty','Swap control sides','Punches on the left thumb, defense on the right.')}
     ${tg('audioTells','Audio tells','A different wind-up sound for each punch, and a chime before power shots.')}

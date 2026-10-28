@@ -49,3 +49,8 @@ The title screen offers one seeded fight a day (`src/js/62-daily.js`): a legend 
 short notice, two-round sprint). Everyone gets the same fight on the same date. Score, 0–3 gloves, best-of-day and a win streak are kept
 on the device; "Copy result" shares a one-line summary. The Legends screen (title screen and career menu) lists every legend in both
 circuits with portrait, homage, scouting report and signature move, and marks the ones beaten in the current career.
+
+## Knockout replays
+With the 3D renderer, the fight records the renderer's inputs each frame (opponent pose, player gloves, camera, flashes) in a short
+ring buffer (`recFrame`). A knockdown snaps the last 1.5 s plus the next second into a clip; if the fight ends by KO or TKO in that
+round, the clip plays back in letterboxed slow motion (slowest around the impact) before the result. Tap to skip; Settings turns it off.

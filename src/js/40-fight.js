@@ -485,6 +485,7 @@ class Fight{
   }
   /* ---------- knockdowns ---------- */
   knockdown(d,a){
+    if(this.r3d&&!this.cfg.headless){const b=this.rbuf||[];let tt=0,i=b.length;while(i>0&&tt<1.5){i--;tt+=b[i].rdt}this.kdClip={frames:b.slice(i),impact:b.length-i,post:0,round:this.round,side:d.side}}
     d.state='down';d.t=0;d.pu=null;d.seq=[];d.hp=0;d.kd++;d.kdTotal++;d.hurt=0;d.buffs=[];d.landed=false;
     a.stats.kd++;a.rs.kd++;d.rs.kdd++;a.pu=null;a.seq=[];a.state='idle';a.queue=null;
     this.phase='down';this.count={d,n:0,t:-1.3,rise:99,need:0,prog:0,ready:false};
@@ -580,8 +581,37 @@ class Fight{
     this.ov.className='fov';this.ov.innerHTML=`<div class="bigtxt">${big}</div>${note?`<div class="pill">${esc(note)}</div>`:''}`;
     if(winner==='p'&&['KO','TKO'].includes(method)&&Settings.slowmo)this.slow=1.2;
     if(this.cfg.headless)return;
-    setTimeout(()=>{this.destroy();this.cfg.onEnd(this.res)},2600);
+    const K=this.kdClip,clip=['KO','TKO'].includes(method)&&K&&K.round===this.round&&this.r3d&&Settings.replay!==false&&K.frames.length>20?K:null;
+    const out=()=>{this.destroy();this.cfg.onEnd(this.res)};
+    setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},clip?1700:2600);
   }
+  /* ---------- knockdown replay: the renderer's inputs are recorded each frame and played back in slow motion ---------- */
+  recFrame(op,rdt){
+    const o=this.o,p=this.p,nf=this.fxId!==this._fxSeen?this.fxLast:null;this._fxSeen=this.fxId;
+    const F={rdt:rdt||1/60,P:JSON.parse(JSON.stringify(op)),glow:this.oGlow?Object.assign({},this.oGlow):null,
+      o:{state:o.state,t:o.t,dur:o.dur,south:o.south,hurt:o.hurt,pu:o.pu?{type:o.pu.type}:null},p:{state:p.state,t:p.t,south:p.south,pu:p.pu?{type:p.pu.type}:null},
+      pG:JSON.parse(JSON.stringify(this.pG)),cam:Object.assign({},this.cam),time:this.time,shake:this.shake,flashSil:this.flashSil,fx:nf};
+    const b=this.rbuf=this.rbuf||[];b.push(F);if(b.length>200)b.shift();
+    const K=this.kdClip;if(K&&K.post<1.1){K.frames.push(F);K.post+=F.rdt}
+  }
+  playReplay(clip,done){
+    this.replaying={clip,i:0,acc:0,done,last:-1};this.paused=false;
+    try{this.ctx.setTransform(1,0,0,1,0,0);this.ctx.clearRect(0,0,this.W,this.H)}catch(e){}
+    this.ov.className='fov rplov';this.ov.innerHTML=`<div class="rpltag">● REPLAY</div><div class="rplskip">Tap to skip</div>`;
+    this.stage.classList.add('replay');
+    this._rskip=e=>{e.stopPropagation();this.endReplay()};setTimeout(()=>this.stage?.addEventListener('pointerdown',this._rskip,{once:true}),250);
+  }
+  replayTick(rdt){
+    const R=this.replaying,fr=R.clip.frames,r3=this.r3d;if(!r3){this.endReplay();return}
+    const near=Math.abs(R.i-R.clip.impact)<14;R.acc+=rdt*(near?.22:.5);
+    while(R.i<fr.length-1&&R.acc>=fr[R.i].rdt){R.acc-=fr[R.i].rdt;R.i++}
+    if(R.i>=fr.length-1){R.hold=(R.hold||0)+rdt;if(R.hold>.5){this.endReplay();return}}
+    const F=fr[Math.min(R.i,fr.length-1)];
+    const proxy={o:F.o,p:F.p,time:F.time,hand:(c,t)=>this.hand(c,t),pG:F.pG,cam:Object.assign({},F.cam,{zoom:(F.cam.zoom||1)*1.12}),shake:F.shake*.6,flashSil:F.flashSil,fx:F.fx&&R.last!==R.i?[F.fx]:[],W:this.W,H:this.H};
+    if(R.i>=R.clip.impact&&!R.boom){R.boom=1;Sfx.hit(1.6);Sfx.roar(.5,2.2);buzz([40,30,80])}
+    R.last=R.i;r3.fxSeen=0;r3.f=proxy;try{r3.render(rdt,F.P,F.glow)}catch(e){r3.f=this;this.endReplay();return}r3.f=this;
+  }
+  endReplay(){const R=this.replaying;if(!R)return;this.replaying=null;this.stage?.removeEventListener('pointerdown',this._rskip);this.stage?.classList.remove('replay');R.done()}
   /* the round just scored: what each side landed, and (open scoring) each judge's card */
   roundBox(){const R=this.roundStats[this.roundStats.length-1];if(!R)return '';
     const why=[];if(R.p.blk>.2)why.push('Judges marked you down for covering up too long.');if(R.o.blk>.2)why.push('They spent the round behind their gloves, and the judges noticed.');
@@ -719,6 +749,7 @@ class Fight{
   loop(ts){
     this.raf=requestAnimationFrame(t=>this.loop(t));
     let rdt=Math.min(.05,(ts-this.last)/1000);this.last=ts;
+    if(this.replaying){this.replayTick(rdt);return}
     if(this.paused){this.draw(0);return}
     if(Settings.fps60&&ts-this.lastDraw<15.5){this.acc+=rdt;return}
     rdt+=this.acc;this.acc=0;this.lastDraw=ts;
@@ -838,7 +869,7 @@ class Fight{
   }
   /* ---------- fx ---------- */
   text(t,col,x,y,life,size){this.texts.push({t:0,txt:t,col,x,y,life,size})}
-  spark(x,y,col,n,s=1){this.fx.push({t:0,life:.28,x,y,col,n,s,rot:Math.random()*6})}
+  spark(x,y,col,n,s=1){this.fx.push({t:0,life:.28,x,y,col,n,s,rot:Math.random()*6});this.fxId=(this.fxId||0)+1;this.fxLast={y,s,col}}
   sweat(x,y,dir,n,opp){for(let i=0;i<n;i++)this.parts.push({t:0,life:.3+Math.random()*.3,x,y:y+(Math.random()-.5)*16,vx:dir*(120+Math.random()*220)+(Math.random()-.5)*120,vy:-40-Math.random()*220,g:900,r:1.5+Math.random()*1.7,col:opp?'rgba(210,235,255,.85)':'rgba(255,255,255,.7)'})}
   dust(x,y){for(let i=0;i<14;i++)this.parts.push({t:0,life:.4+Math.random()*.4,x:x+(Math.random()-.5)*80,y,vx:(Math.random()-.5)*180,vy:-10-Math.random()*60,g:-20,r:5+Math.random()*7,col:'rgba(220,205,170,.35)',puff:true})}
   /* ---------- poses ---------- */
@@ -980,6 +1011,7 @@ class Fight{
     const world=()=>{c.setTransform(1,0,0,1,0,0);c.translate(px+shx*sc,py+shy*sc);c.rotate(cam.rot);c.scale(sc*cam.zoom,sc*cam.zoom);c.translate(-200+cam.x,-300+cam.y)};
     const r3=this.r3d;
     if(r3&&!r3.ok){this.drop3d()}
+    if(this.r3d)this.recFrame(op,rdt);
     if(this.r3d){try{r3.render(rdt,op,this.oGlow)}catch(e){console.warn('3D render failed, using 2D',e);this.drop3d()}}
     if(this.r3d){c.clearRect(0,0,W,H);world();
       if(this.phase==='down'&&this.count){c.save();c.font='64px "Alfa Slab One",Georgia,serif';c.textAlign='center';c.lineWidth=8;c.strokeStyle='rgba(0,0,0,.8)';c.strokeText(this.count.n,200,60);c.fillStyle='#fff';c.fillText(this.count.n,200,60);c.restore()}
