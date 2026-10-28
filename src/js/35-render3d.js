@@ -279,10 +279,10 @@ class Render3D{
   constructor(fight,stage){
     this.f=fight;this.stage=stage;
     const low=!Settings.gfxHi;
-    this.r=new THREE.WebGLRenderer({antialias:!low,powerPreference:'high-performance',desynchronized:!!Settings.lowlat});
+    this.r=new THREE.WebGLRenderer({antialias:!low,powerPreference:'high-performance',alpha:false});this.ok=true;
     this.r.setPixelRatio(Math.min(window.devicePixelRatio||1,low?1:1.5));
     this.r.shadowMap.enabled=!low;this.r.shadowMap.type=THREE.VSMShadowMap;this.r.toneMapping=THREE.ACESFilmicToneMapping;this.r.toneMappingExposure=.85;this.r.outputColorSpace=THREE.SRGBColorSpace;
-    const cv=this.r.domElement;cv.className='gl';stage.insertBefore(cv,stage.firstChild);
+    const cv=this.r.domElement;cv.className='gl';stage.insertBefore(cv,stage.firstChild);cv.addEventListener('webglcontextlost',e=>{e.preventDefault();this.ok=false});
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x070a16);this.scene.fog=new THREE.Fog(0x0a1030,10,34);this.scene.environment=r3env();
     this.cam=new THREE.PerspectiveCamera(50,1,.08,80);this.scene.add(this.cam);
     r3arena(this.scene,{shadows:!low,heat:fight.mods&&fight.mods.heat,seed:7});

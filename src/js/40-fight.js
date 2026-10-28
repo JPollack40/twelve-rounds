@@ -82,7 +82,9 @@ class Fight{
     this.cv=$('canvas',el);
     this.stage=$('.fstage',el);this.ov=$('#fov',el);
     this.r3d=null;if(R3D.ok()){try{this.r3d=new Render3D(this,this.stage)}catch(e){console.warn('3D renderer unavailable, using 2D',e);this.r3d=null}}
-    this.ctx=this.cv.getContext('2d',{alpha:!!this.r3d,desynchronized:!!Settings.lowlat});
+    // a desynchronized (low-latency) canvas is promoted to a hardware overlay on Android, which ignores alpha;
+    // the 2D layer must stay a normal canvas when it sits on top of the 3D scene
+    this.ctx=this.cv.getContext('2d',this.r3d?{alpha:true}:{alpha:false,desynchronized:!!Settings.lowlat});
     this.hud={pb:$$('.hb.p .fbar',el),ob:$$('.hb.o .fbar',el),rd:$('#frd',el),tm:$('#ftm',el),pm:$('#fmeter',el),om:$('#ometer',el)};
     this.spBtns=$$('.fb.spc',el);this.bodyBtn=$('.fb.body',el);
     this.resize();
@@ -896,7 +898,9 @@ class Fight{
     const px=this.ox+200*sc,py=this.oy+300*sc;
     const world=()=>{c.setTransform(1,0,0,1,0,0);c.translate(px+shx*sc,py+shy*sc);c.rotate(cam.rot);c.scale(sc*cam.zoom,sc*cam.zoom);c.translate(-200+cam.x,-300+cam.y)};
     const r3=this.r3d;
-    if(r3){r3.render(rdt,op,this.oGlow);c.clearRect(0,0,W,H);world();
+    if(r3&&!r3.ok){this.drop3d()}
+    if(this.r3d){try{r3.render(rdt,op,this.oGlow)}catch(e){console.warn('3D render failed, using 2D',e);this.drop3d()}}
+    if(this.r3d){c.clearRect(0,0,W,H);world();
       if(this.phase==='down'&&this.count){c.save();c.font='64px "Alfa Slab One",Georgia,serif';c.textAlign='center';c.lineWidth=8;c.strokeStyle='rgba(0,0,0,.8)';c.strokeText(this.count.n,200,60);c.fillStyle='#fff';c.fillText(this.count.n,200,60);c.restore()}
     }else{
     c.fillStyle='#04050b';c.fillRect(0,0,W,H);
@@ -924,7 +928,7 @@ class Fight{
     c.setTransform(1,0,0,1,0,0);
     this.playerGloves(rdt);
     const r=this.pR,look=this.p.look;
-    if(!r3)for(const h of ['L','R']){const g=this.pG[h];drawPlayerGlove(c,g.x+shx*2,g.y+shy*2,r*g.r,look.gloves,h==='L'?-1:1,{look,glow:g.g,gc:'#fff'})}
+    if(!this.r3d)for(const h of ['L','R']){const g=this.pG[h];drawPlayerGlove(c,g.x+shx*2,g.y+shy*2,r*g.r,look.gloves,h==='L'?-1:1,{look,glow:g.g,gc:'#fff'})}
     world();
     for(const tx of this.texts){const k=tx.t/tx.life;const pop=Math.min(1,tx.t/.12);const s=ease.back(pop);c.save();c.translate(tx.x,tx.y-Math.max(0,k-.5)*40);c.scale(s,s);c.globalAlpha=k>.7?(1-k)/.3:1;c.font=`${tx.size}px "Alfa Slab One",Georgia,serif`;c.textAlign='center';
       c.lineWidth=6;c.strokeStyle='rgba(0,0,0,.85)';c.strokeText(tx.txt,0,0);c.fillStyle=tx.col;c.fillText(tx.txt,0,0);c.restore()}
@@ -937,6 +941,7 @@ class Fight{
     if(this.p.state==='down'){c.fillStyle='rgba(0,0,0,.35)';c.fillRect(0,0,W,H)}
     if(this.cfg.overlay)this.drawOverlay(c);
   }
+  drop3d(){try{this.r3d?.destroy()}catch(e){}this.r3d=null;this.resize();if(typeof toast==='function')toast('3D unavailable on this device, using 2D')}
   drawOverlay(c){
     const W=this.W,dpr=this.dpr,o=this.o,p=this.p;
     c.save();c.setTransform(dpr,0,0,dpr,0,0);
