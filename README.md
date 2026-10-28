@@ -54,3 +54,9 @@ circuits with portrait, homage, scouting report and signature move, and marks th
 With the 3D renderer, the fight records the renderer's inputs each frame (opponent pose, player gloves, camera, flashes) in a short
 ring buffer (`recFrame`). A knockdown snaps the last 1.5 s plus the next second into a clip; if the fight ends by KO or TKO in that
 round, the clip plays back in letterboxed slow motion (slowest around the impact) before the result. Tap to skip; Settings turns it off.
+
+## Trophies
+23 milestones (`src/js/64-trophies.js`) kept across every career on the device: first win and KO, first-round KO, off the canvas,
+upsets, legends, titles, unification, undisputed, two-weight, long reigns, 20-0, rivalry, chapters, a title in each circuit, Hall of
+Fame and GOAT retirements, and daily-challenge wins, three-glove stops and 7-day streaks. Sandbox careers never award them.
+Women's championship fights are scheduled for 10 rounds, regional title fights for 8, and other fights top out at 8.

@@ -231,9 +231,10 @@ function purseFor(opp,type,rounds){
 }
 function roundsFor(type){
   const n=B().record.w+B().record.l+B().record.d;
-  if(type==='world'||type==='unify'||type==='chapter')return 12;
-  if(type==='regional')return 10;
-  return n<4?4:n<8?6:n<13?8:10;
+  // women's championship fights are scheduled for ten rounds, the rest top out at eight
+  if(type==='world'||type==='unify'||type==='chapter')return isW()?10:12;
+  if(type==='regional')return isW()?8:10;
+  return n<4?4:n<8?6:n<13||isW()?8:10;
 }
 function pickOpp(target,used,d){
   const list=divFighters(d).filter(f=>!used.has(f.id)&&!f.amateur&&f.pro!==false);
@@ -631,6 +632,7 @@ function applyResult(o,res){
     if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
     if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
   checkGoals('fight',{res,win,ko,o,f},out.lines);
+  out.trophies=trophyCheck('fight',{res,win,ko,o,f,pro});
   gearCheckUnlocks(out.lines);
   G.next=null;
   return out;

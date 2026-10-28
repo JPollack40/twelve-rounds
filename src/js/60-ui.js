@@ -82,7 +82,7 @@ SCR.title=()=>{
     <div class="col">${slots.map(({n,s})=>s?`<div class="card slot"><img src="${portrait(s.look)}" alt=""><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${esc(s.name)}</b><div class="muted num" style="font-size:13.5px">${esc(s.line)}</div></div><button class="btn primary" data-act="load" data-n="${n}">Continue</button></div>`
       :`<div class="card slot"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Empty slot ${n}</b><div class="muted" style="font-size:13.5px">Start a new career</div></div><button class="btn gold" data-act="new" data-n="${n}">New career</button></div>`).join('')}</div>
     <button class="card slot" data-act="daily" style="text-align:left;cursor:pointer;border-color:var(--gold)"><div class="grow"><b class="ui goldt" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Daily challenge #${dailyNo()}</b><div class="muted" style="font-size:13.5px">${(()=>{const S=dailySpec(),b=dailyState().best[S.n];return `${esc(S.L.first)} “${esc(S.L.nick)}” ${esc(S.L.last)} · ${esc(S.tw.name)}${b?' · best '+b.score:''}`})()}</div></div><span class="pill gold">Fight</span></button>
-    <div class="row">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="legends">Legends</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="legends">Legends</button><button class="btn grow" data-go="trophies">Trophies</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
     <p class="dim" style="font-size:12.5px;text-align:center">${esc(Save.status())}</p>
   </div></div>`;
 };
@@ -605,6 +605,7 @@ SCR.legacy=()=>{
   return shell('legacy','Legacy',`<div class="hero"><div class="in" style="text-align:center;align-items:center"><div class="kicker">Hall of Fame standing</div><div class="bigtxt" style="font-size:clamp(34px,9vw,56px)">${esc(L.tier)}</div><p class="rec num">${L.score} legacy points</p>${L.next?`<p class="muted">${L.next[0]-L.score} more to reach ${esc(L.next[1])}</p>`:''}</div></div>
     <div class="card"><div class="tblw"><table class="t">${L.parts.filter(p=>p[1]).map(p=>`<tr><td>${esc(p[0])}</td><td class="r num ${p[1]<0?'bad':''}">${p[1]>0?'+':''}${p[1]}</td></tr>`).join('')}</table></div></div>
     <button class="btn gold" data-go="halloffame">Hall of Fame and year-end awards</button>
+    <button class="btn" data-go="trophies">Trophies (${TROPHIES.filter(T=>trophyState()[T.id]).length}/${TROPHIES.length})</button>
     ${G.phase!=='retired'?`<div class="card col"><h3>Retirement</h3><p class="muted" style="font-size:13.5px">Hang up the gloves whenever you choose. Retiring undefeated with 25+ wins earns a special place in history.</p><button class="btn primary" data-act="retire">Retire</button></div>`:`<button class="btn gold" data-act="totitle">Back to title screen</button>`}`);
 };
 SCR.halloffame=()=>{
@@ -638,7 +639,7 @@ function retireNow(reason){
   const L=legacy();
   if(L.score>=300){G.hof=G.hof||[];G.hof.push({year:START_YEAR+Math.floor(G.week/52)+1,name:fullName(b),rec:`${b.record.w}-${b.record.l}-${b.record.d}`,ko:b.record.ko,div:b.div,player:true});news(`You will be inducted into the Hall of Fame next year.`,'gold')}
   news(`${fullName(b)} retires at ${ageOf(b.born)} with a record of ${b.record.w}-${b.record.l}-${b.record.d} (${b.record.ko} KOs). ${L.tier}.`,'gold');
-  Save.write();
+  Save.write();trophyCheck('retire',L);
   modal(`<div class="kicker">${esc(reason||'The final bell')}</div><div class="bigtxt" style="font-size:40px;text-align:center">${esc(L.tier.toUpperCase())}</div>
     <p style="text-align:center" class="rec num">${b.record.w}-${b.record.l}-${b.record.d} · ${b.record.ko} KO</p>
     <p style="text-align:center">${L.score>=300?'The voters in Canastota will remember your name. Inducted into the Hall of Fame.':L.score>=150?'A real champion. The old-timers will tell stories about you.':'You gave everything you had in the ring.'}</p>

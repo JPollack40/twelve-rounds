@@ -982,9 +982,10 @@ function purseFor(opp,type,rounds){
 }
 function roundsFor(type){
   const n=B().record.w+B().record.l+B().record.d;
-  if(type==='world'||type==='unify'||type==='chapter')return 12;
-  if(type==='regional')return 10;
-  return n<4?4:n<8?6:n<13?8:10;
+  // women's championship fights are scheduled for ten rounds, the rest top out at eight
+  if(type==='world'||type==='unify'||type==='chapter')return isW()?10:12;
+  if(type==='regional')return isW()?8:10;
+  return n<4?4:n<8?6:n<13||isW()?8:10;
 }
 function pickOpp(target,used,d){
   const list=divFighters(d).filter(f=>!used.has(f.id)&&!f.amateur&&f.pro!==false);
@@ -1382,6 +1383,7 @@ function applyResult(o,res){
     if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
     if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
   checkGoals('fight',{res,win,ko,o,f},out.lines);
+  out.trophies=trophyCheck('fight',{res,win,ko,o,f,pro});
   gearCheckUnlocks(out.lines);
   G.next=null;
   return out;
@@ -4024,7 +4026,7 @@ SCR.title=()=>{
     <div class="col">${slots.map(({n,s})=>s?`<div class="card slot"><img src="${portrait(s.look)}" alt=""><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${esc(s.name)}</b><div class="muted num" style="font-size:13.5px">${esc(s.line)}</div></div><button class="btn primary" data-act="load" data-n="${n}">Continue</button></div>`
       :`<div class="card slot"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Empty slot ${n}</b><div class="muted" style="font-size:13.5px">Start a new career</div></div><button class="btn gold" data-act="new" data-n="${n}">New career</button></div>`).join('')}</div>
     <button class="card slot" data-act="daily" style="text-align:left;cursor:pointer;border-color:var(--gold)"><div class="grow"><b class="ui goldt" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Daily challenge #${dailyNo()}</b><div class="muted" style="font-size:13.5px">${(()=>{const S=dailySpec(),b=dailyState().best[S.n];return `${esc(S.L.first)} “${esc(S.L.nick)}” ${esc(S.L.last)} · ${esc(S.tw.name)}${b?' · best '+b.score:''}`})()}</div></div><span class="pill gold">Fight</span></button>
-    <div class="row">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="legends">Legends</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="legends">Legends</button><button class="btn grow" data-go="trophies">Trophies</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
     <p class="dim" style="font-size:12.5px;text-align:center">${esc(Save.status())}</p>
   </div></div>`;
 };
@@ -4547,6 +4549,7 @@ SCR.legacy=()=>{
   return shell('legacy','Legacy',`<div class="hero"><div class="in" style="text-align:center;align-items:center"><div class="kicker">Hall of Fame standing</div><div class="bigtxt" style="font-size:clamp(34px,9vw,56px)">${esc(L.tier)}</div><p class="rec num">${L.score} legacy points</p>${L.next?`<p class="muted">${L.next[0]-L.score} more to reach ${esc(L.next[1])}</p>`:''}</div></div>
     <div class="card"><div class="tblw"><table class="t">${L.parts.filter(p=>p[1]).map(p=>`<tr><td>${esc(p[0])}</td><td class="r num ${p[1]<0?'bad':''}">${p[1]>0?'+':''}${p[1]}</td></tr>`).join('')}</table></div></div>
     <button class="btn gold" data-go="halloffame">Hall of Fame and year-end awards</button>
+    <button class="btn" data-go="trophies">Trophies (${TROPHIES.filter(T=>trophyState()[T.id]).length}/${TROPHIES.length})</button>
     ${G.phase!=='retired'?`<div class="card col"><h3>Retirement</h3><p class="muted" style="font-size:13.5px">Hang up the gloves whenever you choose. Retiring undefeated with 25+ wins earns a special place in history.</p><button class="btn primary" data-act="retire">Retire</button></div>`:`<button class="btn gold" data-act="totitle">Back to title screen</button>`}`);
 };
 SCR.halloffame=()=>{
@@ -4580,7 +4583,7 @@ function retireNow(reason){
   const L=legacy();
   if(L.score>=300){G.hof=G.hof||[];G.hof.push({year:START_YEAR+Math.floor(G.week/52)+1,name:fullName(b),rec:`${b.record.w}-${b.record.l}-${b.record.d}`,ko:b.record.ko,div:b.div,player:true});news(`You will be inducted into the Hall of Fame next year.`,'gold')}
   news(`${fullName(b)} retires at ${ageOf(b.born)} with a record of ${b.record.w}-${b.record.l}-${b.record.d} (${b.record.ko} KOs). ${L.tier}.`,'gold');
-  Save.write();
+  Save.write();trophyCheck('retire',L);
   modal(`<div class="kicker">${esc(reason||'The final bell')}</div><div class="bigtxt" style="font-size:40px;text-align:center">${esc(L.tier.toUpperCase())}</div>
     <p style="text-align:center" class="rec num">${b.record.w}-${b.record.l}-${b.record.d} · ${b.record.ko} KO</p>
     <p style="text-align:center">${L.score>=300?'The voters in Canastota will remember your name. Inducted into the Hall of Fame.':L.score>=150?'A real champion. The old-timers will tell stories about you.':'You gave everything you had in the ring.'}</p>
@@ -4776,7 +4779,7 @@ function dailyDone(S,res){
   const prev=st.best[S.n];const isBest=!prev||sc.score>prev.score;if(isBest)st.best[S.n]={score:sc.score,stars:sc.stars};
   if(sc.win&&st.lastWin!==S.n){st.streak=st.lastWin===S.n-1?st.streak+1:1;st.lastWin=S.n;st.wins++}
   for(const k of Object.keys(st.best))if(+k<S.n-60)delete st.best[k];
-  Store.set('tr_daily',st);
+  Store.set('tr_daily',st);trophyCheck('daily',{sc,st,res});
   const txt=dailyShare(S,res,sc);
   const m=modal(`<div class="kicker">Daily challenge #${S.n}</div><h2 class="sec">${sc.win?(sc.ko?'Knockout!':'You win'):res.winner==='draw'?'A draw':'Not today'}</h2>
     <p class="disp" style="font-size:34px;margin:4px 0">${'🥊'.repeat(sc.stars)}${'<span style="opacity:.25">🥊</span>'.repeat(3-sc.stars)}</p>
@@ -4813,6 +4816,51 @@ Object.assign(ACT,{
   daily(){dailyModal()},
   lgcirc(el){UI.lgC=el.dataset.v;UI.render()},
 });
+/* ================= trophies: milestones kept across every career on this device ================= */
+const TROPHIES=[
+  {id:'first_win',name:'First Blood',desc:'Win your first pro fight.',fight:c=>c.win&&c.pro},
+  {id:'first_ko',name:'Lights Out',desc:'Win a pro fight by knockout.',fight:c=>c.win&&c.ko&&c.pro},
+  {id:'r1_ko',name:'Early Night',desc:'Knock someone out in the first round.',fight:c=>c.win&&c.ko&&c.res.round===1&&c.pro},
+  {id:'canvas',name:'Off the Canvas',desc:'Get knocked down and still win.',fight:c=>c.win&&c.res.kdAgainst>0},
+  {id:'untouch',name:'Untouchable',desc:'Win with 15 perfect dodges and no knockdowns against you.',fight:c=>c.win&&!c.res.kdAgainst&&(c.res.stats?.p?.perfect||0)>=15},
+  {id:'upset',name:'Upset Special',desc:'Beat a fighter rated 8 or more above you.',fight:c=>c.win&&c.pro&&c.f.rating>=playerOvr()+8},
+  {id:'legend1',name:'Giant Killer',desc:'Beat a legend.',fight:c=>c.win&&!!c.f.legend},
+  {id:'legend5',name:'Pantheon',desc:'Beat five legends in one career.',fight:()=>B().legendsBeaten.length>=5},
+  {id:'champ',name:'Champion',desc:'Win a world title.',fight:()=>B().titleWins>0},
+  {id:'unified',name:'Unified',desc:'Hold two world titles in one division at once.',fight:()=>beltsOf('P',B().div).length>=2},
+  {id:'undisputed',name:'Undisputed',desc:'Hold all four belts at once.',fight:()=>beltsOf('P',B().div).length>=4},
+  {id:'twodiv',name:'Two-Weight World Champion',desc:'Win world titles in two divisions.',fight:()=>B().titleDivs.length>=2},
+  {id:'reign',name:'Long Reign',desc:'Make five title defenses.',fight:()=>B().defenses>=5},
+  {id:'unbeaten',name:'Perfect Record',desc:'Start your pro career 20-0.',fight:()=>B().record.w>=20&&!B().record.l&&!B().record.d},
+  {id:'rival',name:'Settled',desc:'Beat your rival three times.',fight:()=>(G.rival?.w||0)>=3},
+  {id:'chapters',name:'Storyteller',desc:'Complete three story chapters in one career.',fight:()=>G.chapters.length>=3},
+  {id:'women',name:'Trailblazer',desc:"Win a world title in women's boxing.",fight:()=>isW()&&B().titleWins>0},
+  {id:'men',name:'Lineal',desc:"Win a world title in men's boxing.",fight:()=>!isW()&&B().titleWins>0},
+  {id:'hof',name:'Canastota',desc:'Retire as a Hall of Famer.',retire:L=>L.score>=300},
+  {id:'goat',name:'The Greatest',desc:'Retire as The Greatest of All Time.',retire:L=>L.score>=800},
+  {id:'d_win',name:'Daily Grind',desc:'Win a daily challenge.',daily:c=>c.sc.win},
+  {id:'d_three',name:'Three Gloves',desc:'Stop a daily challenge legend for three gloves.',daily:c=>c.sc.stars>=3},
+  {id:'d_streak',name:'Week of Wins',desc:'Win the daily challenge seven days running.',daily:c=>c.st.streak>=7},
+];
+function trophyState(){return Store.get('tr_trophies')||{}}
+/* kind: 'fight' | 'retire' | 'daily'. Sandbox careers (dev tools, tests) never award trophies */
+function trophyCheck(kind,ctx){
+  if(kind!=='daily'&&(!G||G.sandbox))return [];
+  const st=trophyState(),got=[];
+  for(const T of TROPHIES){if(st[T.id]||!T[kind])continue;let ok=false;try{ok=!!T[kind](ctx)}catch(e){}
+    if(ok){st[T.id]={t:Date.now(),who:kind==='daily'?'Daily challenge':G&&G.boxer?`${B().first} ${B().last}`:''};got.push(T)}}
+  if(got.length){Store.set('tr_trophies',st);if(!UI.silent)got.forEach((T,i)=>setTimeout(()=>{toast(`🏆 Trophy: ${T.name}`);Sfx.great()},600+i*1400))}
+  return got}
+SCR.trophies=()=>{
+  const st=trophyState(),n=TROPHIES.filter(T=>st[T.id]).length;
+  const body=`<p class="muted" style="font-size:13.5px;margin-top:0">${n} of ${TROPHIES.length} won. Trophies carry across every career on this device.</p>
+    <div class="bar" style="margin:6px 0 14px"><i style="width:${n/TROPHIES.length*100}%"></i></div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">${TROPHIES.map(T=>{const g=st[T.id];return `<div class="card row" style="gap:12px;align-items:center;${g?'border-color:var(--gold)':'opacity:.55'}">
+      <div style="font-size:30px;filter:${g?'none':'grayscale(1)'}">${g?'🏆':'🔒'}</div><div class="grow"><b class="ui ${g?'goldt':''}" style="font-size:16px;text-transform:uppercase;letter-spacing:.04em">${esc(T.name)}</b>
+      <div style="font-size:13.5px">${esc(T.desc)}</div>${g?`<div class="dim" style="font-size:12px">${new Date(g.t).toLocaleDateString()}${g.who?' · '+esc(g.who):''}</div>`:''}</div></div>`}).join('')}</div>`;
+  if(G&&G.boxer)return shell('legacy','Trophies',body);
+  return `<div class="scr"><div class="wrap" style="max-width:900px"><div class="topbar"><button class="btn sm back" data-go="title">◀</button><div class="t">Trophies</div></div>${body}</div></div>`;
+};
 /* ================= dev mode: scenarios, fight lab, flags, logs, sims =================
    Everything here works on the sandbox slot (0). Real careers are never modified. */
 const DevState={tab:'lab',lab:{opp:'arch:boxerpuncher',rating:60,diff:'champion',rounds:3,god:false,onehit:false,freeze:false,dummy:'',tellMul:1,timescale:1,overlay:true,seed:''},simYears:2,lastLog:null};

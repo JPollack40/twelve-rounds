@@ -45,7 +45,7 @@ function dailyDone(S,res){
   const prev=st.best[S.n];const isBest=!prev||sc.score>prev.score;if(isBest)st.best[S.n]={score:sc.score,stars:sc.stars};
   if(sc.win&&st.lastWin!==S.n){st.streak=st.lastWin===S.n-1?st.streak+1:1;st.lastWin=S.n;st.wins++}
   for(const k of Object.keys(st.best))if(+k<S.n-60)delete st.best[k];
-  Store.set('tr_daily',st);
+  Store.set('tr_daily',st);trophyCheck('daily',{sc,st,res});
   const txt=dailyShare(S,res,sc);
   const m=modal(`<div class="kicker">Daily challenge #${S.n}</div><h2 class="sec">${sc.win?(sc.ko?'Knockout!':'You win'):res.winner==='draw'?'A draw':'Not today'}</h2>
     <p class="disp" style="font-size:34px;margin:4px 0">${'🥊'.repeat(sc.stars)}${'<span style="opacity:.25">🥊</span>'.repeat(3-sc.stars)}</p>
