@@ -18,6 +18,10 @@ const Save={
     g.v=g.v||1;g.flags=g.flags||{};g.chapters=g.chapters||[];
     if(g.seed==null){g.seed=RNG.seed();g.rng={career:g.seed,world:(g.seed^0x5bd1e995)>>>0}}
     delete g._rng;
+    // inked renderer: give older fighters and the boxer their face/body traits (hash-based, no RNG draws)
+    for(const f of Object.values(g.world.f||{}))fillLook(f);
+    const bl=g.boxer.look=g.boxer.look||{};if(!bl.bt)bl.bt={lean:'lanky',medium:'athletic',stocky:'brawler'}[g.boxer.build]||'athletic';
+    for(const [k,v] of [['nose','straight'],['scar','none'],['ear','normal'],['expr','stern']])if(!bl[k])bl[k]=v;if(bl.fs==null)bl.fs=hashStr(g.boxer.first+g.boxer.last)%10000;if(!bl.band)bl.band=(g.boxer.last||'').toUpperCase().slice(0,10);
     return g;
   },
   summary(){const b=G.boxer;return {name:b.first+' '+b.last,look:b.look,line:`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} · ${G.phase==='pro'?DIVS[b.div].name:G.phase==='retired'?'Retired':'Amateur'} · Level ${b.level} · ${dateStr()}`}},

@@ -40,6 +40,7 @@ function drawGlove(ctx,x,y,r,col,glow,glowCol,opt={}){
 }
 /* ---------- head ---------- */
 function drawHead(ctx,L,x,y,face,cut,o={}){
+  if(L&&(['spiky','shaggy','curly'].includes(L.hair)||L.beard==='goatee'))L=Object.assign({},L,{hair:['spiky','shaggy','curly'].includes(L.hair)?'short':L.hair,beard:L.beard==='goatee'?'mustache':L.beard});
   const skin=SKIN[L.skin],hc=HAIRC[L.hc||0],dk=shade(skin,-.3);
   const R=34,tilt=o.tilt||0;
   ctx.save();ctx.translate(x,y);ctx.rotate(tilt);
@@ -238,6 +239,7 @@ function buildArena(w,h,sc,ox,oy,opt={}){
 /* portrait cache */
 const _pc={};
 function portrait(L,opt={}){
+  if(typeof R3P!=='undefined'&&R3P.ok()&&!opt.flat){try{const u=R3P.shot(L,{});if(u)return u}catch(e){console.warn('3D portrait failed',e)}}
   const key=JSON.stringify(L)+(opt.bg||'')+(opt.face||'');
   if(_pc[key])return _pc[key];
   const c=document.createElement('canvas');c.width=160;c.height=160;const x=c.getContext('2d');

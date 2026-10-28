@@ -22,3 +22,11 @@ HUD overlay, and is the automatic fallback when WebGL or Three.js is missing (Se
 antialiasing and the 1.5x pixel ratio; the renderer also lowers detail by itself when frames run slow.
 Builds: the hosted page loads Three.js from cdnjs; the offline file and the PWA inline `src/vendor/three.min.js`.
 `dist/twelve-rounds.html` is the frozen alpha build; the beta is `dist/twelve-rounds-beta.html`.
+
+## Art direction: Style A (inked)
+The renderer follows the "Style A" sketchbook sheet: inverted-hull ink outlines, a hard three-band cel ramp,
+screen-space crosshatching in shadow, and ink detail lines painted into skin and torso textures.
+Characters are data: body type (lanky, athletic, brawler, anvil), nose (straight, broken, flat), scars, cauliflower ears,
+game face (grit, stern, calm, cocky), hair (incl. mohawk, spiky, shaggy, curly) and a face-shape seed. Legends get
+homage traits from `LEGEND_VIS`; the named roster (Basilio, Spike, Rocco "The Anvil") lives in `SIGNATURES`.
+Portraits and the creator preview render through the same rig (`R3P`), with the 2D portrait as fallback.

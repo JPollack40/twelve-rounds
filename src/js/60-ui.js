@@ -116,7 +116,7 @@ function settingsHTML(inCareer){
 }
 
 /* ---------- creator ---------- */
-function crDefault(){return {step:0,first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f'},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
+function crDefault(){return {step:0,first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:Math.floor(Math.random()*10000)},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
 function crNatural(c){return clamp(Math.round((c.height-62)/2+BUILDS[c.build].off),0,7)}
 SCR.create=()=>{
   const c=UI.cr,steps=['Identity','Look','Frame','Style','Difficulty'];
@@ -129,11 +129,17 @@ SCR.create=()=>{
     <div class="field"><span class="lbl">Starting age</span><div class="chips">${[18,19,20,21,22].map(a=>`<button class="chip${c.age===a?' on':''}" data-act="cr" data-k="age" data-v="${a}">${a}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Stance</span><div class="chips">${['orthodox','southpaw'].map(s=>`<button class="chip${c.stance===s?' on':''}" data-act="cr" data-k="stance" data-v="${s}">${s}</button>`).join('')}</div></div>
     <button class="btn ghost sm" data-act="crrandom" style="align-self:flex-start">Random name</button></div>`;
-  if(c.step===1){const sw=(k,arr,isIdx)=>arr.map((col,i)=>`<button class="sw${(isIdx?c.look[k]===i:c.look[k]===col)?' on':''}" style="background:${col}" data-act="crl" data-k="${k}" data-v="${isIdx?i:col}" aria-label="${k} ${i}"></button>`).join('');
+  if(c.step===1){const opt=(k,M)=>Object.keys(M).map(v=>`<button class="chip${c.look[k]===v?' on':''}" data-act="crl" data-k="${k}" data-v="${v}">${M[v]}</button>`).join('');const sw=(k,arr,isIdx)=>arr.map((col,i)=>`<button class="sw${(isIdx?c.look[k]===i:c.look[k]===col)?' on':''}" style="background:${col}" data-act="crl" data-k="${k}" data-v="${isIdx?i:col}" aria-label="${k} ${i}"></button>`).join('');
     body=`<div class="col"><div class="field"><span class="lbl">Skin</span><div class="chips">${sw('skin',SKIN,true)}</div></div>
     <div class="field"><span class="lbl">Hair</span><div class="chips">${HAIRS.map(h=>`<button class="chip${c.look.hair===h?' on':''}" data-act="crl" data-k="hair" data-v="${h}">${h}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Hair color</span><div class="chips">${sw('hc',HAIRC,true)}</div></div>
     <div class="field"><span class="lbl">Facial hair</span><div class="chips">${BEARDS.map(h=>`<button class="chip${c.look.beard===h?' on':''}" data-act="crl" data-k="beard" data-v="${h}">${h}</button>`).join('')}</div></div>
+    <div class="field"><span class="lbl">Physique</span><div class="chips">${opt('bt',BODYTYPES)}</div></div>
+    <div class="field"><span class="lbl">Nose</span><div class="chips">${opt('nose',NOSES)}</div></div>
+    <div class="field"><span class="lbl">Scars</span><div class="chips">${opt('scar',SCARS)}</div></div>
+    <div class="field"><span class="lbl">Ears</span><div class="chips">${opt('ear',EARS)}</div></div>
+    <div class="field"><span class="lbl">Game face</span><div class="chips">${opt('expr',EXPRS)}</div></div>
+    <div class="field"><span class="lbl">Face shape</span><div class="chips"><button class="chip" data-act="crface">Shuffle jaw, chin and brow</button></div></div>
     <div class="field"><span class="lbl">Trunks</span><div class="chips">${sw('trunks',COLORS)}</div></div>
     <div class="field"><span class="lbl">Trim</span><div class="chips">${sw('trim',COLORS)}</div></div>
     <div class="field"><span class="lbl">Gloves</span><div class="chips">${sw('gloves',COLORS)}</div></div></div>`}
@@ -149,13 +155,14 @@ SCR.create=()=>{
     <small style="margin-top:4px"><b class="goldt">${AB[A.ability].name}:</b> ${AB[A.ability].desc}</small></button>`}).join('')}</div>`;
   if(c.step===4)body=`<div class="col">${Object.keys(DIFF).map(k=>`<button class="arch${c.diff===k?' on':''}" data-act="cr" data-k="diff" data-v="${k}"><b>${DIFF[k].name}</b><small>${DIFF[k].desc}</small></button>`).join('')}
     <div class="card flat"><span class="lbl">Ready</span><p style="margin-top:6px">${esc(c.first||'Your boxer')} ${c.nick?'“'+esc(c.nick)+'” ':''}${esc(c.last)}, ${c.age}, ${ftIn(c.height)} ${ARCH[c.arch].name} from ${esc(c.home||'nowhere in particular')}. Natural ${DIVS[crNatural(c)].name}.</p></div></div>`;
-  const prev=`<div class="card" style="display:flex;justify-content:center;padding:6px"><canvas id="crcv" width="300" height="300" style="width:min(100%,300px);aspect-ratio:1;max-width:100%"></canvas></div>`;
+  const prev=`<div class="card" style="display:flex;justify-content:center;padding:6px">${R3P.ok()?`<img id="crimg" alt="Your boxer" style="width:min(100%,340px);aspect-ratio:1;border-radius:10px;display:block">`:`<canvas id="crcv" width="300" height="300" style="width:min(100%,300px);aspect-ratio:1;max-width:100%"></canvas>`}</div>`;
   const nav=`<div class="row">${c.step>0?`<button class="btn" data-act="crstep" data-d="-1">Back</button>`:`<button class="btn" data-go="title">Cancel</button>`}<button class="btn ${c.step===4?'primary':'gold'} grow" data-act="crstep" data-d="1">${c.step===4?'Start career':'Next: '+steps[c.step+1]}</button></div>`;
   return `<div class="scr"><div class="wrap" style="max-width:980px"><div class="topbar"><div class="t">Build your boxer</div><span class="pill">${c.step+1} / 5 · ${steps[c.step]}</span></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));align-items:start"><div class="col">${prev}</div><div class="col">${body}${nav}</div></div></div></div>`;
 };
 AFTER.create=()=>{
-  const c=UI.cr,cv=$('#crcv');
+  const c=UI.cr,cv=$('#crcv'),im=$('#crimg');
+  if(im){const u=R3P.shot(c.look,{mode:'full',height:c.height,arch:c.arch,guard:c.arch==='slugger'?'low':'mid'});if(u)im.src=u}
   if(cv){const x=cv.getContext('2d');const g=x.createLinearGradient(0,0,0,300);g.addColorStop(0,'#232a4a');g.addColorStop(1,'#0e1122');x.fillStyle=g;x.fillRect(0,0,300,300);
     const s=(.62+(c.height-62)*.012)*.78;
     const sp=x.createRadialGradient(150,40,10,150,120,200);sp.addColorStop(0,'rgba(255,240,200,.22)');sp.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=sp;x.fillRect(0,0,300,300);
@@ -519,12 +526,13 @@ const ACT={
   practice(){practiceModal()},
   cr(el){const c=UI.cr,k=el.dataset.k;let v=el.dataset.v;if(k==='age')v=+v;c[k]=v;UI.render()},
   crl(el){const k=el.dataset.k;let v=el.dataset.v;if(k==='skin'||k==='hc')v=+v;UI.cr.look[k]=v;UI.render()},
+  crface(){UI.cr.look.fs=Math.floor(Math.random()*10000);UI.render()},
   crrandom(){const c=UI.cr;c.first=pick(FIRST);c.last=pick(LAST);c.nick=chance(.5)?pick(NICKS):'';c.home=pick(HOMES);UI.render()},
   crstep(el){
     const c=UI.cr,d=+el.dataset.d;
     if(c.step===0&&d>0){if(!c.first.trim()||!c.last.trim()){toast('Give your boxer a first and last name.');return}}
     if(c.step===4&&d>0){
-      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:c.look,height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff};
+      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:Object.assign({},c.look,{band:c.last.trim().toUpperCase().slice(0,10)}),height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff};
       o.name=o.first+' '+o.last;newCareer(o);Save.write();Sfx.bell(2);UI.go('home');
       setTimeout(()=>modal(`<div class="kicker">${dateStr()}</div><h2 class="sec">Welcome to the gym</h2><p>Pops Delgado tapes your hands. "First the Golden Gloves. Three fights, three rounds each. Train hard in camp, and remember: watch the gloves, not the eyes."</p><p class="muted" style="font-size:13.5px">Tip: Practice spar from the title screen any time. Fight hints show in your first bout.</p><button class="btn primary" data-close="ok">Let's go</button>`),250);
       return;

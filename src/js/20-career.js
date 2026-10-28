@@ -13,7 +13,16 @@ function dateStr(w){w=w??G.week;const y=START_YEAR+Math.floor(w/52);const m=Math
 function fullName(f){return f.nick?`${f.first} “${f.nick}” ${f.last}`:`${f.first} ${f.last}`}
 function shortName(f){return `${f.first} ${f.last}`}
 function recStr(f){return `${f.w}-${f.l}${f.d?'-'+f.d:''}`}
-function randomLook(){return {skin:randi(0,SKIN.length-1),hair:pick(HAIRS),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:chance(.6)?'none':pick(BEARDS),trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS)}}
+function randomLook(){return {skin:randi(0,SKIN.length-1),hair:pick(HAIRS),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:chance(.6)?'none':pick(BEARDS),trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS),
+  nose:pick(['straight','straight','broken','flat']),scar:chance(.28)?pick(['brow','cheek','nose']):'none',ear:chance(.15)?'cauliflower':'normal',expr:pick(['grit','stern','stern','calm','cocky']),fs:randi(0,9999)}}
+/* visual traits for fighters made before the inked renderer: derived from a hash so the world RNG stream is untouched */
+function fillLook(f){const L=f.look=f.look||{};const r=new Rng(hashStr(String(f.id||f.last||'x')));const p=a=>a[Math.floor(r.next()*a.length)];
+  if(L.fs==null)L.fs=Math.floor(r.next()*10000);if(!L.nose)L.nose=p(['straight','straight','broken','flat']);if(!L.scar)L.scar=r.next()<.28?p(['brow','cheek','nose']):'none';
+  if(!L.ear)L.ear=r.next()<.15?'cauliflower':'normal';if(!L.expr)L.expr=p(['grit','stern','stern','calm','cocky']);
+  if(!L.bt)L.bt=r.next()<.75?(R3_BT_BY_ARCH[f.arch]||'athletic'):p(['lanky','athletic','brawler','anvil']);
+  if(f.legend&&LEGEND_VIS[f.legend]&&!L.legendVis){Object.assign(L,LEGEND_VIS[f.legend]);L.legendVis=1}
+  return L}
+const R3_BT_BY_ARCH={outboxer:'lanky',counter:'athletic',boxerpuncher:'athletic',swarmer:'brawler',slugger:'anvil'};
 
 function ovr(s){return Math.round((s.pow*1.1+s.spd*1.1+s.sta+s.chin+s.def+s.foot*.9+s.iq*.9)/7)}
 function statsFromRating(r,arch){const base=ARCH[arch].base,s={};for(const k of STAT_KEYS)s[k]=clamp(Math.round(r+(base[k]-47)*.8+rand(-4,4)),15,99);return s}
@@ -31,11 +40,12 @@ function makeFighter(div,rating,age,o={}){
   f.w=Math.round(n*wp);f.l=n-f.w;f.d=chance(.25)?randi(0,2):0;
   f.ko=Math.round(f.w*(arch==='slugger'?.75:arch==='swarmer'?.6:.45));
   if(f.legend&&f.l>3)f.l=randi(0,2);
+  if(!f.look.bt)f.look.bt=chance(.75)?R3_BT_BY_ARCH[arch]:pick(['lanky','athletic','brawler','anvil']);
   f.pts=Math.round(clamp(f.rating*10-180+(f.w-f.l)*3+rand(-40,40),20,1000));
   return f;
 }
 function legendFighter(L){
-  const look={skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f'};
+  const look=Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:hashStr(L.id)%10000,band:L.last.toUpperCase()},LEGEND_VIS[L.id]||{},{legendVis:1});
   const f=makeFighter(L.div,L.rating,L.age,{first:L.first,last:L.last,nick:L.nick,home:L.home,arch:L.arch,look,southpaw:L.southpaw,reach:L.reach||0,legend:L.id,pot:L.rating});
   f.pts=Math.round(clamp(f.rating*10-120+rand(0,40),600,1000));
   return f;
@@ -46,6 +56,7 @@ function genWorld(){
     const ids=[];
     const add=f=>{W.f[f.id]=f;ids.push(f.id)};
     LEGENDS.filter(l=>l.div===d).forEach(l=>add(legendFighter(l)));
+    SIGNATURES.filter(x=>x.div===d).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
     const tiers=[[2,85,91],[6,75,85],[10,63,75],[18,40,63]];
     for(const [n,a,b] of tiers)for(let i=0;i<n;i++)add(makeFighter(d,rand(a,b),randi(20,35)));
     W.divs.push(ids);
@@ -390,11 +401,11 @@ function oppCombat(f,o={}){
   const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
   if(ai.weak==='glass')st.chin=Math.max(15,st.chin-15);
   const scout=L?L.ai?.scout:(Q?Q.scout:'');
-  return {scout,quirk:Q?Q.name:null,name:shortName(f),first:f.first,last:f.last,stats:st,look:f.look,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
+  return {scout,quirk:Q?Q.name:null,name:shortName(f),first:f.first,last:f.last,stats:st,look:fillLook(f),arch:f.arch,height:f.height,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
 }
 function playerCombat(){
   const b=B();
-  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:b.look,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
+  return {name:b.first+' '+b.last,first:b.first,last:b.last,stats:effectiveStats(),look:b.look,height:b.height,arch:b.arch,stance:b.stance,reach:b.reach,abilities:b.equipped.slice(),mods:skillMods(),weight:weightInfo()};
 }
 function ptsDelta(my,opp,win,ko,title){
   if(win){let g=20+clamp((opp-my)*.13,-14,70)+(ko?8:0)+(title?70:0);if(opp<my-160)g*=.5;return Math.round(clamp(g,4,150))}

@@ -1,5 +1,5 @@
 {
- "when": "2026-10-28T08:07:34.256Z",
+ "when": "2026-10-28T14:53:41.831Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -149,8 +149,8 @@
    "kos": 0,
    "koed": 0,
    "ok": false,
-   "avgLanded": 131.5,
-   "avgAcc": 0.43,
+   "avgLanded": 135,
+   "avgAcc": 0.44,
    "avgOppAcc": 0.26,
    "results": "o:DECR6 o:DECR6"
   },
@@ -163,42 +163,43 @@
    ],
    "winRate": 0.5,
    "n": 2,
-   "kos": 0,
+   "kos": 1,
    "koed": 0,
    "ok": true,
-   "avgLanded": 180,
-   "avgAcc": 0.51,
-   "avgOppAcc": 0.6,
-   "results": "o:DECR6 p:DECR6"
+   "avgLanded": 163.5,
+   "avgAcc": 0.49,
+   "avgOppAcc": 0.61,
+   "results": "o:DECR6 p:KOR6"
   }
  ],
  "careers": {
   "n": 60,
-  "retireAgeMed": 37,
-  "winsMed": 45,
+  "retireAgeMed": 38,
+  "winsMed": 47,
   "lossesMed": 23,
-  "titlesMed": 2,
-  "titlesAvg": 1.78,
-  "champShare": 0.98,
-  "undisputedShare": 0.03,
+  "titlesMed": 1,
+  "titlesAvg": 1.68,
+  "champShare": 1,
+  "undisputedShare": 0.08,
   "multiDivShare": 0,
-  "legendsAvg": 1.45,
+  "legendsAvg": 1.43,
   "chaptersAvg": 1.03,
-  "moneyMed": 31560672,
-  "hofMed": 249,
+  "moneyMed": 38366067,
+  "hofMed": 284,
   "tiers": {
-   "Hall of Famer": 15,
-   "Champion": 39,
-   "Contender": 6
+   "Champion": 31,
+   "Hall of Famer": 21,
+   "All-Time Great": 5,
+   "Contender": 3
   },
   "forcedRetireShare": 0,
-  "dmgMed": 70
+  "dmgMed": 69
  },
  "errors": [],
  "careerChecks": [
   {
    "k": "retireAgeMed",
-   "v": 37,
+   "v": 38,
    "band": [
     31,
     40
@@ -207,7 +208,7 @@
   },
   {
    "k": "champShare",
-   "v": 0.98,
+   "v": 1,
    "band": [
     0.4,
     1
@@ -234,7 +235,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.45,
+   "v": 1.43,
    "band": [
     0.2,
     6
@@ -242,5 +243,5 @@
    "ok": true
   }
  ],
- "seconds": 10
+ "seconds": 13
 }

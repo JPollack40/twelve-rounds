@@ -52,9 +52,15 @@ const ARCH={
 };
 
 const SKIN=['#f4d5b9','#e8b994','#cf9468','#ad744c','#87573a','#643e27','#46291a'];
-const HAIRS=['bald','buzz','short','afro','mohawk','braids','slick','topknot'];
+const HAIRS=['bald','buzz','short','spiky','shaggy','curly','afro','mohawk','braids','slick','topknot'];
+/* face and body options (Style A sheet) */
+const NOSES={straight:'Straight',broken:'Broken',flat:'Flattened'};
+const SCARS={none:'None',brow:'Brow',cheek:'Cheek',nose:'Nose',both:'Brow + cheek'};
+const EARS={normal:'Normal',cauliflower:'Cauliflower'};
+const EXPRS={grit:'Gritted teeth',stern:'Stern',calm:'Calm',cocky:'Cocky'};
+const BODYTYPES={lanky:'Lanky',athletic:'Athletic',brawler:'Brawler',anvil:'Anvil'};
 const HAIRC=['#151111','#3b2416','#6b4423','#a8742f','#dcb75e','#b23a1f','#8f8f8f','#ece6da'];
-const BEARDS=['none','stubble','mustache','beard'];
+const BEARDS=['none','stubble','mustache','goatee','beard'];
 const COLORS=['#d8392f','#2f6fe2','#f0be48','#f4efe3','#161616','#2e9e5b','#7b3fd1','#e86aa6','#ff7a1a','#0fb5c9','#7a1f1f','#1d2f63'];
 const BUILDS={lean:{name:'Lean',off:-.6},medium:{name:'Medium',off:0},stocky:{name:'Stocky',off:.7}};
 const ARMS={short:{name:'Short',d:-2},avg:{name:'Average',d:1},long:{name:'Long',d:4}};
@@ -141,6 +147,25 @@ const LEGENDS=[
   {id:'tyrell',first:'Mikey',last:'Tyrell',nick:'Iron',div:7,arch:'swarmer',rating:95,age:21,home:'Catskill, NY',skin:5,hair:'buzz',hc:0,trunks:'#161616',homage:'"Iron" Mike Tyson',ab:'peekaboo',ai:{sig:['hook','upper','hook'],sigP:.6,weak:'fader',scout:'A first-round blitz of hooks and uppercuts. Survive the storm; he fades badly after round four.',agg:.9,combo:.7,w:{jab:1,cross:2,hook:4,upper:4},dodge:.6,fadeLate:1}},
   {id:'marchetti',first:'Rocco',last:'Marchetti',nick:'The Rock',div:7,arch:'slugger',rating:91,age:29,home:'Brockton, MA',skin:1,hair:'short',hc:0,trunks:'#d8392f',homage:'Rocky Marciano, 49-0',ab:'suzieq',ai:{sig:['cross','cross'],sigP:.5,weak:'jab',scout:'Short arms, iron chin, and the Suzie Q overhand right. Keep him on the end of your jab.',agg:.85,chinBonus:12}},
   {id:'hollis',first:'Cass',last:'Hollis',nick:'The Lip',div:7,arch:'outboxer',rating:97,age:24,home:'Louisville, KY',skin:4,hair:'short',hc:0,trunks:'#f4efe3',homage:'Muhammad Ali, born Cassius Clay',ab:'ropeadope',ai:{sig:['jab','jab','jab','cross'],sigP:.5,weak:'body',scout:'Dances, talks, and pumps the jab. His hands hang low and he rests on the ropes: go to the body.',agg:.5,dodge:.8,guard:['low','low','high'],trash:1}},
+];
+/* how each legend homage looks in the inked renderer: body type, hair, nose, scars, game face. Homage cues only, no likeness details. */
+const LEGEND_VIS={
+  gonzaga:{bt:'brawler',nose:'flat',expr:'stern'},joffrey:{bt:'athletic',expr:'calm'},hameed:{bt:'lanky',hair:'spiky',expr:'cocky',trim:'#f0be48'},
+  pacheco:{bt:'athletic',hair:'spiky',beard:'goatee',expr:'grit',shape:{jaw:1.1,chin:1.1,nose:1.05,cheek:1.25,brow:1.35}},durante:{bt:'brawler',hair:'shaggy',nose:'broken',scar:'brow',expr:'grit'},
+  mayfield:{bt:'athletic',expr:'cocky'},chavarria:{bt:'brawler',nose:'flat',scar:'brow',expr:'stern'},raye:{bt:'athletic',expr:'cocky'},
+  hurns:{bt:'lanky',expr:'stern'},robbins:{bt:'athletic',expr:'calm'},carver:{bt:'brawler',expr:'grit'},hagan:{bt:'brawler',scar:'nose',expr:'stern'},
+  moorland:{bt:'athletic',expr:'calm'},lister:{bt:'anvil',nose:'flat',expr:'stern'},frazee:{bt:'brawler',expr:'grit'},
+  tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
+  hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
+};
+/* the standard roster: designed recurring contenders from the character sheet */
+const SIGNATURES=[
+  {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',
+    look:{skin:2,hair:'mohawk',hc:2,beard:'stubble',trunks:'#161616',trim:'#d8392f',gloves:'#2f6fe2',bt:'brawler',nose:'broken',scar:'both',ear:'cauliflower',expr:'grit',band:'BASILIO',fs:4711,shape:{jaw:1.35,chin:1.25,nose:1.15,cheek:1.2,brow:1.55}}},
+  {id:'spike',first:'Jae',last:'Moreno',nick:'Spike',div:2,arch:'outboxer',rating:80,age:23,home:'Los Angeles, CA',
+    look:{skin:1,hair:'shaggy',hc:0,beard:'none',trunks:'#f4efe3',trim:'#161616',gloves:'#f4efe3',bt:'lanky',nose:'straight',scar:'none',ear:'normal',expr:'stern',band:'SPIKE',fs:1203,shape:{jaw:.85,chin:1.0,nose:.9,cheek:1.1,brow:1.15}}},
+  {id:'anvil',first:'Rocco',last:'Brandt',nick:'The Anvil',div:7,arch:'slugger',rating:84,age:31,home:'Pittsburgh, PA',
+    look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
 ];
 const LEGEND_BY=Object.fromEntries(LEGENDS.map(l=>[l.id,l]));
 
