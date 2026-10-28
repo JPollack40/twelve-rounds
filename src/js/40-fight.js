@@ -6,6 +6,21 @@ const PUNCH={
   hook:{name:'Hook',dmg:10.5,sta:5.4,wind:.23,act:.1,rec:.3,tell:.5,lead:true,kind:'hook',score:2},
   upper:{name:'Uppercut',dmg:11.5,sta:5.8,wind:.25,act:.1,rec:.34,tell:.54,lead:false,kind:'upper',score:2},
 };
+/* ringside commentary lines: {P} you, {O} the opponent, {T} the punch. p = priority (bigger moments override smaller ones) */
+const CALLS={
+  big:{p:1,l:['Big {T} from {P}!','{P} lands a thudding {T}.','That {T} snapped {O}\'s head back!','Oh, what a shot by {P}!','{P} connects with the {T}!']},
+  body:{p:1,l:['{P} digs one downstairs.','To the body! {O} felt that one.','{P} going to the ribs.','A thudding shot to the midsection by {P}.']},
+  counter:{p:2,l:['Beautiful counter by {P}!','{O} pays for the miss!','Slip and rip: {P} makes {O} pay.','Perfectly timed by {P}!']},
+  perfect:{p:1,l:['{P} makes {O} miss by an inch.','Slick defense from {P}.','Nothing but air!','{O} can\'t find the target.']},
+  ohit:{p:1,l:['{O} catches {P} clean!','Big {T} from {O}!','{P} has to be careful here.','{O} lands the {T}!']},
+  hurt:{p:2,l:['{O} is hurt!','{O} is in trouble!','The legs are going on {O}!','{O} is wobbled!']},
+  phurt:{p:2,l:['{P} is hurt!','{P} needs to hold on!','{P} is in trouble!']},
+  kd:{p:3,l:['DOWN GOES {O}!','{O} is down!','What a punch! {O} hits the canvas!']},
+  pkd:{p:3,l:['{P} is down!','{P} goes down hard!','{O} drops {P}!']},
+  orise:{p:3,l:['{O} beats the count!','{O} is up, but are the legs there?']},
+  prise:{p:3,l:['{P} is up! Can {P} survive the round?','{P} beats the count!']},
+  clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.']},
+};
 const TELL_COL={jab:'#ffe58f',cross:'#ffb347',hook:'#ff7a2a',upper:'#ff3434'};
 const STEP=1/120;
 
@@ -327,7 +342,8 @@ class Fight{
     else{d.hp-=dm;d.maxHp=Math.max(28,d.maxHp-dm*.15);
       if(d.side==='o'){const k=dm*.045;if(P.kind==='upper')d.dmg.cheek+=k*1.2;else if(side==='L')d.dmg.swellL+=k;else d.dmg.swellR+=k;d.dmg.cheek+=k*.4}}
     d.dmgTaken+=dm;d.hits++;
-    if(a.side==='p'){const k=pu.body?'body':pu.type;this.rLand[k]=(this.rLand[k]||0)+1}
+    if(a.side==='p'){const k=pu.body?'body':pu.type;this.rLand[k]=(this.rLand[k]||0)+1;this.call(flags.counter&&dm>2?'counter':pu.body&&dm>2.5?'body':pu.type!=='jab'&&dm>=3?'big':'',{t:pu.type})}
+    else if(pu.type!=='jab'&&dm>=3.6)this.call('ohit',{t:pu.type});
     a.stats.landed++;a.rs.landed++;if(pu.type==='jab')a.stats.jabL++;else{a.stats.powL++;a.rs.pow++}if(pu.body)a.stats.bodyL++;
     a.stats.dmg+=dm;a.rs.score+=P.score+dm*.38;
     a.combo++;a.comboT=1.1;d.combo=0;
@@ -362,7 +378,7 @@ class Fight{
       if(d.streak>=thr){d.streak=0;this.setState(d,'block',rand(.6,.95));d.blockLevel=chance(.8)?(pu.body?'low':'high'):(pu.body?'high':'low');if(chance((d.ai.counter||.3)*this.D.agg+.15))d.pendingCounter=true;this.text('COVERS UP','#cfd8ff',200,60,.6,15)}
     }
     if(!pu.body&&(dm>=4.3||(d.hp<d.maxHp*.25&&dm>2))&&d.state!=='down'){
-      if(d.hurt<=0)this.text(d.side==='o'?'ROCKED!':'YOU\'RE HURT','#ff5a4a',200,d.side==='o'?150:250,1,24);
+      if(d.hurt<=0){this.text(d.side==='o'?'ROCKED!':'YOU\'RE HURT','#ff5a4a',200,d.side==='o'?150:250,1,24);this.call(d.side==='o'?'hurt':'phurt')}
       d.hurt=Math.max(d.hurt,1.1+dm*.2);
     }
     if(!pu.body&&dm>2.6&&!this.cfg.amateur){
@@ -383,6 +399,7 @@ class Fight{
     Sfx.whoosh();a.combo=0;
     if(d.side==='p'){
       const perfect=!evade&&d.state==='dodge'&&d.t<=.17*(1+(d.m.perfect||0));
+      if(perfect)this.call('perfect');
       d.meter=Math.min(300,d.meter+(perfect?30:10));
       if(perfect){d.stats.perfect++;a.recBonus=.45*(1+(d.m.perfect||0));d.counterWin=1;this.text('PERFECT!','#7fe3ff',200,170,.8,24);this.slow=Math.max(this.slow,.18);buzz(10);this.log({ev:'perfect'})}
       else this.text('MISS','#cfd8ff',200,180,.6,16);
@@ -485,6 +502,7 @@ class Fight{
   }
   /* ---------- knockdowns ---------- */
   knockdown(d,a){
+    this.call(d.side==='o'?'kd':'pkd');
     if(this.r3d&&!this.cfg.headless){const b=this.rbuf||[];let tt=0,i=b.length;while(i>0&&tt<1.5){i--;tt+=b[i].rdt}this.kdClip={frames:b.slice(i),impact:b.length-i,post:0,round:this.round,side:d.side}}
     d.state='down';d.t=0;d.pu=null;d.seq=[];d.hp=0;d.kd++;d.kdTotal++;d.hurt=0;d.buffs=[];d.landed=false;
     a.stats.kd++;a.rs.kd++;d.rs.kdd++;a.pu=null;a.seq=[];a.state='idle';a.queue=null;
@@ -513,7 +531,7 @@ class Fight{
   rise(d){
     d.state='idle';d.t=0;d.hp=Math.max(14,d.maxHp*.5-d.kdTotal*5);d.hurt=2.2;d.sta=Math.max(d.sta,30);d.unans=[];
     this.phase='fight';this.count=null;this.ov.className='fov';this.ov.innerHTML='';this.log({ev:'rise',who:d.side});
-    this.text(d.side==='o'?'HE BEAT THE COUNT':'YOU\'RE UP!','#fff',200,150,1.2,22);Sfx.roar(.2,1.5);
+    this.text(d.side==='o'?`${(this.o.last||'').toUpperCase()} IS UP`:'YOU\'RE UP!','#fff',200,150,1.2,22);this.call(d.side==='o'?'orise':'prise');Sfx.roar(.2,1.5);
     const a=d.foe;a.state='idle';
   }
   /* ---------- rounds ---------- */
@@ -584,6 +602,15 @@ class Fight{
     const K=this.kdClip,clip=['KO','TKO'].includes(method)&&K&&K.round===this.round&&this.r3d&&Settings.replay!==false&&K.frames.length>20?K:null;
     const out=()=>{this.destroy();this.cfg.onEnd(this.res)};
     setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},clip?1700:2600);
+  }
+  /* broadcast captions: rate-limited, a bigger moment overrides a smaller one; cosmetic only (Math.random, never the fight RNG) */
+  call(kind,x={}){
+    const L=CALLS[kind];if(!L||this.cfg.headless||Settings.commentary===false||!this.stage||this.replaying)return;
+    const now=performance.now()/1000;if(now<(this.ccUntil||0)&&L.p<=(this.ccPri||0))return;if(now-(this.ccLast||-9)<1.8&&L.p<2)return;
+    const P=this.p.last&&this.p.last!=='You'?this.p.last:null,O=this.o.last||'Your opponent';
+    const t=L.l[Math.floor(Math.random()*L.l.length)].replace(/\{P\}/g,(m,i)=>P||(i?'the challenger':'The challenger')).replace(/\{O\}/g,O).replace(/\{T\}/g,x.t&&PUNCH[x.t]?PUNCH[x.t].name.toLowerCase():'shot');
+    let el=this.ccEl;if(!el){el=this.ccEl=document.createElement('div');el.className='cc';el.setAttribute('aria-live','polite');this.stage.appendChild(el)}
+    el.textContent=t;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');this.ccLast=now;this.ccPri=L.p;this.ccUntil=now+2.2;
   }
   /* ---------- knockdown replay: the renderer's inputs are recorded each frame and played back in slow motion ---------- */
   recFrame(op,rdt){
@@ -792,7 +819,7 @@ class Fight{
       return;
     }
     this.clock-=dt;
-    if(this.clock<=10&&this.clock+dt>10)Sfx.tick();
+    if(this.clock<=10&&this.clock+dt>10){Sfx.tick();this.call('clock')}
     if(this.clock<=0){this.clock=0;return this.endRound()}
     this.tickC(this.p,dt);this.tickC(this.o,dt);
     if(this.phase!=='fight')return;

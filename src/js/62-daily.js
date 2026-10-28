@@ -66,7 +66,8 @@ SCR.legends=()=>{
       <div class="muted" style="font-size:12.5px">${DIVS[l.div].name} · ${ARCH[l.arch].name}${l.southpaw?' · Southpaw':''} · ${esc(l.home)}</div></div>${beaten.includes(l.id)?'<span class="pill gold">Beaten</span>':''}</div>
     <div class="dim" style="font-size:12.5px">Inspired by ${esc(l.homage)}</div>
     <div style="font-size:13.5px">${esc(l.ai.scout)}</div>
-    <div style="font-size:13px"><b class="goldt">${esc(ab.name)}:</b> ${esc(ab.desc)}</div></div>`}).join('');
+    <div style="font-size:13px"><b class="goldt">${esc(ab.name)}:</b> ${esc(ab.desc)}</div>
+    <button class="btn sm" data-act="exhib" data-id="${l.id}" style="align-self:flex-start">Exhibition fight</button></div>`}).join('');
   const body=`<div class="row sp" style="flex-wrap:wrap;gap:8px"><p class="muted" style="font-size:13.5px;margin:0;max-width:52ch">Fictional fighters with original names, each a tribute to a great of the sport. Beat one in your career to learn their signature move.</p>
     <div class="chips">${[['m',"Men's"],['w',"Women's"]].map(([k,n])=>`<button class="chip${circ===k?' on':''}" data-act="lgcirc" data-v="${k}">${n}</button>`).join('')}</div></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:10px">${cards}</div>`;
@@ -78,7 +79,25 @@ AFTER.legends=()=>{const imgs=$$('img[data-lg]');let i=0;const tok=UI._lgTok=(UI
   const next=()=>{if(UI._lgTok!==tok||i>=imgs.length||!imgs[i].isConnected)return;const im=imgs[i++],L=LEGEND_BY[im.dataset.lg];
     const f={look:Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',fs:hashStr(L.id)%10000,band:L.last.toUpperCase(),fem:L.w?1:undefined},LEGEND_VIS[L.id]||{})};
     try{im.src=R3P.ok()?R3P.shot(f.look,{mode:'bust',size:160,arch:L.arch,legend:L.id,guard:'down'}):portrait(f.look)}catch(e){}setTimeout(next,16)};next()};
+/* exhibition: any legend, any time, nothing at stake. In a career you can bring your own boxer */
+function exhibModal(id){
+  const L=LEGEND_BY[id];const mine=G&&G.boxer&&!G.boxer.retired?playerCombat():null;
+  const opts=(mine?[['me',`${B().first} ${B().last} (${playerOvr()})`]]:[]).concat([['80','Rated 80'],['88','Rated 88'],['95','Rated 95']]);
+  const m=modal(`<div class="kicker">Exhibition · nothing at stake</div><h2 class="sec">${esc(L.first)} “${esc(L.nick)}” ${esc(L.last)}</h2>
+    <div class="field"><span class="lbl">Your fighter</span><div class="chips" id="xa">${opts.map((o,i)=>`<button class="chip${i===0?' on':''}" data-v="${o[0]}">${esc(o[1])}</button>`).join('')}</div></div>
+    <div class="field"><span class="lbl">Rounds</span><div class="chips" id="xr">${[3,6,10].map((r,i)=>`<button class="chip${i===0?' on':''}" data-v="${r}">${r}</button>`).join('')}</div></div>
+    <button class="btn primary" id="xgo">Fight</button><button class="btn ghost" data-close="x">Cancel</button>`);
+  m.addEventListener('click',e=>{const c=e.target.closest('.chip');if(c)$$('.chip',c.parentNode).forEach(x=>x.classList.toggle('on',x===c))});
+  $('#xgo',m).onclick=()=>{const who=$('#xa .on',m).dataset.v,rounds=+$('#xr .on',m).dataset.v;m.remove();
+    const S={L,seed:(Math.random()*2**31)>>>0};const {o}=dailyOpp(S);
+    const me=who==='me'?Object.assign(playerCombat(),{mods:Object.assign({},playerCombat().mods)}):Object.assign(dailyMe(S),{stats:Object.fromEntries(STAT_KEYS.map(k=>[k,+who]))});
+    Sfx.init();
+    new Fight({p:me,o,rounds,roundLen:Settings.roundLen,diff:'champion',practice:true,corner:3,trainerName:G&&G.trainer&&TRAINERS[G.trainer]?TRAINERS[G.trainer].name:'Pops Delgado',seed:S.seed,label:'Exhibition',onEnd:res=>{
+      const win=res.winner==='p';modal(`<div class="kicker">Exhibition</div><h2 class="sec">${win?'You beat '+esc(L.last)+'!':res.winner==='draw'?'A draw':esc(L.last)+' wins'}</h2><p>${esc(res.method)}, round ${res.round} · landed ${res.stats.p.landed}/${res.stats.p.thrown} · perfect dodges ${res.stats.p.perfect||0}</p>
+        <p class="muted" style="font-size:13px">Exhibitions don't count toward your record or unlock signature moves. Beat ${esc(L.last)} in your career for that.</p><button class="btn primary" data-close="ok">Done</button>`,{onClose:()=>UI.render()})}}).mount()};
+}
 Object.assign(ACT,{
+  exhib(el){exhibModal(el.dataset.id)},
   daily(){dailyModal()},
   lgcirc(el){UI.lgC=el.dataset.v;UI.render()},
 });

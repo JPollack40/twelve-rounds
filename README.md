@@ -60,3 +60,9 @@ round, the clip plays back in letterboxed slow motion (slowest around the impact
 upsets, legends, titles, unification, undisputed, two-weight, long reigns, 20-0, rivalry, chapters, a title in each circuit, Hall of
 Fame and GOAT retirements, and daily-challenge wins, three-glove stops and 7-day streaks. Sandbox careers never award them.
 Women's championship fights are scheduled for 10 rounds, regional title fights for 8, and other fights top out at 8.
+
+## Commentary and exhibitions
+Fights show short broadcast captions (`CALLS` in `40-fight.js`) for counters, big shots, body work, slick defense, hurt fighters,
+knockdowns, getting up and the ten-second warning. They are rate-limited, a bigger moment overrides a smaller one, and they use
+Math.random only, so the seeded fight simulation is untouched. Settings can turn them off. Any legend card in the Legends gallery
+offers an exhibition: pick your fighter (your career boxer, or a preset 80/88/95) and 3, 6 or 10 rounds. Nothing counts.
