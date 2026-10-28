@@ -126,13 +126,13 @@ function newCareer(o){
   G={v:SAVE_V,slot:o.slot,created:Date.now(),diff:o.diff,week:0,phase:'amateur',seed,rng:{career:seed,world:(seed^0x5bd1e995)>>>0},sandbox:!!o.sandbox,
     boxer:null,world:null,rival:null,promoter:null,trainer:'pops',gym:'basement',staff:{cutman:false,nutri:false},
     offers:[],next:null,newsList:[],flags:{},chapters:[],history:[],am:{stage:0,round:0,opps:[],results:[]},pending:[],seen:{}};
+  useCareerRng();
   const base=ARCH[o.arch].base,stats={};for(const k of STAT_KEYS)stats[k]=base[k];
   const natural=clamp(Math.round((o.height-62)/2+BUILDS[o.build].off),0,7);
   G.boxer={name:o.name,first:o.first,last:o.last,nick:o.nick,home:o.home,stance:o.stance,look:o.look,height:o.height,build:o.build,
     reach:o.height+ARMS[o.arms].d,arch:o.arch,born:-(o.age*52)-randi(0,40),natural,div:natural,stats,level:1,xp:0,statPts:0,skillPts:1,
     skills:[],abilities:[ARCH[o.arch].ability],equipped:[ARCH[o.arch].ability],damage:0,injuries:[],hype:5,money:1500,pts:0,
     record:{w:0,l:0,d:0,ko:0},am:{w:0,l:0},form:[],streak:0,legendsBeaten:[],regional:null,formerChamp:false,titleWins:0,defenses:0,undisputed:0,titleDivs:[],retired:false};
-  useCareerRng();
   genWorld();
   const rv=makeFighter(natural,Math.max(40,playerOvr()+1),o.age,{arch:counterArch(o.arch)});
   rv.rival=true;rv.pts=60;rv.w=rv.l=rv.d=rv.ko=0;rv.pro=false;rv.edge=rand(0,4);

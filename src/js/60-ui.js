@@ -28,7 +28,7 @@ function profileHTML(){
   return `<div class="prof"><img src="${portrait(b.look)}" alt=""><div class="grow">
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
-    <div class="belts">${beltsHTML()}</div>
+    <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${beltsHTML()}</div>
     <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
     <dt>Overall</dt><dd class="num">${playerOvr()}</dd><dt>Money</dt><dd class="num">${money(b.money)}</dd><dt>Age</dt><dd class="num">${age} · ${dateStr()}</dd></dl>
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
@@ -40,7 +40,7 @@ const NAV=[
 ];
 function navHTML(active){
   const b=B();const dot={boxer:b.statPts>0,skills:b.skillPts>0&&SKILLS.some(s=>canBuySkill(s)),fight:!!G.next||G.offers.length>0};
-  return `<div class="nav">${NAV.map(n=>`<button class="navb${n[0]===active?' on':''}" data-go="${n[0]}">${dot[n[0]]?'<span class="dot"></span>':''}<b>${n[1]}</b><small>${n[2]}</small></button>`).join('')}</div>`;
+  return `<div class="nav">${(Settings.dev?NAV.concat([['dev','Dev','Lab & scenarios']]):NAV).map(n=>`<button class="navb${n[0]===active?' on':''}" data-go="${n[0]}">${dot[n[0]]?'<span class="dot"></span>':''}<b>${n[1]}</b><small>${n[2]}</small></button>`).join('')}</div>`;
 }
 function shell(active,title,content){
   const wide=isWide();
@@ -64,7 +64,7 @@ SCR.title=()=>{
     <div class="title-hero"><div class="logo" id="logo" data-act="logotap">TWELVE<span>ROUNDS</span></div><p class="muted" style="max-width:34ch">A boxing career, from the Golden Gloves to the Hall of Fame.</p></div>
     <div class="col">${slots.map(({n,s})=>s?`<div class="card slot"><img src="${portrait(s.look)}" alt=""><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${esc(s.name)}</b><div class="muted num" style="font-size:13.5px">${esc(s.line)}</div></div><button class="btn primary" data-act="load" data-n="${n}">Continue</button></div>`
       :`<div class="card slot"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">Empty slot ${n}</b><div class="muted" style="font-size:13.5px">Start a new career</div></div><button class="btn gold" data-act="new" data-n="${n}">New career</button></div>`).join('')}</div>
-    <div class="row"><button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
+    <div class="row">${Settings.dev?'<button class="btn gold grow" data-act="devgo">Dev mode</button>':''}<button class="btn grow" data-act="practice">Practice spar</button><button class="btn grow" data-go="help">How to play</button><button class="btn grow" data-go="tsettings">Settings</button></div>
     <p class="dim" style="font-size:12.5px;text-align:center">${esc(Save.status())}</p>
   </div></div>`;
 };
@@ -98,6 +98,12 @@ function settingsHTML(inCareer){
     ${tg('slowmo','Knockdown slow motion','Slow motion on knockdowns.')}
     ${tg('hints','Fight hints','Show the how-to-fight card in practice and your first bout.')}
     ${tg('lefty','Swap control sides','Punches on the left thumb, defense on the right.')}
+    ${tg('audioTells','Audio tells','A different wind-up sound for each punch, and a chime before power shots.')}
+    ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
+    ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
+    ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Fight button size</b>
+    <div class="chips">${[[.85,'Small'],[1,'Normal'],[1.2,'Large'],[1.4,'Huge']].map(([v,l])=>`<button class="chip${(Settings.btnSize||1)===v?' on':''}" data-act="btnsize" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Round length</b><div class="muted" style="font-size:13px">Real seconds per round. The fight clock still reads as boxing time.</div>
     <div class="chips">${[45,60,90].map(s=>`<button class="chip${Settings.roundLen===s?' on':''}" data-act="roundlen" data-s="${s}">${s}s</button>`).join('')}</div></div>
     ${inCareer?`<div class="card col"><h3>Save</h3><p class="muted" style="font-size:13.5px">${esc(Save.status())}</p>
@@ -468,13 +474,13 @@ function retireNow(reason){
 }
 
 /* ---------- events ---------- */
-function checkEvent(force){
+function checkEvent(force,id){
   if(!G||G.phase==='retired')return false;
   const b=B();
   if(G.flags.forceRetire){const r=G.flags.forceRetire;G.flags.forceRetire=null;retireNow(r);return true}
   if(b.damage>=100){retireNow('The commission refuses to renew your license.');return true}
   if(ageOf(b.born)>=45){retireNow('At 45, it\'s time.');return true}
-  const e=maybeEvent(force);if(!e)return false;
+  const e=maybeEvent(force,id);if(!e)return false;
   const m=modal(`<div class="kicker">${e.id==='hurricane'||e.id==='exile'?'Story chapter':'Life outside the ring'}</div><h2 class="sec">${esc(e.title)}</h2><p>${esc(e.text())}</p><div class="col" style="gap:8px">${e.choices.map((c,i)=>`<button class="btn ${i?'':'gold'}" data-ch="${i}">${esc(c.t)}</button>`).join('')}</div>`);
   m.addEventListener('click',ev=>{const b=ev.target.closest('[data-ch]');if(!b)return;const r=e.choices[+b.dataset.ch].fx();news(`${e.title}: ${r}`);Save.write();
     $('.box',m).innerHTML=`<h2 class="sec">${esc(e.title)}</h2><p>${esc(r)}</p><button class="btn primary" data-close="ok">Continue</button>`;
@@ -558,6 +564,8 @@ const ACT={
   staff(el){const k=el.dataset.k;G.staff[k]=!G.staff[k];Save.write();UI.render()},
   toggle(el){const k=el.dataset.k;Settings[k]=!Settings[k];saveSettings();if(k==='sound'&&Settings.sound)Sfx.init();UI.render()},
   roundlen(el){Settings.roundLen=+el.dataset.s;saveSettings();UI.render()},
+  btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
+  devgo(){UI.go('dev')},
   export(){
     const code=Save.exportCode();
     const m=modal(`<h2 class="sec">Export save</h2><p class="muted" style="font-size:13.5px">Copy this code and keep it somewhere safe. Paste it into Import on any device or copy of the game.</p><textarea id="exp" rows="6" readonly style="font-size:11px;font-family:monospace">${esc(code)}</textarea><div class="row"><button class="btn gold grow" id="cpy">Copy</button><button class="btn ghost" data-close="x">Close</button></div>`);

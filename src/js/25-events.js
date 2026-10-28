@@ -120,7 +120,8 @@ const EVENTS=[
     text:()=>`Your doctor shows you the scans. "You've taken a lot of punishment. Long-term damage ${Math.round(B().damage)}/100. At 100, the commission won't license you."`,
     choices:[{t:'Keep fighting',fx:()=>{G.flags.retireTalk=1;return 'You\'re not done yet.'}},{t:'Think about retiring',fx:()=>{G.flags.retireTalk=1;return 'Retirement is always available from the Legacy screen.'}}]},
 ];
-function maybeEvent(force){
+function maybeEvent(force,id){
+  if(id){const e=EVENTS.find(x=>x.id===id);if(!e)return null;if(e.prep&&!e.prep())return null;return e}
   if(G.phase!=='pro')return null;
   if(!force&&(G.week-(G.flags.lastEvent||-99)<5||!chance(.5)))return null;
   const pool=EVENTS.filter(e=>{try{return e.cond()}catch(x){return false}});
