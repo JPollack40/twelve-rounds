@@ -36,3 +36,10 @@ Six slots (gloves, trunks, shoes, mouthguard, wraps, walkout robe), defined in `
 Items unlock by level, pro wins, a world title, amateur gold or beating a specific legend, then cost money.
 Stat effects (`fx`) apply in `effectiveStats()` and are capped at ±5 per stat; robes add hype per win.
 Cosmetics merge into the boxer's look via `playerLook()`: trunk patterns, glove tape, shoe colour, mouthguard colour.
+
+## Women's circuit
+Each career is in the men's or the women's world, chosen on the first creator step. The women's world has its own fighters, rivals,
+champions and 12 legends inspired by the greats of women's boxing (homages with original names), each with a learnable signature move,
+plus two named roster fighters and two story chapters (The Undercard, Headliners). Divisions run Flyweight to Heavyweight (175+ lb).
+Fighter text is written once and pronouns are swapped for the women's world (`gtxt`). In the renderer, `look.fem` gives a women's frame,
+a sports top, a softer inked face, and ponytail, bun and twin-braid hair (also available to everyone).

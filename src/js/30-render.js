@@ -40,6 +40,8 @@ function drawGlove(ctx,x,y,r,col,glow,glowCol,opt={}){
 }
 /* ---------- head ---------- */
 function drawHead(ctx,L,x,y,face,cut,o={}){
+  if(L&&['ponytail','bun','twinbraids'].includes(L.hair))L=Object.assign({},L,{hair:L.hair==='twinbraids'?'braids':L.hair==='bun'?'topknot':'slick'});
+  if(L&&L.fem&&L.beard&&L.beard!=='none')L=Object.assign({},L,{beard:'none'});
   if(L&&(['spiky','shaggy','curly'].includes(L.hair)||L.beard==='goatee'))L=Object.assign({},L,{hair:['spiky','shaggy','curly'].includes(L.hair)?'short':L.hair,beard:L.beard==='goatee'?'mustache':L.beard});
   const skin=SKIN[L.skin],hc=HAIRC[L.hc||0],dk=shade(skin,-.3);
   const R=34,tilt=o.tilt||0;
@@ -153,6 +155,8 @@ function drawFighter(ctx,L,P,o={}){
   ctx.save();ctx.strokeStyle=sk3;ctx.globalAlpha=.38;ctx.lineWidth=2.4;ctx.lineCap='round';
   const px=chX+tw*10;
   ctx.beginPath();ctx.moveTo(px-50,chY+6);ctx.quadraticCurveTo(px-25,chY+22,px-3,chY+8);ctx.moveTo(px+50,chY+6);ctx.quadraticCurveTo(px+25,chY+22,px+3,chY+8);ctx.moveTo(px,chY+14);ctx.lineTo(px,trY-46);ctx.moveTo(px-18,chY+34);ctx.lineTo(px+18,chY+34);ctx.moveTo(px-16,chY+52);ctx.lineTo(px+16,chY+52);ctx.stroke();ctx.restore();
+  if(L.fem){ctx.save();part(ctx,c=>{c.beginPath();c.moveTo(chX-66*tw2+tw*6,chY-22);c.quadraticCurveTo(chX+tw*6,chY-8,chX+66*tw2+tw*6,chY-22);c.lineTo(chX+70*tw2+tw*6,chY+26);c.quadraticCurveTo(chX+tw*6,chY+34,chX-70*tw2+tw*6,chY+26);c.closePath()},L.trunks,chX,chY,70,{hi:.15,sh:.3});
+    ctx.fillStyle=L.trim;ctx.fillRect(chX-70*tw2+tw*6,chY+22,140*tw2,8);ctx.restore()}
   // back arm (pulled back)
   const arms=[[shL,P.lg,true],[shR,P.rg,false]];
   for(const [sh,g,il] of arms)if((g[2]||0)<-.25)drawArm(sh,g,il);

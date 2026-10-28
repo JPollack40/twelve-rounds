@@ -1,6 +1,6 @@
-# Regression report 2026-10-28T21:10:21.092Z
+# Regression report 2026-10-28T21:34:29.545Z
 
-5 fights per matchup, 500 simulated careers, 77s.
+5 fights per matchup, 500 simulated careers, 73s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
@@ -13,8 +13,8 @@
 | expert_plus20 | 40% | 10–90 | 1/0 | 0.56/0.12 | ✅ |
 | masher_eq | 0% | 0–40 | 0/5 | 0.27/0.82 | ✅ |
 | turtle_eq | 0% | 0–75 | 0/0 | 0.26/0.31 | ✅ |
-| human_legend_tyrell | 20% | 5–60 | 1/0 | 0.5/0.33 | ✅ |
-| human_legend_hollis | 80% | 30–100 | 4/0 | 0.56/0.57 | ✅ |
+| human_legend_tyrell | 40% | 5–60 | 2/0 | 0.57/0.41 | ✅ |
+| human_legend_hollis | 100% | 30–100 | 5/0 | 0.58/0.68 | ✅ |
 
 ## Careers
 ```
@@ -22,25 +22,30 @@
  "n": 500,
  "retireAgeMed": 37,
  "winsMed": 46,
- "lossesMed": 23,
+ "lossesMed": 22,
  "titlesMed": 2,
- "titlesAvg": 1.76,
+ "titlesAvg": 1.77,
  "champShare": 0.97,
- "undisputedShare": 0.04,
+ "undisputedShare": 0.06,
  "multiDivShare": 0,
- "legendsAvg": 1.48,
- "chaptersAvg": 1.03,
- "moneyMed": 39137529,
- "hofMed": 319,
+ "legendsAvg": 1.44,
+ "chaptersAvg": 1.05,
+ "moneyMed": 38647832,
+ "womenN": 166,
+ "womenChampShare": 0.98,
+ "womenLegendsAvg": 1.29,
+ "crossCircuitLegends": 0,
+ "hofMed": 337,
  "tiers": {
-  "Hall of Famer": 211,
-  "Champion": 175,
-  "All-Time Great": 74,
-  "Contender": 36,
-  "Journeyman": 4
+  "Hall of Famer": 225,
+  "Champion": 158,
+  "All-Time Great": 79,
+  "The Greatest of All Time": 3,
+  "Contender": 30,
+  "Journeyman": 5
  },
  "forcedRetireShare": 0,
- "dmgMed": 71
+ "dmgMed": 70
 }
 ```
 
@@ -49,7 +54,10 @@
 | retireAgeMed | 37 | 31–40 | ✅ |
 | champShare | 0.97 | 0.4–1 | ✅ |
 | forcedRetireShare | 0 | 0–0.4 | ✅ |
-| chaptersAvg | 1.03 | 0.3–5 | ✅ |
-| legendsAvg | 1.48 | 0.2–6 | ✅ |
+| chaptersAvg | 1.05 | 0.3–5 | ✅ |
+| legendsAvg | 1.44 | 0.2–6 | ✅ |
+| womenChampShare | 0.98 | 0.4–1 | ✅ |
+| womenLegendsAvg | 1.29 | 0.1–6 | ✅ |
+| crossCircuitLegends | 0 | 0–0 | ✅ |
 
 No page errors.

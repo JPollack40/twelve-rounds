@@ -42,9 +42,23 @@ const CHAPTERS=[
       const c=champsIn(b.div)[0];if(!c)return null;const bl=beltsOf(c.id,b.div);
       const o=mkOffer(c,'chapter','Big George Comes Back',`At ${ageOf(b.born)}, a shot at the ${bl.join(' & ')} title. Wearing your old trunks.`,{title:{belts:bl}});o.mods={};return o},
     done(win){if(win){G.chapters.push('comeback');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: the oldest champion'}}},
+  // women's circuit chapters
+  {id:'undercard',circ:'w',title:'The Undercard',homage:'Christy Martin vs. Deirdre Gogarty, Las Vegas, 1996',
+    intro:'You\'re on the undercard of a heavyweight title fight, in front of a pay-per-view audience that has never watched a women\'s fight. Nobody expects much. Give them six rounds they will never forget.',
+    offer(){const b=B();const r=playerRank()||99;if(G.phase!=='pro'||b.record.w<4||b.record.w>16||r<6)return null;
+      const c=divFighters(b.div).filter(f=>!f.rival&&!beltsOf(f.id,b.div).length&&Math.abs(f.rating-playerOvr())<=7).sort((a,c)=>c.pts-a.pts)[0];if(!c)return null;
+      const o=mkOffer(c,'chapter','The Undercard',`Six rounds on a heavyweight pay-per-view card. Win it and the whole country is talking about you. One and a half times the purse.`,{rounds:6});o.purse=Math.round(o.purse*1.5);o.venue='MGM Grand Garden Arena';o.mods={};return o},
+    done(win){if(win){G.chapters.push('undercard');B().hype=clamp(B().hype+20,0,100);return 'Chapter complete: the fight that made the magazine cover'}}},
+  {id:'garden',circ:'w',title:'Headliners',homage:'Katie Taylor vs. Amanda Serrano, Madison Square Garden, 2022',
+    intro:'For the first time, two women headline Madison Square Garden. Sold out, the best two fighters in the world, and every belt that matters. Whatever happens tonight, it is history.',
+    offer(){const b=B();if(G.phase!=='pro'||(playerRank()||99)>3)return null;
+      const c=divFighters(b.div).filter(f=>!f.rival&&f.rating>=playerOvr()-2).sort((a,c)=>c.pts-a.pts)[0];if(!c)return null;
+      const bl=beltsOf(c.id,b.div).concat(beltsOf('P',b.div));
+      const o=mkOffer(c,'chapter','Headliners',`Main event at the Garden against ${shortName(c)}.${bl.length?' '+bl.join(' & ')+' on the line.':''} Double purse.`,bl.length?{title:{belts:bl,defense:beltsOf('P',b.div).length>0}}:{});o.purse*=2;o.venue='Madison Square Garden';o.mods={};return o},
+    done(win){if(win){G.chapters.push('garden');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: Headliners at the Garden'}B().hype=clamp(B().hype+8,0,100)}},
 ];
 const CHAPTER_INFO=[
-  ...CHAPTERS.map(c=>({id:c.id,title:c.title,homage:c.homage})),
+  ...CHAPTERS.map(c=>({id:c.id,title:c.title,homage:c.homage,circ:c.circ})),
   {id:'longcount',title:'The Long Count',homage:'Dempsey vs. Tunney II, Chicago, 1927'},
   {id:'hurricane',title:'The Hurricane',homage:'Rubin "Hurricane" Carter'},
   {id:'exile',title:'The Exile',homage:'Muhammad Ali\'s stand, 1967–70'},

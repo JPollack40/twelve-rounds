@@ -446,7 +446,7 @@ const DIVS=[
   {k:'welter',name:'Welterweight',short:'WW',lb:'147'},
   {k:'middle',name:'Middleweight',short:'MW',lb:'160'},
   {k:'lightheavy',name:'Light Heavyweight',short:'LHW',lb:'175'},
-  {k:'heavy',name:'Heavyweight',short:'HW',lb:'200+'},
+  {k:'heavy',name:'Heavyweight',short:'HW',lb:'200+',lbW:'175+'},
 ];
 const STATS=[
   ['pow','Power','Damage on every punch.'],
@@ -491,7 +491,7 @@ const ARCH={
 };
 
 const SKIN=['#f4d5b9','#e8b994','#cf9468','#ad744c','#87573a','#643e27','#46291a'];
-const HAIRS=['bald','buzz','short','spiky','shaggy','curly','afro','mohawk','braids','slick','topknot'];
+const HAIRS=['bald','buzz','short','spiky','shaggy','curly','afro','mohawk','braids','slick','topknot','ponytail','bun','twinbraids'];
 /* face and body options (Style A sheet) */
 const NOSES={straight:'Straight',broken:'Broken',flat:'Flattened'};
 const SCARS={none:'None',brow:'Brow',cheek:'Cheek',nose:'Nose',both:'Brow + cheek'};
@@ -533,6 +533,18 @@ const AB={
   peekaboo:{name:'Peek-a-Boo',cost:2,kind:'buff',dur:7,mods:{dodgeCounter:1.7,spd:1.2},legend:'tyrell',desc:'7s: bob and weave. Every dodge fires a 1.7x counter, +20% speed.'},
   suzieq:{name:'Suzie Q',cost:2,kind:'strike',punch:'cross',mult:2.2,pierce:.6,legend:'marchetti',desc:'A looping overhand right at 2.2x that crashes through the guard.'},
   ropeadope:{name:'Rope-a-Dope',cost:2,kind:'buff',dur:8,mods:{blockAbsorb:.92,drainOnBlock:7},legend:'hollis',chapter:'jungle',desc:'8s: lay on the ropes. Blocks absorb 92% and every punch they throw costs them 7 stamina.'},
+  ringqueen:{name:'Queen of the Ring',cost:1,kind:'buff',dur:7,mods:{spd:1.25,jabDmg:1.35,evade:.1},legend:'halm',desc:'7s: +25% speed, jabs 35% harder, some punches miss you outright.'},
+  superbad:{name:'Super Bad',cost:1,kind:'buff',dur:7,mods:{dodgeCounter:1.8,spd:1.1},legend:'estrella',desc:'7s: every dodge fires a 1.8x counter, +10% speed.'},
+  aztec:{name:'Aztec Combination',cost:2,kind:'combo',seq:['jab','cross','hook','bhook','upper'],mult:1,legend:'navarro',desc:'A five-punch combination that finishes downstairs and back up.'},
+  realdeal:{name:'The Real Deal',cost:2,kind:'buff',dur:7,mods:{bodyDmg:1.5,spd:1.2},legend:'serran',desc:'7s: southpaw volume. +20% speed, body shots 50% harder.'},
+  braybarrage:{name:'Bray Barrage',cost:2,kind:'combo',seq:['jab','cross','hook','cross','hook','upper'],mult:.95,legend:'tierney',desc:'A relentless six-punch combination thrown in a blur.'},
+  destroyer:{name:'Dutch Destroyer',cost:2,kind:'strike',punch:'hook',mult:2.3,pierce:.7,legend:'rijkman',desc:'A kickboxer\'s left hook at 2.3x through most of a guard.'},
+  firstlady:{name:'First Lady',cost:2,kind:'buff',dur:8,mods:{blockAbsorb:.9,dodgeCounter:1.5},legend:'brekke',desc:'8s: clinical defense. Blocks absorb 90% and every dodge counters.'},
+  coalminer:{name:'Coal Miner\'s Grit',cost:2,kind:'buff',dur:8,mods:{dmg:1.3,dmgTaken:.85},legend:'marlow',desc:'8s: +30% damage and 15% less damage taken. Bleed and keep coming.'},
+  preacher:{name:'Albuquerque Shuffle',cost:1,kind:'buff',dur:7,mods:{evade:.15,spd:1.2},legend:'holmgren',desc:'7s: southpaw angles. +20% speed and many punches miss you outright.'},
+  trex:{name:'GWOAT',cost:3,kind:'buff',dur:10,mods:{spd:1.2,dmg:1.25,dmgTaken:.85},legend:'fields',desc:'10s: +20% speed, +25% damage, 15% less damage taken.'},
+  shebee:{name:'She Bee Stingin\'',cost:2,kind:'strike',punch:'cross',mult:2.1,pierce:.6,legend:'alder',desc:'A long right hand at 2.1x that cuts through the guard.'},
+  wolfbite:{name:'The Wolf\'s Right',cost:2,kind:'strike',punch:'cross',mult:2.5,pierce:.8,legend:'wolford',desc:'An overhand right at 2.5x. Anyone can go to sleep.'},
   phantom:{name:'Phantom Punch',cost:3,kind:'strike',punch:'cross',mult:2,instant:true,kdBelow:.5,chapter:'phantom',desc:'A short right nobody sees. Drops anyone under half health.'},
 };
 
@@ -586,6 +598,19 @@ const LEGENDS=[
   {id:'tyrell',first:'Mikey',last:'Tyrell',nick:'Iron',div:7,arch:'swarmer',rating:95,age:21,home:'Catskill, NY',skin:5,hair:'buzz',hc:0,trunks:'#161616',homage:'"Iron" Mike Tyson',ab:'peekaboo',ai:{sig:['hook','upper','hook'],sigP:.6,weak:'fader',scout:'A first-round blitz of hooks and uppercuts. Survive the storm; he fades badly after round four.',agg:.9,combo:.7,w:{jab:1,cross:2,hook:4,upper:4},dodge:.6,fadeLate:1}},
   {id:'marchetti',first:'Rocco',last:'Marchetti',nick:'The Rock',div:7,arch:'slugger',rating:91,age:29,home:'Brockton, MA',skin:1,hair:'short',hc:0,trunks:'#d8392f',homage:'Rocky Marciano, 49-0',ab:'suzieq',ai:{sig:['cross','cross'],sigP:.5,weak:'jab',scout:'Short arms, iron chin, and the Suzie Q overhand right. Keep him on the end of your jab.',agg:.85,chinBonus:12}},
   {id:'hollis',first:'Cass',last:'Hollis',nick:'The Lip',div:7,arch:'outboxer',rating:97,age:24,home:'Louisville, KY',skin:4,hair:'short',hc:0,trunks:'#f4efe3',homage:'Muhammad Ali, born Cassius Clay',ab:'ropeadope',ai:{sig:['jab','jab','jab','cross'],sigP:.5,weak:'body',scout:'Dances, talks, and pumps the jab. His hands hang low and he rests on the ropes: go to the body.',agg:.5,dodge:.8,guard:['low','low','high'],trash:1}},
+  /* women's circuit (w:1): homages to the pioneers and champions of women's boxing */
+  {id:'halm',w:1,first:'Regine',last:'Halm',nick:'Queen of the Ring',div:0,arch:'outboxer',rating:90,age:27,home:'Karlsruhe, GER',skin:1,hair:'ponytail',hc:4,trunks:'#d8392f',homage:'Regina Halmich, who carried women\'s boxing on German TV',ab:'ringqueen',ai:{sig:['jab','jab','cross'],sigP:.5,weak:'body',scout:'Quick feet and a stinging jab, always at range. Pressure her body and she slows down.',agg:.45,dodge:.7}},
+  {id:'estrella',w:1,first:'Senna',last:'Estrella',nick:'Super Bad',div:0,arch:'counter',rating:91,age:26,home:'East Los Angeles, CA',skin:2,hair:'bun',hc:0,trunks:'#161616',homage:'Seniesa "Super Bad" Estrada',ab:'superbad',ai:{sig:['jab','cross','hook'],sigP:.45,weak:'flurry',scout:'Slick and fast, she makes you miss and makes you pay. Wide open when she finally lets her hands go.',counter:.8,dodge:.75,agg:.4}},
+  {id:'navarro',w:1,first:'Jacqui',last:'Navarro',nick:'The Aztec Princess',div:1,arch:'boxerpuncher',rating:89,age:28,home:'Tijuana, MEX',skin:2,hair:'ponytail',hc:0,trunks:'#2e9e5b',homage:'Jackie Nava, "La Princesa Azteca"',ab:'aztec',ai:{sig:['jab','cross','hook','bhook'],sigP:.5,weak:'upper',scout:'Combinations that always finish on the body. She dips low to throw them: uppercuts catch her.',body:.45}},
+  {id:'serran',w:1,first:'Amalia',last:'Serrán',nick:'La Real',div:2,arch:'swarmer',rating:94,age:29,home:'Carolina, PUR',skin:3,hair:'twinbraids',hc:0,trunks:'#e86aa6',homage:'Amanda "The Real Deal" Serrano, champion in seven divisions',ab:'realdeal',southpaw:true,movesUp:true,ai:{sig:['cross','bhook','cross','hook'],sigP:.55,weak:'counter',scout:'A southpaw who throws the straight left from everywhere and digs to the body. She loads up on the left: counter it.',agg:.85,combo:.7,body:.45}},
+  {id:'tierney',w:1,first:'Kathleen',last:'Tierney',nick:'The Bray Bomber',div:3,arch:'boxerpuncher',rating:96,age:30,home:'Bray, IRL',skin:0,hair:'ponytail',hc:1,trunks:'#2e9e5b',homage:'Katie Taylor, who headlined Madison Square Garden',ab:'braybarrage',ai:{sig:['jab','cross','hook','cross','hook'],sigP:.5,weak:'jab',scout:'Relentless volume behind a high guard. She rushes in behind her combinations: a stiff jab keeps her honest.',agg:.75,combo:.75}},
+  {id:'rijkman',w:1,first:'Lucia',last:'Rijkman',nick:'The Dutch Destroyer',div:3,arch:'slugger',rating:95,age:28,home:'Amsterdam, NED',skin:4,hair:'braids',hc:0,trunks:'#ff7a1a',homage:'Lucia Rijker, "the most dangerous woman in the world"',ab:'destroyer',ai:{sig:['jab','hook','cross'],sigP:.5,weak:'slowStart',scout:'A former kickboxer with frightening power in both hands. Ring rust: she needs a round or two to find her timing.',agg:.7,w:{jab:3,cross:3,hook:4,upper:1.5}}},
+  {id:'brekke',w:1,first:'Cecilie',last:'Brekke',nick:'The First Lady',div:4,arch:'counter',rating:94,age:31,home:'Bergen, NOR',skin:2,hair:'ponytail',hc:0,trunks:'#1d2f63',homage:'Cecilia Brækhus, the first undisputed women\'s champion of the four-belt era',ab:'firstlady',ai:{sig:['jab','cross'],sigP:.45,weak:'fader',scout:'Textbook defense and a clean one-two. She is in her thirties now: make it a long, hard fight.',block:.7,dodge:.65,counter:.7,agg:.35}},
+  {id:'marlow',w:1,first:'Christa',last:'Marlow',nick:'The Coal Miner\'s Daughter',div:4,arch:'swarmer',rating:88,age:27,home:'Itmann, WV',skin:0,hair:'short',hc:2,trunks:'#e86aa6',homage:'Christy Martin, whose bloody 1996 war made women\'s boxing front-page news',ab:'coalminer',ai:{sig:['hook','hook','cross'],sigP:.55,weak:'cuts',scout:'Charges forward throwing hooks and never takes a step back. She bleeds: open a cut and the doctor gets interested.',agg:.9,w:{jab:1,cross:2.5,hook:6,upper:1.5}}},
+  {id:'holmgren',w:1,first:'Hallie',last:'Holmgren',nick:'The Preacher\'s Daughter',div:4,arch:'outboxer',rating:90,age:28,home:'Albuquerque, NM',skin:1,hair:'ponytail',hc:3,trunks:'#2f6fe2',homage:'Holly Holm, "The Preacher\'s Daughter"',ab:'preacher',southpaw:true,ai:{sig:['jab','cross','jab'],sigP:.45,weak:'body',scout:'A southpaw who moves, moves, moves. Cut off the ring and make her fight on the inside, to the body.',dodge:.8,agg:.4}},
+  {id:'fields',w:1,first:'Clarice',last:'Fields',nick:'T-Rex',div:5,arch:'boxerpuncher',rating:97,age:26,home:'Flint, MI',skin:5,hair:'braids',hc:0,trunks:'#f0be48',homage:'Claressa "T-Rex" Shields, two-time Olympic gold medalist and undisputed in three divisions',ab:'trex',ai:{sig:['jab','cross','hook','upper'],sigP:.45,weak:'none',scout:'Fast, strong and smart, and she knows it. No weakness anyone has found. Stay calm and win it round by round.',trash:1}},
+  {id:'alder',w:1,first:'Layla',last:'Alder',nick:'She Bee Stingin\'',div:6,arch:'boxerpuncher',rating:93,age:27,home:'Miami Beach, FL',skin:4,hair:'bun',hc:0,trunks:'#f4efe3',homage:'Laila Ali, undefeated in 24 fights',ab:'shebee',reach:3,ai:{sig:['jab','jab','cross'],sigP:.5,weak:'upper',scout:'A long jab, a heavy right hand and her father\'s footwork. She stands tall: uppercuts come up the middle.'}},
+  {id:'wolford',w:1,first:'Annie',last:'Wolford',nick:'The Wolf',div:7,arch:'slugger',rating:92,age:30,home:'Austin, TX',skin:5,hair:'buzz',hc:0,trunks:'#161616',homage:'Ann Wolfe, owner of one of the most famous one-punch knockouts in the sport',ab:'wolfbite',ai:{sig:['cross','hook'],sigP:.5,weak:'jab',scout:'Walks you down looking for one right hand. Keep her on the end of your jab and never stand still in front of her.',agg:.8,intimidate:1,chinBonus:8,w:{jab:1,cross:6,hook:4,upper:1}}},
 ];
 /* how each legend homage looks in the inked renderer: body type, hair, nose, scars, game face. Homage cues only, no likeness details. */
 const LEGEND_VIS={
@@ -595,6 +620,11 @@ const LEGEND_VIS={
   hurns:{bt:'lanky',expr:'stern'},robbins:{bt:'athletic',expr:'calm'},carver:{bt:'brawler',expr:'grit'},hagan:{bt:'brawler',scar:'nose',expr:'stern'},
   moorland:{bt:'athletic',expr:'calm'},lister:{bt:'anvil',nose:'flat',expr:'stern'},frazee:{bt:'brawler',expr:'grit'},
   tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',robe:'hood',robeCol:'#1d1d1f',robeTrim:'#1d1d1f',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
+  halm:{bt:'lanky',expr:'calm'},estrella:{bt:'athletic',expr:'cocky',trim:'#f0be48'},navarro:{bt:'athletic',expr:'stern'},
+  serran:{bt:'brawler',expr:'grit',trim:'#161616',robe:'satin',robeCol:'#e86aa6',robeTrim:'#f4efe3'},tierney:{bt:'athletic',expr:'stern',trim:'#f4efe3'},
+  rijkman:{bt:'brawler',nose:'flat',expr:'grit'},brekke:{bt:'athletic',expr:'calm',trim:'#d9a93a'},marlow:{bt:'brawler',nose:'broken',scar:'brow',expr:'grit'},
+  holmgren:{bt:'lanky',expr:'calm'},fields:{bt:'athletic',expr:'cocky',trim:'#161616',robe:'gold',robeCol:'#f0be48',robeTrim:'#7a1f1f'},alder:{bt:'lanky',expr:'stern',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a'},
+  wolford:{bt:'anvil',nose:'broken',expr:'stern',robe:'hood',hoodLow:true,robeCol:'#2a2a2c',robeTrim:'#2a2a2c'},
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
@@ -605,7 +635,7 @@ const GEAR=[
   {id:'g_puncher',slot:'gloves',name:"Puncher's 8 oz",desc:'Horsehair padding. Every shot lands harder, and so do theirs through your guard.',price:12000,unlock:{level:6},fx:{pow:3,def:-2},look:{gloveTape:'#161616'}},
   {id:'g_speed',slot:'gloves',name:'Featherweight laces',desc:'Light, fast, a little soft on impact.',price:22000,unlock:{level:8},fx:{spd:2,pow:-1},look:{gloveTape:'#f0be48'}},
   {id:'g_pro',slot:'gloves',name:'Pro lace-ups',desc:'Custom-fitted fight gloves.',price:45000,unlock:{level:12},fx:{pow:1,spd:1},look:{gloveTape:'#f4efe3'}},
-  {id:'g_stone',slot:'gloves',name:'Hands of Stone',desc:'Worn by the man you beat. Brutal and heavy.',price:40000,unlock:{legend:'durante'},fx:{pow:4,spd:-1},look:{gloves:'#7a1f1f',gloveTape:'#161616'}},
+  {id:'g_stone',slot:'gloves',name:'Hands of Stone',desc:'Worn by the legend you beat. Brutal and heavy.',price:40000,unlock:{legend:'durante',legendW:'rijkman'},fx:{pow:4,spd:-1},look:{gloves:'#7a1f1f',gloveTape:'#161616'}},
   {id:'g_belt',slot:'gloves',name:'Championship gold',desc:'Gold-taped gloves for a world champion.',price:120000,unlock:{title:1},fx:{pow:1,def:1},look:{gloveTape:'#f0be48'}},
   {id:'t_std',slot:'trunks',name:'Plain satin',desc:'Your colors, nothing else.',price:0,look:{trunkPat:'solid'}},
   {id:'t_stripe',slot:'trunks',name:'Classic side stripes',desc:'Two stripes down each leg.',price:1500,look:{trunkPat:'stripe'}},
@@ -648,10 +678,15 @@ const SIGNATURES=[
     look:{skin:1,hair:'shaggy',hc:0,beard:'none',trunks:'#f4efe3',trim:'#161616',gloves:'#f4efe3',bt:'lanky',nose:'straight',scar:'none',ear:'normal',expr:'stern',band:'SPIKE',fs:1203,shape:{jaw:.85,chin:1.0,nose:.9,cheek:1.1,brow:1.15}}},
   {id:'anvil',first:'Rocco',last:'Brandt',nick:'The Anvil',div:7,arch:'slugger',rating:84,age:31,home:'Pittsburgh, PA',
     look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,robe:'hood',hoodLow:true,robeCol:'#3a3330',robeTrim:'#3a3330',shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
+  {id:'reina',w:1,first:'Valentina',last:'Cruz',nick:'La Reina',div:2,arch:'swarmer',rating:81,age:26,home:'San Antonio, TX',
+    look:{skin:2,hair:'twinbraids',hc:0,trunks:'#f4efe3',trim:'#d8392f',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'cocky',band:'LA REINA',fs:5150,fem:1,robe:'vest',robeCol:'#161616',robeTrim:'#d8392f'}},
+  {id:'glacier',w:1,first:'Dagny',last:'Lund',nick:'The Glacier',div:7,arch:'slugger',rating:83,age:30,home:'Tromsø, NOR',
+    look:{skin:0,hair:'bun',hc:4,trunks:'#1d2f63',trim:'#cfcfcf',gloves:'#f4efe3',bt:'brawler',nose:'broken',scar:'cheek',ear:'normal',expr:'stern',band:'LUND',fs:7331,fem:1,robe:'hood',hoodLow:true,robeCol:'#e9e6df',robeTrim:'#e9e6df'}},
 ];
 const LEGEND_BY=Object.fromEntries(LEGENDS.map(l=>[l.id,l]));
 
 const FIRST=['Marcus','Danny','Luis','Andre','Tommy','Kenji','Mateo','Darnell','Sergei','Oscar','Jamal','Victor','Eddie','Ramon','Isaac','Felix','Dmitri','Kofi','Angelo','Raul','Terrence','Hector','Yuki','Bilal','Connor','Jesse','Malik','Pedro','Nikolai','Tyrone','Frankie','Javier','Omar','Sean','Leon','Carlos','Abdul','Ivan','Desmond','Rico','Gennady','Sammy','Antonio','Jermaine','Liam','Manny','Rafael','Dante','Joel','Vasyl','Takeshi','Emeka','Paulie','Bernard','Arturo','Mikkel','Teofilo','Curtis','Gilberto','Ray','Nate','Joe','Lamont','Abel','Santiago','Khalid','Brandon','Errol','Diego','Viktor'];
+const FIRST_W=['Maria','Ana','Danielle','Keisha','Yuki','Sofia','Erin','Natasha','Gabriela','Tasha','Jessica','Mikaela','Ramla','Leah','Chantelle','Daniela','Sandy','Alycia','Savannah','Franchón','Yokasta','Marlen','Seren','Ebanie','Hannah','Mary','Nina','Olga','Tiara','Kali','Rosa','Imani','Brianna','Lauren','Ivana','Shannon','Terri','Aisha','Carla','Elena','Mia','Jade','Zoe','Lucía','Precious','Ewa','Aoife','Chloe','Kimberly','Destiny'];
 const LAST=['Rivera','Johnson','Okafor','Morales','Kovalenko','Tanaka','Brooks','Castillo','Walker','Delgado','Petrov','Mendez','Hayes','Santos','Barrera','Washington','Kim','O\'Brien','Fuentes','Ibrahim','Carter','Romero','Ward','Vargas','Mitchell','Novak','Sullivan','Guerrero','Bell','Ortiz','Lopez','Holloway','Asante','Reyes','Duran','Pryor','Spence','Malignaggi','Cotto','Klein','Abara','Moreno','Duval','Franco','Ellis','Quarry','Shavers','Lyle','Norton','Tate','Ruiz','Usyk','Benn','Eubank','Haye','Arreola','Bivol','Garcia','Pavlik','Taylor','Zale','Graziano','Basilio','Gavilan','Saddler','Pep','Ortega','Mancini','Arguello','Pintor','Zarate'];
 const NICKS=['The Hammer','Lights Out','Kid Dynamite','The Professor','Bad Intentions','El Toro','The Ghost','Silk','Machete','Showtime','The Truth','Iceman','Thunder','The Jackal','Hitman Jr.','The Cobra','Mad Dog','Smooth','The Mechanic','Pitbull','Baby Face','The Saint','Gunner','Hurricane Jr.','Bomber','El Matador','Too Sharp','The Tank','Cyclone','Quicksilver','The Surgeon','Vandal','Mr. Clean','Sugar Shane','Dr. Steelhammer','The Bull','El Chico','Big Country','Razor','The Shadow','Chopper','Golden Boy','Boom Boom','The Dentist','Slick','Pretty Boy','The Executioner','Buzzsaw','No Mercy','Iron Lung','The Animal','Fast Eddie','Spider','The Rock Jr.','Midnight','Tiger','The Pride','Diamond','Cannonball','Steamroller'];
 const HOMES=['Philadelphia, PA','Detroit, MI','Brooklyn, NY','Las Vegas, NV','Los Angeles, CA','Houston, TX','Chicago, IL','Mexico City, MEX','Tijuana, MEX','Guadalajara, MEX','San Juan, PUR','Manila, PHI','Kyiv, UKR','Almaty, KAZ','London, ENG','Manchester, ENG','Belfast, NIR','Glasgow, SCO','Accra, GHA','Lagos, NGA','Tokyo, JPN','Osaka, JPN','Havana, CUB','Santo Domingo, DOM','Buenos Aires, ARG','Caracas, VEN','Bogotá, COL','Panama City, PAN','Sydney, AUS','Toronto, CAN','Montreal, CAN','Paris, FRA','Berlin, GER','Moscow, RUS','Sheffield, ENG','Cardiff, WAL','Dublin, IRL','Newark, NJ','Atlantic City, NJ','Baltimore, MD','Oxnard, CA','El Paso, TX','Miami, FL','Cleveland, OH','St. Louis, MO','Youngstown, OH','Brockton, MA','Bangkok, THA','Seoul, KOR','Nairobi, KEN','Johannesburg, RSA','Kingston, JAM','Mumbai, IND','Auckland, NZL','Lviv, UKR','Sofia, BUL','Tashkent, UZB','Phoenix, AZ','Denver, CO','Fresno, CA'];
@@ -719,10 +754,17 @@ function useCareerRng(){const r=careerRng();RNG.cur=r?r.career:null}
 const B=()=>G.boxer;
 function ageOf(born){return Math.floor((G.week-born)/52)}
 function dateStr(w){w=w??G.week;const y=START_YEAR+Math.floor(w/52);const m=Math.min(11,Math.floor((w%52)/52*12));return MONTHS[m]+' '+y}
+/* circuit: every career is in the men's or the women's world; legends, names, frames and pronouns follow it */
+function isW(){return !!(typeof G!=='undefined'&&G&&G.circuit==='w')}
+function inCircuit(x){return !!x.w===isW()}
+function divLb(d){return isW()&&DIVS[d].lbW?DIVS[d].lbW:DIVS[d].lb}
+const W_HAIRS=['ponytail','ponytail','ponytail','bun','bun','twinbraids','twinbraids','braids','short','curly','afro','slick','buzz','topknot'];
+/* fighter text is written with he/him; the women's world swaps the pronouns */
+function gtxt(t){if(!isW()||!t)return t;const m={he:'she',He:'She',him:'her',Him:'Her',his:'her',His:'Her',himself:'herself',men:'women',man:'woman'};return t.replace(/\b(he|He|him|Him|his|His|himself|men|man)\b/g,w=>m[w])}
 function fullName(f){return f.nick?`${f.first} “${f.nick}” ${f.last}`:`${f.first} ${f.last}`}
 function shortName(f){return `${f.first} ${f.last}`}
 function recStr(f){return `${f.w}-${f.l}${f.d?'-'+f.d:''}`}
-function randomLook(){return {skin:randi(0,SKIN.length-1),hair:pick(HAIRS),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:chance(.6)?'none':pick(BEARDS),trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS),
+function randomLook(){const w=isW();return {skin:randi(0,SKIN.length-1),hair:pick(w?W_HAIRS:HAIRS.slice(0,11)),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:w||chance(.6)?'none':pick(BEARDS),fem:w?1:undefined,trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS),
   nose:pick(['straight','straight','broken','flat']),scar:chance(.28)?pick(['brow','cheek','nose']):'none',ear:chance(.15)?'cauliflower':'normal',expr:pick(['grit','stern','stern','calm','cocky']),fs:randi(0,9999)}}
 /* visual traits for fighters made before the inked renderer: derived from a hash so the world RNG stream is untouched */
 function fillLook(f){const L=f.look=f.look||{};const r=new Rng(hashStr(String(f.id||f.last||'x')));const p=a=>a[Math.floor(r.next()*a.length)];
@@ -739,8 +781,8 @@ function statsFromRating(r,arch){const base=ARCH[arch].base,s={};for(const k of 
 /* ---------- world ---------- */
 function makeFighter(div,rating,age,o={}){
   const arch=o.arch||pick(Object.keys(ARCH));
-  const h=[63,65,66,68,70,72,74,76][div]+randi(-2,2);
-  const f={id:'f'+uid(),first:o.first||pick(FIRST),last:o.last||pick(LAST),nick:o.nick!==undefined?o.nick:(chance(.55)?pick(NICKS):''),
+  const h=(isW()?[60,62,63,65,66,68,70,72]:[63,65,66,68,70,72,74,76])[div]+randi(-2,2);
+  const f={id:'f'+uid(),first:o.first||pick(isW()?FIRST_W:FIRST),last:o.last||pick(LAST),nick:o.nick!==undefined?o.nick:(chance(.55)?pick(NICKS):''),
     home:o.home||pick(HOMES),div,arch,rating:Math.round(clamp(rating,25,99)),born:G.week-age*52-randi(0,51),w:0,l:0,d:0,ko:0,pts:0,
     look:o.look||randomLook(),stance:o.southpaw?'southpaw':(chance(.18)?'southpaw':'orthodox'),height:h,reach:h+randi(-1,4)+(o.reach||0),
     legend:o.legend||null,active:true,pot:o.pot||Math.round(clamp(rating+rand(0,18),40,97)),quirk:o.legend?null:(chance(.65)?pick(Object.keys(QUIRKS)):null)};
@@ -754,7 +796,7 @@ function makeFighter(div,rating,age,o={}){
   return f;
 }
 function legendFighter(L){
-  const look=Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:hashStr(L.id)%10000,band:L.last.toUpperCase()},LEGEND_VIS[L.id]||{},{legendVis:1});
+  const look=Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',fem:L.w?1:undefined,trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:hashStr(L.id)%10000,band:L.last.toUpperCase()},LEGEND_VIS[L.id]||{},{legendVis:1});
   const f=makeFighter(L.div,L.rating,L.age,{first:L.first,last:L.last,nick:L.nick,home:L.home,arch:L.arch,look,southpaw:L.southpaw,reach:L.reach||0,legend:L.id,pot:L.rating});
   f.pts=Math.round(clamp(f.rating*10-120+rand(0,40),600,1000));
   return f;
@@ -764,8 +806,8 @@ function genWorld(){
   for(let d=0;d<8;d++){
     const ids=[];
     const add=f=>{W.f[f.id]=f;ids.push(f.id)};
-    LEGENDS.filter(l=>l.div===d).forEach(l=>add(legendFighter(l)));
-    SIGNATURES.filter(x=>x.div===d).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
+    LEGENDS.filter(l=>l.div===d&&inCircuit(l)).forEach(l=>add(legendFighter(l)));
+    SIGNATURES.filter(x=>x.div===d&&inCircuit(x)).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
     const tiers=[[2,85,91],[6,75,85],[10,63,75],[18,40,63]];
     for(const [n,a,b] of tiers)for(let i=0;i<n;i++)add(makeFighter(d,rand(a,b),randi(20,35)));
     W.divs.push(ids);
@@ -812,7 +854,7 @@ function weightInfo(div){
     '-1':{pow:1.06,chin:1.05,spd:1,sta:.9,miss:.06,label:'Weight cut',tone:'warn',note:'Size advantage, slight stamina cost.'},
     '0':{pow:1,chin:1,spd:1,sta:1,miss:0,label:'Natural weight',tone:'good',note:'No penalties.'},
     '1':{pow:.92,chin:.92,spd:1.06,sta:1.04,miss:0,label:'Moved up',tone:'warn',note:'Faster than them, but they hit harder.'},
-    '2':{pow:.84,chin:.84,spd:1.1,sta:1.06,miss:0,label:'Way above natural',tone:'bad',note:'Fighting much bigger men.'},
+    '2':{pow:.84,chin:.84,spd:1.1,sta:1.06,miss:0,label:'Way above natural',tone:'bad',note:'Fighting much bigger opponents.'},
   }[String(d)];
   if(!T)return null;
   const r=Object.assign({},T);
@@ -827,7 +869,8 @@ function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
   if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};
   if(u.title&&!b.titleWins)return {ok:false,why:'Win a world title'};
   if(u.amgold&&!(G.flags.am_gold_0||G.flags.am_gold_1))return {ok:false,why:'Win amateur gold'};
-  if(u.legend&&!b.legendsBeaten.includes(u.legend)){const L=LEGEND_BY[u.legend];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
+  const lg=isW()&&u.legendW?u.legendW:u.legend;
+  if(lg&&!b.legendsBeaten.includes(lg)){const L=LEGEND_BY[lg];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
   return {ok:true}}
 function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
 function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
@@ -865,12 +908,12 @@ function slotsCount(){return B().level>=15?3:2}
 /* ---------- new career ---------- */
 function newCareer(o){
   const seed=(o.seed??RNG.seed())>>>0;
-  G={v:SAVE_V,slot:o.slot,created:Date.now(),diff:o.diff,week:0,phase:'amateur',seed,rng:{career:seed,world:(seed^0x5bd1e995)>>>0},sandbox:!!o.sandbox,
+  G={v:SAVE_V,slot:o.slot,created:Date.now(),diff:o.diff,circuit:o.circuit==='w'?'w':'m',week:0,phase:'amateur',seed,rng:{career:seed,world:(seed^0x5bd1e995)>>>0},sandbox:!!o.sandbox,
     boxer:null,world:null,rival:null,promoter:null,trainer:'pops',gym:'basement',staff:{cutman:false,nutri:false},
     offers:[],next:null,newsList:[],flags:{},chapters:[],history:[],am:{stage:0,round:0,opps:[],results:[]},pending:[],seen:{}};
   useCareerRng();
   const base=ARCH[o.arch].base,stats={};for(const k of STAT_KEYS)stats[k]=base[k];
-  const natural=clamp(Math.round((o.height-62)/2+BUILDS[o.build].off),0,7);
+  const natural=clamp(Math.round((o.height-(G.circuit==='w'?58:62))/2+BUILDS[o.build].off),0,7);
   G.boxer={name:o.name,first:o.first,last:o.last,nick:o.nick,home:o.home,stance:o.stance,look:o.look,height:o.height,build:o.build,
     reach:o.height+ARMS[o.arms].d,arch:o.arch,born:-(o.age*52)-randi(0,40),natural,div:natural,stats,level:1,xp:0,statPts:0,skillPts:1,
     skills:[],abilities:[ARCH[o.arch].ability],equipped:[ARCH[o.arch].ability],damage:0,injuries:[],hype:5,money:1500,pts:0,
@@ -889,7 +932,7 @@ function counterArch(a){return {outboxer:'swarmer',slugger:'counter',swarmer:'ou
 function rivalF(){return G.rival?G.world.f[G.rival.id]:null}
 
 /* ---------- news ---------- */
-function news(t,tone){G.newsList.unshift({w:G.week,t,tone:tone||''});if(G.newsList.length>80)G.newsList.length=80}
+function news(t,tone){G.newsList.unshift({w:G.week,t:gtxt(t),tone:tone||''});if(G.newsList.length>80)G.newsList.length=80}
 
 /* ---------- amateurs ---------- */
 const AM_TOURNEYS=[
@@ -958,7 +1001,7 @@ function genOffers(){
   // a callout or rematch demanded in the post-fight interview
   if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);offers.push(mkOffer(cf,'grudge',cf.id===(last&&last.oppId)?'Rematch':'Callout Fight',cf.id===(last&&last.oppId)?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`))}}
   // chapters first
-  for(const ch of CHAPTERS){if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
+  for(const ch of CHAPTERS){if(ch.circ&&ch.circ!==(G.circuit||'m'))continue;if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
     const cont=ranking(d).filter(e=>e.id!=='P'&&!beltsOf(e.id,d).length);
     const mand=cont[0]?.f;if(mand&&!used.has(mand.id)){used.add(mand.id);offers.push(mkOffer(mand,'world','Mandatory Title Defense',`The ${myBelts.join(', ')} ordered this one. Your #1 contender.`,{title:{belts:myBelts.slice(),defense:true}}))}
@@ -1196,7 +1239,7 @@ function oppCombat(f,o={}){
   const ai=deep(ARCH[f.arch].ai);if(L?.ai)Object.assign(ai,deep(L.ai));
   const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
   if(ai.weak==='glass')st.chin=Math.max(15,st.chin-15);
-  const scout=L?L.ai?.scout:(Q?Q.scout:'');
+  const scout=gtxt(L?L.ai?.scout:(Q?Q.scout:''));
   return {scout,quirk:Q?Q.name:null,name:shortName(f),first:f.first,last:f.last,stats:st,look:fillLook(f),arch:f.arch,height:f.height,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
 }
 function playerCombat(){
@@ -1452,9 +1495,23 @@ const CHAPTERS=[
       const c=champsIn(b.div)[0];if(!c)return null;const bl=beltsOf(c.id,b.div);
       const o=mkOffer(c,'chapter','Big George Comes Back',`At ${ageOf(b.born)}, a shot at the ${bl.join(' & ')} title. Wearing your old trunks.`,{title:{belts:bl}});o.mods={};return o},
     done(win){if(win){G.chapters.push('comeback');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: the oldest champion'}}},
+  // women's circuit chapters
+  {id:'undercard',circ:'w',title:'The Undercard',homage:'Christy Martin vs. Deirdre Gogarty, Las Vegas, 1996',
+    intro:'You\'re on the undercard of a heavyweight title fight, in front of a pay-per-view audience that has never watched a women\'s fight. Nobody expects much. Give them six rounds they will never forget.',
+    offer(){const b=B();const r=playerRank()||99;if(G.phase!=='pro'||b.record.w<4||b.record.w>16||r<6)return null;
+      const c=divFighters(b.div).filter(f=>!f.rival&&!beltsOf(f.id,b.div).length&&Math.abs(f.rating-playerOvr())<=7).sort((a,c)=>c.pts-a.pts)[0];if(!c)return null;
+      const o=mkOffer(c,'chapter','The Undercard',`Six rounds on a heavyweight pay-per-view card. Win it and the whole country is talking about you. One and a half times the purse.`,{rounds:6});o.purse=Math.round(o.purse*1.5);o.venue='MGM Grand Garden Arena';o.mods={};return o},
+    done(win){if(win){G.chapters.push('undercard');B().hype=clamp(B().hype+20,0,100);return 'Chapter complete: the fight that made the magazine cover'}}},
+  {id:'garden',circ:'w',title:'Headliners',homage:'Katie Taylor vs. Amanda Serrano, Madison Square Garden, 2022',
+    intro:'For the first time, two women headline Madison Square Garden. Sold out, the best two fighters in the world, and every belt that matters. Whatever happens tonight, it is history.',
+    offer(){const b=B();if(G.phase!=='pro'||(playerRank()||99)>3)return null;
+      const c=divFighters(b.div).filter(f=>!f.rival&&f.rating>=playerOvr()-2).sort((a,c)=>c.pts-a.pts)[0];if(!c)return null;
+      const bl=beltsOf(c.id,b.div).concat(beltsOf('P',b.div));
+      const o=mkOffer(c,'chapter','Headliners',`Main event at the Garden against ${shortName(c)}.${bl.length?' '+bl.join(' & ')+' on the line.':''} Double purse.`,bl.length?{title:{belts:bl,defense:beltsOf('P',b.div).length>0}}:{});o.purse*=2;o.venue='Madison Square Garden';o.mods={};return o},
+    done(win){if(win){G.chapters.push('garden');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: Headliners at the Garden'}B().hype=clamp(B().hype+8,0,100)}},
 ];
 const CHAPTER_INFO=[
-  ...CHAPTERS.map(c=>({id:c.id,title:c.title,homage:c.homage})),
+  ...CHAPTERS.map(c=>({id:c.id,title:c.title,homage:c.homage,circ:c.circ})),
   {id:'longcount',title:'The Long Count',homage:'Dempsey vs. Tunney II, Chicago, 1927'},
   {id:'hurricane',title:'The Hurricane',homage:'Rubin "Hurricane" Carter'},
   {id:'exile',title:'The Exile',homage:'Muhammad Ali\'s stand, 1967–70'},
@@ -1588,6 +1645,8 @@ function drawGlove(ctx,x,y,r,col,glow,glowCol,opt={}){
 }
 /* ---------- head ---------- */
 function drawHead(ctx,L,x,y,face,cut,o={}){
+  if(L&&['ponytail','bun','twinbraids'].includes(L.hair))L=Object.assign({},L,{hair:L.hair==='twinbraids'?'braids':L.hair==='bun'?'topknot':'slick'});
+  if(L&&L.fem&&L.beard&&L.beard!=='none')L=Object.assign({},L,{beard:'none'});
   if(L&&(['spiky','shaggy','curly'].includes(L.hair)||L.beard==='goatee'))L=Object.assign({},L,{hair:['spiky','shaggy','curly'].includes(L.hair)?'short':L.hair,beard:L.beard==='goatee'?'mustache':L.beard});
   const skin=SKIN[L.skin],hc=HAIRC[L.hc||0],dk=shade(skin,-.3);
   const R=34,tilt=o.tilt||0;
@@ -1701,6 +1760,8 @@ function drawFighter(ctx,L,P,o={}){
   ctx.save();ctx.strokeStyle=sk3;ctx.globalAlpha=.38;ctx.lineWidth=2.4;ctx.lineCap='round';
   const px=chX+tw*10;
   ctx.beginPath();ctx.moveTo(px-50,chY+6);ctx.quadraticCurveTo(px-25,chY+22,px-3,chY+8);ctx.moveTo(px+50,chY+6);ctx.quadraticCurveTo(px+25,chY+22,px+3,chY+8);ctx.moveTo(px,chY+14);ctx.lineTo(px,trY-46);ctx.moveTo(px-18,chY+34);ctx.lineTo(px+18,chY+34);ctx.moveTo(px-16,chY+52);ctx.lineTo(px+16,chY+52);ctx.stroke();ctx.restore();
+  if(L.fem){ctx.save();part(ctx,c=>{c.beginPath();c.moveTo(chX-66*tw2+tw*6,chY-22);c.quadraticCurveTo(chX+tw*6,chY-8,chX+66*tw2+tw*6,chY-22);c.lineTo(chX+70*tw2+tw*6,chY+26);c.quadraticCurveTo(chX+tw*6,chY+34,chX-70*tw2+tw*6,chY+26);c.closePath()},L.trunks,chX,chY,70,{hi:.15,sh:.3});
+    ctx.fillStyle=L.trim;ctx.fillRect(chX-70*tw2+tw*6,chY+22,140*tw2,8);ctx.restore()}
   // back arm (pulled back)
   const arms=[[shL,P.lg,true],[shR,P.rg,false]];
   for(const [sh,g,il] of arms)if((g[2]||0)<-.25)drawArm(sh,g,il);
@@ -1858,6 +1919,8 @@ const R3_BT={
   brawler:{hip:1.04,waist:1.06,chest:1.1,depth:.77,sh:.47,arm:1.16,fore:1.14,delt:1.14,len:.98,leg:1.06,legLen:.97,neck:.12,neckLen:.88,trap:1.3},
   anvil:{hip:1.12,waist:1.22,chest:1.17,depth:.85,sh:.5,arm:1.26,fore:1.2,delt:1.24,len:.95,leg:1.15,legLen:.92,neck:.142,neckLen:.72,trap:1.55,belly:1},
 };
+/* women's frame: narrower shoulders and waist, lighter arms and neck, relatively wider hips; the bust is sculpted under a sports top */
+function r3femP(P){return Object.assign({},P,{sh:P.sh*.88,chest:P.chest*.9,waist:P.waist*.84,hip:P.hip*1.02,depth:P.depth*.97,arm:P.arm*.8,fore:P.fore*.84,delt:P.delt*.8,neck:P.neck*.78,neckLen:P.neckLen*1.12,trap:P.trap*.5,leg:P.leg*.96,lat:.5,ribs:0,belly:0,fem:1})}
 const R3_BT_ARCH={outboxer:'lanky',counter:'athletic',boxerpuncher:'athletic',swarmer:'brawler',slugger:'anvil'};
 const R3_EXPR={grit:{angry:1,squint:.25,lidOpen:.86,grit:1},stern:{angry:.75,squint:.1,lidOpen:.9},calm:{angry:.38,squint:.12,lidOpen:.8},cocky:{angry:.15,lidOpen:.78,smile:.7}};
 /* ---------- the skull: radial displacement in face space; front = -z in geometry (mesh is turned 180°) ---------- */
@@ -1911,7 +1974,8 @@ function r3skinTex(L,o={},cv){
   const fx=768,fy=256;
   const occ=(px,py,rx,ry,a,col='60,25,25')=>{const g=x.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(${col},${a})`);g.addColorStop(1,`rgba(${col},0)`);x.save();x.translate(px,py);x.scale(rx,ry);x.fillStyle=g;x.beginPath();x.arc(0,0,1,0,7);x.fill();x.restore()};
   const ink=(a=.6)=>`rgba(29,21,23,${a})`;
-  const line=(pts,w=4,a=.6)=>{x.strokeStyle=ink(a);x.lineWidth=w;x.lineCap='round';x.lineJoin='round';x.beginPath();pts.forEach(([th,lat],i)=>{const [px,py]=r3tx(th,lat);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()};
+  const fk=L.fem?.5:1;
+  const line=(pts,w=4,a=.6)=>{x.strokeStyle=ink(a*fk);x.lineWidth=w;x.lineCap='round';x.lineJoin='round';x.beginPath();pts.forEach(([th,lat],i)=>{const [px,py]=r3tx(th,lat);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()};
   for(const s of [-1,1]){occ(fx+s*110,fy+45,80,60,.07,'200,90,80');occ(fx+s*70,fy-8,46,30,.34);occ(fx+s*250,fy,40,50,.1,'200,90,80')}
   occ(fx,fy+60,24,16,.08,'200,90,80');occ(fx,fy+70,30,10,.3);occ(fx,fy+150,34,12,.25);occ(fx,fy+200,120,30,.25);
   x.fillStyle='rgba(165,75,75,.4)';x.beginPath();x.ellipse(fx,fy+95,40,7,0,0,7);x.fill();x.fillStyle='rgba(160,70,70,.42)';x.beginPath();x.ellipse(fx,fy+116,34,9,0,0,7);x.fill();
@@ -1981,8 +2045,8 @@ function r3look(look,o={}){
   const hairColor=typeof lk.hc==='number'?HAIRC[lk.hc]||HAIRC[0]:(lk.hairColor||'#1a120c');
   const shape=lk.shape||{jaw:.85+r.next()*.45,chin:.85+r.next()*.4,nose:.85+r.next()*.35,cheek:.85+r.next()*.4,brow:1.05+r.next()*.35};
   const bt=lk.bt||R3_BT_ARCH[o.arch]||['lanky','athletic','brawler','anvil'][h%4];
-  return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
-    eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
+  return {skin,hair:lk.hair||'short',hairColor,beard:lk.fem?'none':(lk.beard||'none'),trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
+    eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,lk.fem?{jaw:shape.jaw*.8,chin:shape.chin*.88,nose:shape.nose*.84,brow:Math.min(1.15,shape.brow)*.8,cheek:shape.cheek*1.04}:{},{noseType:lk.nose||'straight'}),fem:!!lk.fem,
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
     robe:lk.robe||null,robeCol:lk.robeCol||null,robeTrim:lk.robeTrim||null,hoodLow:!!lk.hoodLow,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
@@ -2001,7 +2065,7 @@ function r3head(L){
   const browCol=new THREE.Color(L.hair==='bald'?'#2a1d18':L.hairColor).lerp(new THREE.Color(INK),.45).getHex();
   const eyeMat=r3ink(new THREE.MeshPhysicalMaterial({color:0xf1ede4,roughness:.25,clearcoat:.8}),.6);
   for(const s of [-1,1]){
-    const c=S(s*.41,.035,-.026);const eye=new THREE.Group();eye.position.copy(c);eye.scale.setScalar(.9);g.add(eye);
+    const c=S(s*.41,.035,-.026);const eye=new THREE.Group();eye.position.copy(c);eye.scale.setScalar(L.fem?.97:.9);g.add(eye);
     eye.add(r3mesh(new THREE.SphereGeometry(.042,28,20),eyeMat,{ol:false}));
     const ig=new THREE.Group();eye.add(ig);ctl.eyes.push(ig);
     const iris=r3mesh(new THREE.SphereGeometry(.0425,28,20,0,Math.PI*2,0,.74),new THREE.MeshPhysicalMaterial({color:L.eyes,roughness:.3,clearcoat:1}),{ol:false});iris.rotation.x=Math.PI/2;ig.add(iris);
@@ -2010,20 +2074,22 @@ function r3head(L){
     // lids: skin caps that rotate down over the ball; a heavy ink lash line rides the upper lid's edge
     const tc=Math.PI*.42,ru=.0465;
     const upG=new THREE.Group();eye.add(upG);upG.add(r3mesh(new THREE.SphereGeometry(ru,28,18,0,Math.PI*2,0,tc),skinP,{ol:false}));
-    const lash=r3mesh(new THREE.TorusGeometry(ru*Math.sin(tc),.0068,6,30,Math.PI),inkM,{ol:false});lash.rotation.x=Math.PI/2;lash.position.y=ru*Math.cos(tc);upG.add(lash);
+    const lash=r3mesh(new THREE.TorusGeometry(ru*Math.sin(tc),L.fem?.0092:.0068,6,30,Math.PI),inkM,{ol:false});lash.rotation.x=Math.PI/2;lash.position.y=ru*Math.cos(tc);upG.add(lash);
     const loG=new THREE.Group();eye.add(loG);const tl=Math.PI*.3;loG.add(r3mesh(new THREE.SphereGeometry(.045,28,14,0,Math.PI*2,Math.PI-tl,tl),skinP,{ol:false}));
     const ll=r3mesh(new THREE.TorusGeometry(.045*Math.sin(tl),.0028,5,24,Math.PI),inkM,{ol:false});ll.rotation.x=Math.PI/2;ll.position.y=-.045*Math.cos(tl);loG.add(ll);
     ctl.lids.push(upG);ctl.lows.push(loG);
     // brow: heavy tapered tube, thick at the inner end, low over the eye
     const bg=new THREE.Group();bg.position.copy(c);g.add(bg);ctl.brows.push({g:bg,s,base:c.clone()});
-    const pts=[];for(let i=0;i<=8;i++){const t=i/8;pts.push(S(s*(.1+.62*t),.165+.055*Math.sin(t*Math.PI*.9)-.02*t,.018).sub(c))}
-    bg.add(r3mesh(r3strand(pts,.03,.012,24,8,true),r3cel(browCol,null,false,.4),{olw:.0024}));
+    const pts=[];for(let i=0;i<=8;i++){const t=i/8;pts.push(S(s*(.1+.62*t),(L.fem?.18:.165)+(L.fem?.075:.055)*Math.sin(t*Math.PI*.9)-.02*t,.018).sub(c))}
+    bg.add(r3mesh(r3strand(pts,L.fem?.0145:.03,L.fem?.0055:.012,24,8,true),r3cel(browCol,null,false,.4),{olw:L.fem?.0016:.0024}));
+    // winged lash flick at the outer corner
+    if(L.fem)g.add(r3mesh(r3strand([S(s*.555,.06,.004),S(s*.6,.075,.01),S(s*.64,.1,.014)],.0075,.0015,10,5,true),inkM,{ol:false}));
   }
   // mouth: ink line + lips; teeth band and dark cavity revealed by grit/open
-  {const lipM=r3cel(new THREE.Color(L.skin).offsetHSL(-.015,.08,-.12).getHex());
+  {const lipM=r3cel(L.fem?new THREE.Color(L.skin).lerp(new THREE.Color(0xa83a52),.45).getHex():new THREE.Color(L.skin).offsetHSL(-.015,.08,-.12).getHex());const lk=L.fem?1.4:1;
     const arc=(lat,w,yoff,e=.006)=>{const pts=[];for(let i=0;i<=10;i++){const t=i/10;pts.push(S(-w+2*w*t,lat+Math.sin(t*Math.PI)*yoff,e))}return pts};
-    const up=r3mesh(r3strand(arc(-.518,.25,.008,.002),.0062,.0062,20,7,true),lipM,{ol:false});g.add(up);ctl.lipUp=up;
-    const lo=r3mesh(r3strand(arc(-.592,.2,-.008,.0),.0085,.0085,20,7,true),lipM,{ol:false});g.add(lo);ctl.lipLo=lo;
+    const up=r3mesh(r3strand(arc(-.518,.25,.008,.002),.0062*lk,.0062*lk,20,7,true),lipM,{ol:false});g.add(up);ctl.lipUp=up;
+    const lo=r3mesh(r3strand(arc(-.592,.2,-.008,.0),.0085*lk,.0085*lk,20,7,true),lipM,{ol:false});g.add(lo);ctl.lipLo=lo;
     const ml=r3mesh(r3strand(arc(-.553,.3,-.004,.012),.0045,.0045,20,6,true),inkM,{ol:false});g.add(ml);ctl.mline=ml;
     const mp=S(0,-.555,0);
     const cav=r3mesh(new THREE.SphereGeometry(.07,16,12),r3flat(0x2a0d0d),{ol:false});cav.position.copy(S(0,-.555,-.026));cav.scale.set(1.15,.01,.5);g.add(cav);ctl.cav=cav;
@@ -2041,7 +2107,7 @@ function r3head(L){
 }
 /* hair: an alpha-masked cap for coverage plus geometric clumps (merged into one mesh) that carry the ink outlines */
 function r3hair(g,L,hg,R,S){
-  const style=L.hair||'short';if(style==='bald')return;
+  const style=L.hair||'short';if(style==='bald')return;const sleek=['slick','topknot','ponytail','bun','twinbraids'].includes(style);
   const hc=new THREE.Color(L.hairColor||'#1a120c');const hm=r3cel(hc.getHex(),null,false,.8);
   const rr=new Rng(L.hseed||1);const rnd=(a,b)=>a+(b-a)*rr.next();
   const geos=[];const add=(geo)=>{geos.push(geo);return geo};
@@ -2077,15 +2143,15 @@ function r3hair(g,L,hg,R,S){
           const q=new THREE.SphereGeometry(.0135,8,6);q.scale(1,.7,1.75);M.makeBasis(B,Nn,T).setPosition(mid);q.rotateY(i%2?.35:-.35);q.applyMatrix4(M);add(q)}
         prev=p}}
     flush(.0018);return}
-  cap(style==='curly'?1.04:1.03,mask(ax=>hairline(ax,style==='slick'?-112:style==='shaggy'?-90:-104)));
+  cap(style==='curly'?1.04:1.03,mask(ax=>hairline(ax,sleek?-108:style==='shaggy'?-90:-104)));
   if(style==='curly'){for(let i=0;i<110;i++){const th=rnd(-2.8,2.8),lat=rnd(.3,.97);if(Math.abs(th)<1&&lat<.58)continue;if(Math.abs(th)>2.2&&lat<.45)continue;ball(S(th,lat,.012),rnd(.018,.026))}flush(.0018);return}
   if(style==='topknot'){const q=new THREE.SphereGeometry(.065,16,12);q.scale(1,.85,1);q.translate(0,R*1.16,-.07);add(q)}
-  const n0=style==='shaggy'?46:style==='spiky'?40:style==='slick'?26:style==='topknot'?22:32;
+  const n0=style==='shaggy'?46:style==='spiky'?40:sleek?26:32;
   for(let i=0;i<n0;i++){
     let th,lat;
     if(i<14){th=-1.05+2.1*(i/13)+rnd(-.05,.05);lat=.57+.05*Math.abs(th)+rnd(-.02,.03)}else{th=rnd(-2.6,2.6);lat=rnd(.6,.97)}
     const n=nrm(th,lat);const base=S(th,lat,-.003);
-    if(style==='slick'||style==='topknot'){const tip=base.clone().add(back.clone().multiplyScalar(.12)).add(n.clone().multiplyScalar(.02));const mid=base.clone().lerp(tip,.5).add(n.clone().multiplyScalar(.022));add(r3strand([base,mid,tip],.022,.006,8,6));continue}
+    if(sleek){const tip=base.clone().add(back.clone().multiplyScalar(.12)).add(n.clone().multiplyScalar(.02));const mid=base.clone().lerp(tip,.5).add(n.clone().multiplyScalar(.022));add(r3strand([base,mid,tip],.022,.006,8,6));continue}
     if(style==='short'){const tip=base.clone().add(n.clone().multiplyScalar(.035)).add(back.clone().multiplyScalar(.09));const mid=base.clone().lerp(tip,.5).add(n.clone().multiplyScalar(.02));add(r3strand([base,mid,tip],.022,.004,8,6));continue}
     if(style==='spiky'){const len=rnd(.07,.12)*(i<14?.8:1);const dir=n.clone().multiplyScalar(.8).add(back.clone().multiplyScalar(.25)).add(new THREE.Vector3(rnd(-.15,.15),.2,0)).normalize();
       const tip=base.clone().add(dir.clone().multiplyScalar(len));const mid=base.clone().add(dir.clone().multiplyScalar(len*.5)).add(n.clone().multiplyScalar(.01));add(r3strand([base,mid,tip],.026,.001,8,6));continue}
@@ -2094,6 +2160,21 @@ function r3hair(g,L,hg,R,S){
       const mid=base.clone().add(n.clone().multiplyScalar(.045)).add(dir.clone().multiplyScalar(len*.35));const tip=mid.clone().add(dir.clone().multiplyScalar(len*.7));
       add(r3strand([base,mid,tip],.028,.0015,10,6));continue}
   }
+  // gathered styles: a tied ponytail, a bun, or two plaits hanging behind the shoulders
+  const plait=(pts,r0,r1)=>{const cv=new THREE.CatmullRomCurve3(pts);const n=Math.round(cv.getLength()/.022);const T=new THREE.Vector3(),Nn=new THREE.Vector3(),Bn=new THREE.Vector3(),M=new THREE.Matrix4();
+    for(let i=0;i<n;i++){const u=(i+.5)/n,p=cv.getPointAt(u);cv.getTangentAt(u,T);Bn.set(1,0,0);Nn.crossVectors(T,Bn).normalize();Bn.crossVectors(Nn,T).normalize();
+      const r=r0+(r1-r0)*u;const q=new THREE.SphereGeometry(r,8,6);q.scale(1,.75,1.5);q.rotateY(i%2?.45:-.45);M.makeBasis(Bn,Nn,T).setPosition(p.clone().add(Bn.clone().multiplyScalar(i%2?r*.35:-r*.35)));q.applyMatrix4(M);add(q)}
+    const e=cv.getPointAt(1);const tie=new THREE.SphereGeometry(r1*.9,8,6);tie.translate(e.x,e.y,e.z);add(tie)};
+  if(style==='ponytail'){const T=S(Math.PI,.22,.012),o=T.clone().setY(0).normalize(),dn=new THREE.Vector3(0,-1,0);
+    const tie=new THREE.TorusGeometry(.028,.012,6,16);tie.lookAt(o);tie.translate(T.x+o.x*.012,T.y,T.z+o.z*.012);add(tie);
+    for(let i=0;i<13;i++){const ox=rnd(-.026,.026),oo=rnd(-.012,.012);const sx=new THREE.Vector3(ox,0,0);
+      const p0=T.clone().add(o.clone().multiplyScalar(.02)).add(sx.clone().multiplyScalar(.4));const p1=p0.clone().add(o.clone().multiplyScalar(.07+oo)).add(dn.clone().multiplyScalar(.05)).add(sx);
+      const p2=p1.clone().add(o.clone().multiplyScalar(.015+oo)).add(dn.clone().multiplyScalar(.15)).add(sx.clone().multiplyScalar(.4));const p3=p2.clone().add(o.clone().multiplyScalar(-.03)).add(dn.clone().multiplyScalar(.13)).add(sx.clone().multiplyScalar(.3+rnd(-.5,.5)));
+      add(r3strand([p0,p1,p2,p3],.04,.004,14,6))}}
+  if(style==='bun'){const T=S(Math.PI,.5,.03);const q=new THREE.SphereGeometry(.072,18,14);q.scale(1.08,.95,.82);q.translate(T.x,T.y,T.z-.035);add(q);
+    for(let i=0;i<3;i++){const w=new THREE.TorusGeometry(.06-i*.008,.011,6,20,Math.PI*1.3);w.rotateX(-.6+i*.5);w.rotateZ(i*1.7);w.translate(T.x,T.y,T.z-.04);add(w)}}
+  if(style==='twinbraids')for(const sd of [-1,1]){const a=S(sd*2.45,.2,.004),b=S(sd*2.75,-.25,.02);
+    plait([a,b,b.clone().add(new THREE.Vector3(sd*.01,-.12,-.035)),b.clone().add(new THREE.Vector3(sd*.02,-.3,-.03))],.027,.017)}
   flush(style==='short'||style==='slick'?.0024:.003);
 }
 /* expression state: lidOpen 0..1, squint, angry, hurt, open (mouth), grit (teeth), smile, look, lookY */
@@ -2138,11 +2219,11 @@ function r3torsoGeo(P,m){
   const H=P.hip*m,Wa=P.waist*m,C=P.chest*m,bel=P.belly?.035:0;
   const prof=[[-.42,.2*H],[-.3,.24*H],[-.18,.245*H],[-.06,.225*Wa+bel*.5],[.04,.2*Wa+bel],[.12,.2*Wa+bel*.7],[.22,.225*C],[.32,.275*C],[.42,.33*C],[.5,.37*C],[.56,.405*C],[.62,.4*C],[.67,.3*C],[.7,.15*Math.max(1,P.neck/.105)],[.72,.1*Math.max(1,P.neck/.105)]];
   const hw=y=>{if(y<=prof[0][0])return prof[0][1];for(let i=1;i<prof.length;i++)if(y<=prof[i][0]){const [y0,r0]=prof[i-1],[y1,r1]=prof[i];const u=(y-y0)/(y1-y0);return r0+(r1-r0)*(u*u*(3-2*u))}return prof[prof.length-1][1]};
-  const absK=P.belly?.45:1,lat=P.lat??1;
+  const absK=P.belly?.45:P.fem?.55:1,lat=P.lat??1;
   const rf=(t,a)=>{const y=.72-t*.94;const w=hw(y)*1.18,d=hw(y)*P.depth;const sa=Math.sin(a),ca=Math.cos(a);let r=1/Math.sqrt((sa/w)*(sa/w)+(ca/d)*(ca/d));
     const fr=Math.max(0,ca),bk=Math.max(0,-ca);let dd=0;
     const pecY=(y>.4?Math.min(1,(y-.4)/.035):0)*(1-Math.min(1,Math.max(0,(y-.55)/.1)));
-    for(const s of [-1,1]){dd+=.042*C*r3ang(a,s*.42,.34)*pecY;
+    for(const s of [-1,1]){if(P.fem)dd+=.062*C*r3ang(a,s*.36,.4)*r3g(y,.44,.075);else dd+=.042*C*r3ang(a,s*.42,.34)*pecY;
       for(const yc of [.29,.19,.09])dd+=.014*absK*r3ang(a,s*.16,.1)*r3g(y,yc,.035);
       dd+=.014*r3ang(a,s*1.15,.25)*r3g(y,.02,.08);
       for(const yc of [.36,.31,.26])dd+=.006*r3ang(a,s*.98,.08)*r3g(y,yc,.018);
@@ -2156,12 +2237,12 @@ function r3torsoGeo(P,m){
   const g=r3muscle(.94,rf,{seg:48,rad:56,cap:5,ck:.5});g.scale(1,R3_TS,1);return g;
 }
 /* ink lines on the torso, in (angle, height) body coordinates so they sit on the sculpted forms */
-function r3torsoInk(skin,ribs,belly){const k='ti'+skin+ribs+belly;if(R3D._c[k])return R3D._c[k];const N=512;const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');x.fillStyle=skin;x.fillRect(0,0,N,N);
+function r3torsoInk(skin,ribs,belly,top){const k='ti'+skin+ribs+belly+(top||'');if(R3D._c[k])return R3D._c[k];const N=512;const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');x.fillStyle=skin;x.fillRect(0,0,N,N);
   const P=(a,y)=>[(((a/(Math.PI*2))%1)+1)%1*N,(.72-y)/.94*N];
   const line=(pts,w,al)=>{for(const off of [0,N,-N]){x.strokeStyle=`rgba(29,21,23,${al})`;x.lineWidth=w;x.lineCap='round';x.lineJoin='round';x.beginPath();pts.forEach(([a,y],i)=>{let [px,py]=P(a,y);if(a<0&&px>N/2)px-=N;px+=off;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()}};
-  const ab=belly?.5:1;
+  const ab=belly?.5:top?.6:1;
   for(const s of [-1,1]){
-    line([[s*.05,.44],[s*.28,.412],[s*.52,.425],[s*.78,.5]],5.5,.6);
+    if(!top)line([[s*.05,.44],[s*.28,.412],[s*.52,.425],[s*.78,.5]],5.5,.6);
     line([[s*.12,.63],[s*.36,.645],[s*.62,.665]],3,.32);
     for(const yy of [.245,.145,.05])line([[s*.03,yy],[s*.26,yy-.006]],3.6,.42*ab);
     line([[s*.32,.37],[s*.31,.2],[s*.26,.03],[s*.17,-.1]],3.2,.36*ab);
@@ -2172,7 +2253,16 @@ function r3torsoInk(skin,ribs,belly){const k='ti'+skin+ribs+belly;if(R3D._c[k])r
     line([[s*1.42,.56],[s*1.62,.4],[s*1.82,.28]],3,.3);
     if(ribs)for(let i=0;i<4;i++)line([[s*(1.0+i*.02),.33-i*.05],[s*(1.22+i*.02),.31-i*.05]],2.6,.32);
   }
-  line([[0,.43],[0,.58]],3,.35);line([[0,.37],[0,-.06]],3.6,.42*ab);line([[Math.PI,.64],[Math.PI,-.15]],3.5,.38);
+  if(top){// sports top: scoop front, racerback straps, elastic under-band in the trim colour
+    const yb=.33,yt=a=>{const f=Math.abs(Math.atan2(Math.sin(a),Math.cos(a)));let y=f<1.2?.55+.03*(f/1.2):f<2.4?.6:.58;
+      if(f>.42&&f<.72)y=.74;if(f>Math.PI-.32)y=.74;return y};
+    const cs=new THREE.Color(top[0]).getStyle(),ts=new THREE.Color(top[1]).getStyle();
+    for(let i=0;i<N;i++){const a=i/N*Math.PI*2;const y0=yt(a);x.fillStyle=cs;x.fillRect(i,(.72-y0)/.94*N,1.6,(y0-yb)/.94*N);x.fillStyle=ts;x.fillRect(i,(.72-yb)/.94*N-9,1.6,9)}
+    const edge=[];for(let i=0;i<=96;i++){const a=-Math.PI+i/96*Math.PI*2;edge.push([a,yt(a)])}
+    for(let i=1;i<edge.length;i++)line([edge[i-1],edge[i]],3.4,.55);
+    for(let i=1;i<edge.length;i++)line([[edge[i-1][0],yb-.004],[edge[i][0],yb-.004]],3.6,.6);
+    for(const s of [-1,1]){line([[s*.06,.5],[s*.3,.415],[s*.55,.45]],3,.32);line([[s*.02,.56],[s*.04,.47]],2.6,.35)}}
+  line([[0,.43],[0,.58]],3,top?0:.35);line([[0,.37],[0,-.06]],3.6,.42*ab);line([[Math.PI,.64],[Math.PI,-.15]],3.5,.38);
   const t=new THREE.CanvasTexture(c);t.wrapS=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.userData.keep=1;return R3D._c[k]=t}
 function r3bootTex(col){const k='bt'+col;if(R3D._c[k])return R3D._c[k];const c=document.createElement('canvas');c.width=256;c.height=128;const x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,256,128);
   x.strokeStyle='rgba(29,21,23,.7)';x.lineWidth=3;for(const ox of [0,256]){x.beginPath();x.moveTo(ox-22,14);x.lineTo(ox-22,112);x.moveTo(ox+22,14);x.lineTo(ox+22,112);x.stroke();
@@ -2193,7 +2283,7 @@ const R3_ROBE={
   satin:{fab:'silk',hood:'down',sleeves:true,len:-.95,gap:.5,bulk:1,pose:'wave'},
   gold:{fab:'silk',hood:'down',sleeves:true,len:-.95,gap:.5,bulk:1,pose:'wave'},
   hood:{fab:'terry',hood:'up',sleeves:true,len:-1.0,gap:.3,bulk:1.04,pose:'hunch'},
-  vest:{fab:'silk',hood:'up',sleeves:false,len:-.32,gap:.42,bulk:.96,pose:'punch',fray:true},
+  vest:{fab:'silk',hood:'drape',sleeves:false,len:-.32,gap:.42,bulk:.96,pose:'punch',fray:true},
 };
 function r3robeTex(base,trim,fab,name,fray){
   const c=document.createElement('canvas');c.width=512;c.height=512;const x=c.getContext('2d');const bs=new THREE.Color(base).getStyle(),ts=new THREE.Color(trim).getStyle();
@@ -2211,15 +2301,17 @@ function r3robeTex(base,trim,fab,name,fray){
 function r3frayMask(){if(R3D._fray)return R3D._fray;const c=document.createElement('canvas');c.width=256;c.height=256;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,256,256);x.fillStyle='#000';const r=new Rng(4);
   x.beginPath();x.moveTo(0,256);for(let i=0;i<=64;i++){x.lineTo(i*4,256-4-r.next()*18)}x.lineTo(256,256);x.fill();const t=new THREE.CanvasTexture(c);t.userData.keep=1;return R3D._fray=t}
 /* open-front shell swept down the body; the front gap half-angle varies with height (V neck that closes at the belt) */
-function r3robeShell(prof,sx,sz,gapAt,segs=40,rad=56){
+function r3robeShell(prof,sx,sz,gapAt,segs=40,rad=56,hole=null){
   const y0=prof[0][1],y1=prof[prof.length-1][1];
   const rAt=y=>{for(let i=1;i<prof.length;i++)if(y>=prof[i][1]){const [r0,a]=prof[i-1],[r1,b]=prof[i];const u=(a-y)/(a-b);return r0+(r1-r0)*u}return prof[prof.length-1][0]};
   const pos=[],uv=[],idx=[];
   for(let j=0;j<=segs;j++){const t=j/segs,y=y0+(y1-y0)*t,r=rAt(y),g=gapAt(y);
     for(let k=0;k<=rad;k++){const ph=g+(Math.PI*2-2*g)*k/rad;pos.push(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz);uv.push(k/rad,1-t)}}
-  const W=rad+1;for(let j=0;j<segs;j++)for(let k=0;k<rad;k++){const a=j*W+k,b=a+W;idx.push(a,b,a+1,b,b+1,a+1)}
+  const W=rad+1;for(let j=0;j<segs;j++)for(let k=0;k<rad;k++){const a=j*W+k,b=a+W;
+    if(hole){const y=y0+(y1-y0)*(j+.5)/segs,g=gapAt(y),ph=g+(Math.PI*2-2*g)*(k+.5)/rad;if(hole(ph,y))continue}
+    idx.push(a,b,a+1,b,b+1,a+1)}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  return {geo:g,edge:(side)=>{const pts=[];for(let j=0;j<=segs;j+=2){const y=y0+(y1-y0)*j/segs,r=rAt(y)+.006,g=gapAt(y),ph=side>0?g:Math.PI*2-g;pts.push(new THREE.Vector3(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz))}return pts},
+  return {geo:g,at:(ph,y,e=.006)=>{const r=rAt(y)+e;return new THREE.Vector3(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz)},edge:(side)=>{const pts=[];for(let j=0;j<=segs;j+=2){const y=y0+(y1-y0)*j/segs,r=rAt(y)+.006,g=gapAt(y),ph=side>0?g:Math.PI*2-g;pts.push(new THREE.Vector3(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz))}return pts},
     hem:()=>{const pts=[];const r=rAt(y1)+.006,g=gapAt(y1);for(let k=0;k<=24;k++){const ph=g+(Math.PI*2-2*g)*k/24;pts.push(new THREE.Vector3(Math.sin(ph)*r*sx,y1+.01,Math.cos(ph)*r*sz))}return pts}}}
 function r3robe(L,P,m,parts){
   const R=R3_ROBE[L.robe];if(!R)return;const {spine,headG,arms,al}=parts;
@@ -2228,9 +2320,12 @@ function r3robe(L,P,m,parts){
   const top=R.hood==='up'?.8:.79;
   // the body shell hugs the torso (narrower than the shoulder joints) so the arms sit in the sleeves, not under the robe
   const prof=R.sleeves?[[.17,top],[.3*C,.75],[.4*C,.7],[.43*C,.6],[.43*C,.36],[.4*C,.12],[.43*C,-.12],[.46*C,-.5],[.49*C,R.len]]
-                     :[[.17,top],[.32*C,.76],[.44*C,.7],[.46*C,.6],[.45*C,.36],[.43*C,.12],[.46*C,R.len]];
+                     :[[.17,top],[.3*C,.77],[.42*C,.71],[.45*C,.6],[.44*C,.36],[.42*C,.12],[.44*C,R.len]];
   const gapAt=R.fray?(y=>R.gap*(y>.6?.85+(y-.6):1)):(y=>y>.14?.05+R.gap*Math.pow(Math.min(1,(y-.14)/.62),1.15):y<-.55?.05+.16*Math.min(1,(-.55-y)/.4):.05);
-  const sh=r3robeShell(prof,1.2,P.depth/.72*1.08,gapAt);sh.geo.scale(1,TS,1);
+  // sleeveless vest: real armholes cut through the shell (slightly forward of the side seam) so the arm comes out of the hole, not from under the cloth
+  const AH={y:.575,ry:.175,rx:.62,c:[Math.PI/2-.12,Math.PI*1.5+.12]};
+  const inHole=R.sleeves?null:(ph,y)=>AH.c.some(pc=>((ph-pc)/AH.rx)**2+((y-AH.y)/AH.ry)**2<1);
+  const sh=r3robeShell(prof,R.sleeves?1.2:1.13,P.depth/.72*1.08,gapAt,40,72,inHole);sh.geo.scale(1,TS,1);
   const tex=r3robeTex(base,trim,R.fab,L.band||'',R.fray);
   const mat=r3cel(0xffffff,tex,true,R.fab==='terry'?1.15:.85);mat.side=THREE.DoubleSide;
   if(R.fray){mat.alphaMap=r3frayMask();mat.alphaTest=.5;mat.transparent=false}
@@ -2238,6 +2333,11 @@ function r3robe(L,P,m,parts){
   const trimM=r3cel(new THREE.Color(trim).getHex(),null,true,.5);
   const tube=(pts,r)=>{const g=r3strand(pts.map(p=>new THREE.Vector3(p.x,p.y*TS,p.z)),r,r,40,8,true);return r3mesh(g,trimM,{olw:.0026})};
   if(!R.fray){spine.add(tube(sh.edge(1),R.fab==='terry'?.016:.022));spine.add(tube(sh.edge(-1),R.fab==='terry'?.016:.022));spine.add(tube(sh.hem(),.014))}
+  if(inHole)for(const pc of AH.c){const pts=[];for(let i=0;i<=32;i++){const a=i/32*Math.PI*2;pts.push(sh.at(pc+Math.cos(a)*AH.rx,AH.y+Math.sin(a)*AH.ry,.004))}spine.add(tube(pts,.013))}
+  // heavy robes: a lighter stitched seam over each shoulder and round the armhole so dark sleeves read against the body
+  const seamM=r3cel(new THREE.Color(base).lerp(new THREE.Color(0xffffff),.26).getHex(),null,true,1.1);
+  if(R.fab==='terry')for(const sd of [1,-1]){const pts=[];for(let i=0;i<=10;i++){const y=.77-.13*i/10;pts.push(sh.at(sd>0?Math.PI/2+.05:Math.PI*1.5-.05,y,.008).lerp(sh.at(sd>0?.6:Math.PI*2-.6,.79,.008),1-i/10))}
+    spine.add(r3mesh(r3strand(pts.map(p=>new THREE.Vector3(p.x,p.y*TS,p.z)),.011,.011,20,6,true),seamM,{olw:.0018}))}
   // belt with a knot and two hanging ends
   if(R.sleeves){const bw=.45*C*1.2,bd=.45*C*P.depth/.72*1.08;const bm=r3cel(new THREE.Color(R.fab==='terry'?base:trim).getHex(),null,true,.7);
     const belt=r3mesh(new THREE.TorusGeometry(1,.035,8,48),bm,{olw:.003});belt.scale.set(bw+.01,bd+.01,1);belt.rotation.x=Math.PI/2;belt.position.y=.12*TS;spine.add(belt);
@@ -2247,6 +2347,7 @@ function r3robe(L,P,m,parts){
   if(R.sleeves){const smat=r3cel(0xffffff,tex,true,R.fab==='terry'?1.15:.85);const cuffM=r3cel(new THREE.Color(base).lerp(new THREE.Color(0xffffff),.22).getHex(),null,true,1.1);
     for(const s of [-1,1]){const A=arms[s];const ak=m*P.arm*R.bulk;
       const up=r3mesh(r3muscle(.5*al,(t,a)=>ak*(.16-.02*t),{seg:8,rad:22,cap:3,ck:.55}),smat,{olw:.004});up.position.y=.07;A.sh.add(up);
+      if(R.fab==='terry'){const sr=r3mesh(new THREE.TorusGeometry(ak*.163,.011,6,28),seamM,{olw:.0018});sr.rotation.x=Math.PI/2;sr.position.y=-.02;A.sh.add(sr)}
       const lo=r3mesh(r3muscle(.36*al,(t,a)=>ak*(.13+.045*t*t),{seg:8,rad:22,cap:2,ck:.3}),smat,{olw:.004});lo.position.y=.04;A.elbow.add(lo);
       const cuff=r3mesh(new THREE.TorusGeometry(ak*.17,R.fab==='terry'?.024:.016,6,24),R.fab==='terry'?cuffM:trimM,{olw:.002});cuff.rotation.x=Math.PI/2;cuff.position.y=-.32*al;A.elbow.add(cuff)}}
   // hood: up (shell over the head, face open; low hoods shade the eyes) or down (rolled collar behind the neck)
@@ -2254,18 +2355,23 @@ function r3robe(L,P,m,parts){
     const hg=new THREE.SphereGeometry(.3,40,24,Math.PI/2+.95,Math.PI*2-1.9,0,Math.PI*.7);const hood=r3mesh(hg,hm,{olw:.004});
     hood.scale.set(.96,1.1,1.05);hood.position.set(0,.05,-.035);hood.rotation.x=L.hoodLow?.38:.18;headG.add(hood);
     const cowl=r3mesh(new THREE.TorusGeometry(.2,.065,10,32,Math.PI*1.5),hm,{olw:.003});cowl.rotation.set(Math.PI/2,0,Math.PI*.25);cowl.position.set(0,.77*TS,-.02);cowl.scale.set(1.15,.9,1);spine.add(cowl)}
+  else if(R.hood==='drape'){// hood down: a soft frayed cowl lying on the upper back, clear of the hair
+    const hm=r3cel(0xffffff,tex,true,.85);hm.side=THREE.DoubleSide;if(R.fray){hm.alphaMap=r3frayMask();hm.alphaTest=.5}
+    const hg=new THREE.SphereGeometry(.26,32,16,Math.PI/2+.7,Math.PI*2-1.4,0,Math.PI*.55);const hood=r3mesh(hg,hm,{olw:.0035});
+    hood.scale.set(1.05,.5,.8);hood.rotation.x=-1.62;hood.position.set(0,.7*TS,-.44*C*1.08*P.depth/.72);spine.add(hood);
+    const roll=r3mesh(new THREE.TorusGeometry(.2,.04,10,32,Math.PI*1.25),hm,{olw:.003});roll.rotation.set(Math.PI/2-.15,0,Math.PI*.375);roll.position.set(0,.78*TS,-.03);roll.scale.set(1.2,1,1);spine.add(roll)}
   else{const col=r3mesh(new THREE.TorusGeometry(.19,.055,10,32,Math.PI*1.3),r3cel(new THREE.Color(trim).getHex(),null,true,.6),{olw:.003});col.rotation.set(Math.PI/2-.25,0,Math.PI*.35);col.position.set(0,.78*TS,-.03);col.scale.set(1.2,1,1);spine.add(col)}
 }
 /* ---------- boxer rig ---------- */
 function r3boxer(L,opt={}){
-  const P=R3_BT[L.bt]||R3_BT.athletic,m=L.mass||1,TS=R3_TS;
+  const P0=R3_BT[L.bt]||R3_BT.athletic,P=L.fem?r3femP(P0):P0,m=L.mass||1,TS=R3_TS;
   const skinM=r3cel(L.skin);
   const root=new THREE.Group();root.scale.setScalar(1+((L.height||70)-70)*.011);
   const ll=P.legLen*1.2,legY=.12+.99*ll;
   const pelvis=new THREE.Group();pelvis.position.y=legY-.11;root.add(pelvis);
   const spine=new THREE.Group();spine.position.y=.08;pelvis.add(spine);
   const H=P.hip*m,Wa=P.waist*m,bel=P.belly?.035:0;
-  const torso=r3mesh(r3torsoGeo(P,m),r3cel(0xffffff,r3torsoInk(L.skin,!!P.ribs,!!P.belly)),{olw:.0046});torso.position.y=.72*TS;spine.add(torso);
+  const torso=r3mesh(r3torsoGeo(P,m),r3cel(0xffffff,r3torsoInk(L.skin,!!P.ribs,!!P.belly,P.fem?[L.trunks,L.trim]:null)),{olw:.0046});torso.position.y=.72*TS;spine.add(torso);
   const trunkM=r3cel(0xffffff,r3trunkTex(L.trunks,L.trim,L.trunkPat),true);
   const trunks=r3mesh(r3lathe([[0,.04],[.235*H,.04],[.27*H,-.06],[.285*H,-.2],[.29*H,-.3],[0,-.3]],1.14,.84*P.depth/.72,40),trunkM,{olw:.0048});trunks.position.y=-.02;pelvis.add(trunks);
   const bandR=.25*Math.max(H,Wa+bel*2);const band=r3mesh(new THREE.CylinderGeometry(bandR,bandR*.98,.1,48,1,true),r3cel(0xffffff,r3bandTex(new THREE.Color(L.trim).getStyle(),new THREE.Color(L.trunks).getStyle(),L.band),true),{olw:.0042});
@@ -2344,7 +2450,7 @@ function r3guard(bx,kind='high'){
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
   const hy=u.headG.getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
-  const pose=(s)=>kind==='hunch'?new THREE.Vector3(s*.13,hy-.5,.66):kind==='punch'?(s===1?new THREE.Vector3(.22,hy-.14,.95):new THREE.Vector3(-.2,hy-.3,.4)):kind==='wave'?(s===1?new THREE.Vector3(.5,hy+.12,.22):new THREE.Vector3(-.38,hy-1.05,.12)):null;
+  const pose=(s)=>kind==='hunch'?new THREE.Vector3(s*.13,hy-.5,.66):kind==='punch'?(s===1?new THREE.Vector3(.8,hy-.08,1.0):new THREE.Vector3(-.2,hy-.3,.4)):kind==='wave'?(s===1?new THREE.Vector3(.5,hy+.12,.22):new THREE.Vector3(-.38,hy-1.05,.12)):null;
   for(const s of [-1,1]){const pz=pose(s);const t=pz?pz:kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
     const pole=kind==='wave'&&s===1?new THREE.Vector3(1.6,.2,-.2):new THREE.Vector3(s*.35,-1.5,.7);r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),pole.applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
 }
@@ -2408,12 +2514,12 @@ const R3P={cache:new Map(),
   },
   shot(look,o={}){
     const mode=o.mode||'bust',size=o.size||(mode==='full'?360:224);
-    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'']);
+    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'',o.rot??'']);
     if(this.cache.has(key))return this.cache.get(key);
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
-    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=mode==='full'?(o.robe?(L.robe==='vest'?-.55:-.18):-.42):-.22;this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
+    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=o.rot??(mode==='full'?(o.robe?(L.robe==='vest'?-.55:-.18):-.42):-.22);this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
     r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
     bx.updateWorldMatrix(true,true);const hp=bx.userData.headG.getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
@@ -3833,7 +3939,7 @@ function profileHTML(){
   return `<div class="prof"><img src="${portrait(playerLook())}" alt=""><div class="grow">
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
-    <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${beltsHTML()}</div>
+    <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${isW()?'<span class="pill">Women\'s circuit</span>':''}${beltsHTML()}</div>
     <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
     <dt>Overall</dt><dd class="num">${playerOvr()}</dd><dt>Money</dt><dd class="num">${money(b.money)}</dd><dt>Age</dt><dd class="num">${age} · ${dateStr()}</dd></dl>
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
@@ -3938,15 +4044,17 @@ function settingsHTML(inCareer){
 }
 
 /* ---------- creator ---------- */
-function crDefault(){return {step:0,first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:Math.floor(Math.random()*10000)},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
-function crNatural(c){return clamp(Math.round((c.height-62)/2+BUILDS[c.build].off),0,7)}
+function crDefault(){return {step:0,circuit:'m',first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:Math.floor(Math.random()*10000)},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
+function crNatural(c){return clamp(Math.round((c.height-(c.circuit==='w'?58:62))/2+BUILDS[c.build].off),0,7)}
 SCR.create=()=>{
   const c=UI.cr,steps=['Identity','Look','Frame','Style','Difficulty'];
   let body='';
   if(c.step===0)body=`<div class="col">
-    <div class="grid2"><label class="field"><span class="lbl">First name</span><input id="f_first" maxlength="16" value="${esc(c.first)}" placeholder="Jake" autocomplete="off"></label>
-    <label class="field"><span class="lbl">Last name</span><input id="f_last" maxlength="18" value="${esc(c.last)}" placeholder="Morrison" autocomplete="off"></label></div>
-    <label class="field"><span class="lbl">Nickname (optional)</span><input id="f_nick" maxlength="20" value="${esc(c.nick)}" placeholder="The Hammer" autocomplete="off"></label>
+    <div class="field"><span class="lbl">Circuit</span><div class="chips">${[['m',"Men's boxing"],['w',"Women's boxing"]].map(([k,n])=>`<button class="chip${c.circuit===k?' on':''}" data-act="cr" data-k="circuit" data-v="${k}">${n}</button>`).join('')}</div>
+      <small class="muted" style="font-size:12.5px">${c.circuit==='w'?"Your own world of rivals, champions and legends inspired by the greats of women's boxing.":"Rivals, champions and legends inspired by the greats of men's boxing."}</small></div>
+    <div class="grid2"><label class="field"><span class="lbl">First name</span><input id="f_first" maxlength="16" value="${esc(c.first)}" placeholder="${c.circuit==='w'?'Maria':'Jake'}" autocomplete="off"></label>
+    <label class="field"><span class="lbl">Last name</span><input id="f_last" maxlength="18" value="${esc(c.last)}" placeholder="${c.circuit==='w'?'Delgado':'Morrison'}" autocomplete="off"></label></div>
+    <label class="field"><span class="lbl">Nickname (optional)</span><input id="f_nick" maxlength="20" value="${esc(c.nick)}" placeholder="${c.circuit==='w'?'The Storm':'The Hammer'}" autocomplete="off"></label>
     <label class="field"><span class="lbl">Hometown</span><input id="f_home" maxlength="28" value="${esc(c.home)}" placeholder="Philadelphia, PA" autocomplete="off"></label>
     <div class="field"><span class="lbl">Starting age</span><div class="chips">${[18,19,20,21,22].map(a=>`<button class="chip${c.age===a?' on':''}" data-act="cr" data-k="age" data-v="${a}">${a}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Stance</span><div class="chips">${['orthodox','southpaw'].map(s=>`<button class="chip${c.stance===s?' on':''}" data-act="cr" data-k="stance" data-v="${s}">${s}</button>`).join('')}</div></div>
@@ -3955,7 +4063,7 @@ SCR.create=()=>{
     body=`<div class="col"><div class="field"><span class="lbl">Skin</span><div class="chips">${sw('skin',SKIN,true)}</div></div>
     <div class="field"><span class="lbl">Hair</span><div class="chips">${HAIRS.map(h=>`<button class="chip${c.look.hair===h?' on':''}" data-act="crl" data-k="hair" data-v="${h}">${h}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Hair color</span><div class="chips">${sw('hc',HAIRC,true)}</div></div>
-    <div class="field"><span class="lbl">Facial hair</span><div class="chips">${BEARDS.map(h=>`<button class="chip${c.look.beard===h?' on':''}" data-act="crl" data-k="beard" data-v="${h}">${h}</button>`).join('')}</div></div>
+    ${c.circuit==='w'?'':`<div class="field"><span class="lbl">Facial hair</span><div class="chips">${BEARDS.map(h=>`<button class="chip${c.look.beard===h?' on':''}" data-act="crl" data-k="beard" data-v="${h}">${h}</button>`).join('')}</div></div>`}
     <div class="field"><span class="lbl">Physique</span><div class="chips">${opt('bt',BODYTYPES)}</div></div>
     <div class="field"><span class="lbl">Nose</span><div class="chips">${opt('nose',NOSES)}</div></div>
     <div class="field"><span class="lbl">Scars</span><div class="chips">${opt('scar',SCARS)}</div></div>
@@ -3966,7 +4074,7 @@ SCR.create=()=>{
     <div class="field"><span class="lbl">Trim</span><div class="chips">${sw('trim',COLORS)}</div></div>
     <div class="field"><span class="lbl">Gloves</span><div class="chips">${sw('gloves',COLORS)}</div></div></div>`}
   if(c.step===2){const nat=crNatural(c);const reach=c.height+ARMS[c.arms].d;
-    body=`<div class="col"><div class="field"><span class="lbl">Height: ${ftIn(c.height)}</span><input type="range" id="f_h" min="62" max="78" value="${c.height}" style="accent-color:var(--gold)"></div>
+    body=`<div class="col"><div class="field"><span class="lbl">Height: ${ftIn(c.height)}</span><input type="range" id="f_h" min="${c.circuit==='w'?58:62}" max="${c.circuit==='w'?74:78}" value="${c.height}" style="accent-color:var(--gold)"></div>
     <div class="field"><span class="lbl">Build</span><div class="chips">${Object.keys(BUILDS).map(k=>`<button class="chip${c.build===k?' on':''}" data-act="cr" data-k="build" data-v="${k}">${BUILDS[k].name}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Arm length</span><div class="chips">${Object.keys(ARMS).map(k=>`<button class="chip${c.arms===k?' on':''}" data-act="cr" data-k="arms" data-v="${k}">${ARMS[k].name}</button>`).join('')}</div></div>
     <div class="card flat col"><div class="row sp"><span class="lbl">Natural division</span><b class="ui goldt" style="font-size:20px;text-transform:uppercase">${DIVS[nat].name}</b></div>
@@ -4131,12 +4239,12 @@ SCR.fightnight=()=>{
   const L=f.legend?LEGEND_BY[f.legend]:null;
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="topbar"><button class="btn sm back" data-go="home">◀</button><div class="t">Fight night</div>${o.venue?`<span class="pill">${esc(o.venue)}</span>`:''}</div>
-    ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(ch.intro)}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
+    ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(gtxt(ch.intro))}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
     <div class="card col"><div class="kicker" style="text-align:center">${esc(o.label)} · ${o.rounds} rounds${o.title&&!o.title.regional?' · '+o.title.belts.join(' / ')+' '+DIVS[b.div].name+' title':''}</div>
       <div class="vsrow"><div><img src="${portrait(playerLook())}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
       <div class="tape">${row('Record',`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''}`,recStr(f))}${row('Age',ageOf(b.born),ageOf(f.born),cmp(ageOf(f.born),ageOf(b.born)))}
       ${row('Height',ftIn(b.height),ftIn(f.height),cmp(b.height,f.height))}${row('Reach',b.reach+'″',f.reach+'″',cmp(b.reach,f.reach))}
-      ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',DIVS[b.div].lb+' lb',DIVS[b.div].lb+' lb')}</div>
+      ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',divLb(b.div)+' lb',divLb(b.div)+' lb')}</div>
       <p style="text-align:center" class="muted">Odds: <b>${esc(odds)}</b>${L?` · <span class="goldt">Homage to ${esc(L.homage)}</span>`:''}</p>
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
@@ -4156,7 +4264,7 @@ function pressLine(f){const L=f.legend?LEGEND_BY[f.legend]:null;const ex=(f.look
   if(f.rival)return `"Last time doesn't count. Saturday I settle this for good."`;
   if(L&&L.ai&&L.ai.trash)return `"I'm too pretty and too fast for this one. Pick the round, I'll make it happen."`;
   const P={cocky:[`"I'll be home before the main event starts."`,`"He's a nice story. Saturday the story ends."`],grit:[`"He's in for the worst night of his life."`,`"I don't talk. I hurt people."`],stern:[`"I respect him. I'm still taking his spot."`,`"Good fighter. Not good enough."`],calm:[`"Nothing to say. See you Saturday."`,`"We trained for everything he does."`]};
-  const a=P[ex]||P.stern;return a[hashStr(f.id)%a.length]}
+  const a=P[ex]||P.stern;return gtxt(a[hashStr(f.id)%a.length])}
 function pressHTML(n,f,o){
   if(o.amateur||!G||G.phase!=='pro')return '';
   if(n.press){const c=PRESS[n.press];return `<div class="card flat"><span class="lbl">Press conference</span><p style="margin:6px 0 2px"><b>${esc(c.name)}.</b> ${esc(c.fx)}</p></div>`}
@@ -4165,7 +4273,7 @@ function pressHTML(n,f,o){
 function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   const nm=x=>x.nick?`${x.first} "${x.nick}" ${x.last}`:`${x.first} ${x.last}`;
   const L=[o.label];
-  if(o.title&&!o.title.regional)L.push(`Ladies and gentlemen, ${o.rounds} rounds for the ${o.title.belts.join(' and ')} ${DIVS[b.div].name} championship of the world!`);
+  if(o.title&&!o.title.regional)L.push(`Ladies and gentlemen, ${o.rounds} rounds for the ${o.title.belts.join(' and ')} ${isW()?"women's ":''}${DIVS[b.div].name} championship of the world!`);
   else L.push(b.hype>40?`Ladies and gentlemen, it's main event time! ${o.rounds} rounds.`:`This bout is scheduled for ${o.rounds} rounds in the ${DIVS[b.div].name} division.`);
   L.push(`In the blue corner, from ${f.home}, with a record of ${rec(f)}: ${nm(f)}!`);
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
@@ -4307,7 +4415,7 @@ SCR.skills=()=>{
 SCR.division=()=>{
   const b=B();
   const rows=DIVS.map((d,i)=>{const diff=i-b.natural,ok=Math.abs(diff)<=2,wi=ok?weightInfo(i):null;const ch=G.world.champs[i];const cnames=[...new Set(BODIES.map(x=>ch[x.k]).filter(Boolean))].map(id=>id==='P'?'You':shortName(G.world.f[id])).slice(0,2).join(', ');
-    return `<div class="card row sp" style="${i===b.div?'border-color:var(--gold)':''}${ok?'':'opacity:.45'}"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${d.name}</b> <span class="dim num">${d.lb} lb</span>
+    return `<div class="card row sp" style="${i===b.div?'border-color:var(--gold)':''}${ok?'':'opacity:.45'}"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${d.name}</b> <span class="dim num">${divLb(i)} lb</span>
       <div class="muted" style="font-size:13px">${ok?`${wi.label}${i===b.natural?' (natural)':''}. ${wi.note}`:'Out of your range.'}${cnames?' Champions: '+esc(cnames)+'.':''}</div></div>
       ${i===b.div?'<span class="pill gold">Current</span>':ok&&G.phase==='pro'?`<button class="btn sm" data-act="movediv" data-d="${i}">Move</button>`:''}</div>`}).join('');
   return shell('division','Division',`<h2 class="sec">Weight class</h2><p class="muted" style="font-size:13.5px">You can only change divisions between fights. Moving carries 62% of your ranking points and vacates any belts. Champions in more than one division earn big legacy.</p>${G.next?'<div class="card warnt">You have a fight booked. Finish it first.</div>':''}<div class="col">${rows}</div>`);
@@ -4345,7 +4453,7 @@ SCR.rankings=d=>{
     <h2 class="sec">${DIVS[d].name}</h2><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${champs}</div>
     <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th class="r">Record</th><th class="r">OVR</th><th class="r">Pts</th></tr>
     ${list.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${b.record.w}-${b.record.l}</td><td class="r">${playerOvr()}</td><td class="r">${b.pts}</td></tr>`}
-      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${recStr(f)}</td><td class="r">${Math.round(f.rating)}</td><td class="r">${f.pts}</td></tr>`}).join('')}</table></div>`);
+      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${recStr(f)}</td><td class="r">${Math.round(f.rating)}</td><td class="r">${Math.round(f.pts)}</td></tr>`}).join('')}</table></div>`);
 };
 
 /* ---------- record ---------- */
@@ -4373,13 +4481,13 @@ function recordsCard(){const R=G.records||{};const rows=[
   return `<div class="card"><h3>Personal records</h3><div class="tblw"><table class="t">${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="num goldt">${esc(String(r[1]))}</td><td class="muted">${esc(r[2]||'')}</td></tr>`).join('')}</table></div></div>`}
 SCR.record=()=>{
   const b=B(),h=[...G.history].reverse();
-  const ch=CHAPTER_INFO.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
+  const chI=CHAPTER_INFO.filter(c=>!c.circ||c.circ===(G.circuit||'m'));const ch=chI.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
   return shell('record','Record',`${progressCharts()}${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
     <div class="card"><span class="lbl">Amateur</span><p class="rec num">${b.am.w}-${b.am.l}</p><p class="muted">${G.flags.am_gold_0?'Golden Gloves gold ':''}${G.flags.am_gold_1?'· National gold':''}</p></div>
     <div class="card"><span class="lbl">Titles</span><p class="rec num">${b.titleWins} won · ${b.defenses} defenses</p><p class="muted">${b.titleDivs.map(d=>DIVS[d].short).join(', ')||'None yet'}</p></div></div>
     <div class="card"><h3>Fight history</h3><div class="tblw"><table class="t"><tr><th>Date</th><th>Res</th><th>Opponent</th><th>Method</th><th>Fight</th></tr>
     ${h.map(x=>`<tr><td class="num">${dateStr(x.w)}</td><td class="${x.res==='W'?'good':x.res==='L'?'bad':''}"><b>${x.res}</b></td><td>${esc(x.opp)} <span class="dim">(${esc(x.oppRec)})</span></td><td>${x.method}${['KO','TKO','RTD'].includes(x.method)?' R'+x.round:''}</td><td>${esc(x.label||'')}${x.title?' <span class="belt">'+esc(x.title)+'</span>':''}${x.pro?'':' <span class="pill">Am</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No fights yet.</td></tr>'}</table></div></div>
-    <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${CHAPTER_INFO.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
+    <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${chI.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
 };
 SCR.news=()=>shell('news','News',`<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`);
 
@@ -4471,15 +4579,17 @@ const ACT={
   new(el){UI.cr=crDefault();UI.cr.slot=+el.dataset.n;UI.go('create')},
   load(el){const g=Save.read(+el.dataset.n);if(!g){toast('That save could not be loaded.');return}loadCareer(g);UI.go('home');setTimeout(()=>checkEvent(),300)},
   practice(){practiceModal()},
-  cr(el){const c=UI.cr,k=el.dataset.k;let v=el.dataset.v;if(k==='age')v=+v;c[k]=v;UI.render()},
+  cr(el){const c=UI.cr,k=el.dataset.k;let v=el.dataset.v;if(k==='age')v=+v;
+    if(k==='circuit'&&v!==c.circuit){const w=v==='w';c.look.fem=w?1:undefined;c.height=w?65:70;if(w){c.look.beard='none';if(c.look.hair==='short')c.look.hair='ponytail'}else if(['ponytail','bun','twinbraids'].includes(c.look.hair))c.look.hair='short'}
+    c[k]=v;UI.render()},
   crl(el){const k=el.dataset.k;let v=el.dataset.v;if(k==='skin'||k==='hc')v=+v;UI.cr.look[k]=v;UI.render()},
   crface(){UI.cr.look.fs=Math.floor(Math.random()*10000);UI.render()},
-  crrandom(){const c=UI.cr;c.first=pick(FIRST);c.last=pick(LAST);c.nick=chance(.5)?pick(NICKS):'';c.home=pick(HOMES);UI.render()},
+  crrandom(){const c=UI.cr;c.first=pick(c.circuit==='w'?FIRST_W:FIRST);c.last=pick(LAST);c.nick=chance(.5)?pick(NICKS):'';c.home=pick(HOMES);UI.render()},
   crstep(el){
     const c=UI.cr,d=+el.dataset.d;
     if(c.step===0&&d>0){if(!c.first.trim()||!c.last.trim()){toast('Give your boxer a first and last name.');return}}
     if(c.step===4&&d>0){
-      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:Object.assign({},c.look,{band:c.last.trim().toUpperCase().slice(0,10)}),height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff};
+      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:Object.assign({},c.look,{band:c.last.trim().toUpperCase().slice(0,10)}),height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff,circuit:c.circuit};
       o.name=o.first+' '+o.last;newCareer(o);Save.write();Sfx.bell(2);UI.go('home');
       setTimeout(()=>modal(`<div class="kicker">${dateStr()}</div><h2 class="sec">Welcome to the gym</h2><p>Pops Delgado tapes your hands. "First the Golden Gloves. Three fights, three rounds each. Train hard in camp, and remember: watch the gloves, not the eyes."</p><p class="muted" style="font-size:13.5px">Tip: Practice spar from the title screen any time. Fight hints show in your first bout.</p><button class="btn primary" data-close="ok">Let's go</button>`),250);
       return;
@@ -4863,7 +4973,7 @@ const Save={
   },
   migrate(g){
     if(!g||!g.boxer||!g.world)return null;
-    g.v=g.v||1;g.flags=g.flags||{};g.chapters=g.chapters||[];
+    g.v=g.v||1;g.flags=g.flags||{};g.chapters=g.chapters||[];g.circuit=g.circuit||'m';
     if(g.seed==null){g.seed=RNG.seed();g.rng={career:g.seed,world:(g.seed^0x5bd1e995)>>>0}}
     delete g._rng;
     // inked renderer: give older fighters and the boxer their face/body traits (hash-based, no RNG draws)

@@ -33,7 +33,7 @@ const MATCHUPS=[
        const seed=1000+i*7919;const rng=new Rng(seed^0x55);
        const me={name:'Bot',first:'Bot',last:'Bot',stats:Object.fromEntries(STAT_KEYS.map(k=>[k,M.pstat||55])),look,stance:'orthodox',reach:71,abilities:['onetwo'],mods:{}};
        let opp;
-       if(M.legend){G=G||{week:0,world:{f:{},divs:[[],[],[],[],[],[],[],[]],champs:[]},flags:{}};const f=RNG.with(new Rng(seed),()=>legendFighter(LEGEND_BY[M.legend]));opp=oppCombat(f);if(G.world&&!G.boxer)G=null}
+       if(M.legend){G=G||{week:0,world:{f:{},divs:[[],[],[],[],[],[],[],[]],champs:[]},flags:{}};const opr=new Rng(seed);const f=RNG.with(opr,()=>legendFighter(LEGEND_BY[M.legend]));opp=RNG.with(opr,()=>oppCombat(f));if(G.world&&!G.boxer)G=null}
        else opp={name:'Opp',first:'O',last:'Opp',stats:RNG.with(new Rng(seed),()=>statsFromRating(M.rating,M.arch)),look:RNG.with(new Rng(seed),()=>randomLook()),stance:'orthodox',reach:71,ai:deep(ARCH[M.arch].ai),abilities:M.rating>=80?[ARCH[M.arch].ability]:[]};
        const F=new Fight({p:me,o:opp,rounds:6,roundLen:45,diff:M.diff,corner:2,seed,headless:true,practice:true,onEnd(){}});
        const r=F.headless(BOTS[M.bot](rng));
@@ -51,10 +51,10 @@ const MATCHUPS=[
    const rows=[];UI.silent=true;
    for(let i=b0;i<Math.min(NC,b0+25);i++){
      const seed=50000+i;
-     sandboxCareer(seed,{arch:['outboxer','slugger','swarmer','counter','boxerpuncher'][i%5]});
+     const circ=i%3===2?'w':'m';sandboxCareer(seed,{arch:['outboxer','slugger','swarmer','counter','boxerpuncher'][i%5],circuit:circ,height:circ==='w'?65:70});
      let years=0;while(G.phase!=='retired'&&years<22){simYears(1);years++;if(ageOf(B().born)>=36&&legacy().score>0&&Math.random()<.35){retireNow('sim');break}}
      const b=B(),L=legacy();
-     rows.push({age:ageOf(b.born),w:b.record.w,l:b.record.l,titles:b.titleWins,def:b.defenses,undisp:b.undisputed,divs:b.titleDivs.length,legends:b.legendsBeaten.length,chapters:G.chapters.length,money:Math.round(b.money),hof:L.score,tier:L.tier,dmg:Math.round(b.damage),forced:b.damage>=100,events:G.newsList.length});
+     rows.push({circ:G.circuit,legendsW:b.legendsBeaten.filter(id=>LEGEND_BY[id].w).length,legendsM:b.legendsBeaten.filter(id=>!LEGEND_BY[id].w).length,age:ageOf(b.born),w:b.record.w,l:b.record.l,titles:b.titleWins,def:b.defenses,undisp:b.undisputed,divs:b.titleDivs.length,legends:b.legendsBeaten.length,chapters:G.chapters.length,money:Math.round(b.money),hof:L.score,tier:L.tier,dmg:Math.round(b.damage),forced:b.damage>=100,events:G.newsList.length});
    }
    UI.silent=false;return rows;},[batch,NC]));process.stdout.write('.')}
  process.stdout.write('\n');
@@ -63,8 +63,8 @@ const MATCHUPS=[
  const tiers={};C.forEach(r=>tiers[r.tier]=(tiers[r.tier]||0)+1);
  out.careers={n:C.length,retireAgeMed:med(C.map(r=>r.age)),winsMed:med(C.map(r=>r.w)),lossesMed:med(C.map(r=>r.l)),titlesMed:med(C.map(r=>r.titles)),titlesAvg:+avg(C.map(r=>r.titles)).toFixed(2),champShare:+(C.filter(r=>r.titles>0).length/C.length).toFixed(2),
    undisputedShare:+(C.filter(r=>r.undisp>0).length/C.length).toFixed(2),multiDivShare:+(C.filter(r=>r.divs>1).length/C.length).toFixed(2),legendsAvg:+avg(C.map(r=>r.legends)).toFixed(2),chaptersAvg:+avg(C.map(r=>r.chapters)).toFixed(2),
-   moneyMed:med(C.map(r=>r.money)),hofMed:med(C.map(r=>r.hof)),tiers,forcedRetireShare:+(C.filter(r=>r.forced).length/C.length).toFixed(2),dmgMed:med(C.map(r=>r.dmg))};
- const cb=[['retireAgeMed',[31,40]],['champShare',[.4,1]],['forcedRetireShare',[0,.4]],['chaptersAvg',[.3,5]],['legendsAvg',[.2,6]]];
+   moneyMed:med(C.map(r=>r.money)),womenN:C.filter(r=>r.circ==='w').length,womenChampShare:+(C.filter(r=>r.circ==='w'&&r.titles>0).length/Math.max(1,C.filter(r=>r.circ==='w').length)).toFixed(2),womenLegendsAvg:+avg(C.filter(r=>r.circ==='w').map(r=>r.legends).concat([0])).toFixed(2),crossCircuitLegends:C.filter(r=>r.circ==='w'?r.legendsM>0:r.legendsW>0).length,hofMed:med(C.map(r=>r.hof)),tiers,forcedRetireShare:+(C.filter(r=>r.forced).length/C.length).toFixed(2),dmgMed:med(C.map(r=>r.dmg))};
+ const cb=[['retireAgeMed',[31,40]],['champShare',[.4,1]],['forcedRetireShare',[0,.4]],['chaptersAvg',[.3,5]],['legendsAvg',[.2,6]],['womenChampShare',[.4,1]],['womenLegendsAvg',[.1,6]],['crossCircuitLegends',[0,0]]];
  out.careerChecks=cb.map(([k,band])=>({k,v:out.careers[k],band,ok:out.careers[k]>=band[0]&&out.careers[k]<=band[1]}));
  out.seconds=Math.round((Date.now()-t0)/1000);
  fs.writeFileSync(__dirname+'/last-report.json',JSON.stringify(out,null,1));

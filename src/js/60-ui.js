@@ -45,7 +45,7 @@ function profileHTML(){
   return `<div class="prof"><img src="${portrait(playerLook())}" alt=""><div class="grow">
     ${b.nick?`<div class="nk">“${esc(b.nick)}”</div>`:''}<div class="nm">${esc(b.first)} ${esc(b.last)}</div>
     <div class="rec num">${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''} <span class="muted" style="font-size:14px">${b.record.ko} KO${G.phase==='amateur'?` · Am ${b.am.w}-${b.am.l}`:''}</span></div></div></div>
-    <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${beltsHTML()}</div>
+    <div class="belts">${G.sandbox?'<span class="pill red">Sandbox</span>':''}${isW()?'<span class="pill">Women\'s circuit</span>':''}${beltsHTML()}</div>
     <dl class="kv"><dt>Status</dt><dd>${esc(rankLabel())}</dd><dt>Level</dt><dd class="num">${b.level} <span class="muted">(${b.xp}/${need} XP)</span></dd>
     <dt>Overall</dt><dd class="num">${playerOvr()}</dd><dt>Money</dt><dd class="num">${money(b.money)}</dd><dt>Age</dt><dd class="num">${age} · ${dateStr()}</dd></dl>
     <div class="bar g"><i style="width:${b.xp/need*100}%"></i></div>`;
@@ -150,15 +150,17 @@ function settingsHTML(inCareer){
 }
 
 /* ---------- creator ---------- */
-function crDefault(){return {step:0,first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:Math.floor(Math.random()*10000)},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
-function crNatural(c){return clamp(Math.round((c.height-62)/2+BUILDS[c.build].off),0,7)}
+function crDefault(){return {step:0,circuit:'m',first:'',last:'',nick:'',home:'',age:19,stance:'orthodox',look:{skin:2,hair:'short',hc:0,beard:'none',trunks:'#d8392f',trim:'#f4efe3',gloves:'#d8392f',bt:'athletic',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:Math.floor(Math.random()*10000)},height:70,build:'medium',arms:'avg',arch:'boxerpuncher',diff:'champion'}}
+function crNatural(c){return clamp(Math.round((c.height-(c.circuit==='w'?58:62))/2+BUILDS[c.build].off),0,7)}
 SCR.create=()=>{
   const c=UI.cr,steps=['Identity','Look','Frame','Style','Difficulty'];
   let body='';
   if(c.step===0)body=`<div class="col">
-    <div class="grid2"><label class="field"><span class="lbl">First name</span><input id="f_first" maxlength="16" value="${esc(c.first)}" placeholder="Jake" autocomplete="off"></label>
-    <label class="field"><span class="lbl">Last name</span><input id="f_last" maxlength="18" value="${esc(c.last)}" placeholder="Morrison" autocomplete="off"></label></div>
-    <label class="field"><span class="lbl">Nickname (optional)</span><input id="f_nick" maxlength="20" value="${esc(c.nick)}" placeholder="The Hammer" autocomplete="off"></label>
+    <div class="field"><span class="lbl">Circuit</span><div class="chips">${[['m',"Men's boxing"],['w',"Women's boxing"]].map(([k,n])=>`<button class="chip${c.circuit===k?' on':''}" data-act="cr" data-k="circuit" data-v="${k}">${n}</button>`).join('')}</div>
+      <small class="muted" style="font-size:12.5px">${c.circuit==='w'?"Your own world of rivals, champions and legends inspired by the greats of women's boxing.":"Rivals, champions and legends inspired by the greats of men's boxing."}</small></div>
+    <div class="grid2"><label class="field"><span class="lbl">First name</span><input id="f_first" maxlength="16" value="${esc(c.first)}" placeholder="${c.circuit==='w'?'Maria':'Jake'}" autocomplete="off"></label>
+    <label class="field"><span class="lbl">Last name</span><input id="f_last" maxlength="18" value="${esc(c.last)}" placeholder="${c.circuit==='w'?'Delgado':'Morrison'}" autocomplete="off"></label></div>
+    <label class="field"><span class="lbl">Nickname (optional)</span><input id="f_nick" maxlength="20" value="${esc(c.nick)}" placeholder="${c.circuit==='w'?'The Storm':'The Hammer'}" autocomplete="off"></label>
     <label class="field"><span class="lbl">Hometown</span><input id="f_home" maxlength="28" value="${esc(c.home)}" placeholder="Philadelphia, PA" autocomplete="off"></label>
     <div class="field"><span class="lbl">Starting age</span><div class="chips">${[18,19,20,21,22].map(a=>`<button class="chip${c.age===a?' on':''}" data-act="cr" data-k="age" data-v="${a}">${a}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Stance</span><div class="chips">${['orthodox','southpaw'].map(s=>`<button class="chip${c.stance===s?' on':''}" data-act="cr" data-k="stance" data-v="${s}">${s}</button>`).join('')}</div></div>
@@ -167,7 +169,7 @@ SCR.create=()=>{
     body=`<div class="col"><div class="field"><span class="lbl">Skin</span><div class="chips">${sw('skin',SKIN,true)}</div></div>
     <div class="field"><span class="lbl">Hair</span><div class="chips">${HAIRS.map(h=>`<button class="chip${c.look.hair===h?' on':''}" data-act="crl" data-k="hair" data-v="${h}">${h}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Hair color</span><div class="chips">${sw('hc',HAIRC,true)}</div></div>
-    <div class="field"><span class="lbl">Facial hair</span><div class="chips">${BEARDS.map(h=>`<button class="chip${c.look.beard===h?' on':''}" data-act="crl" data-k="beard" data-v="${h}">${h}</button>`).join('')}</div></div>
+    ${c.circuit==='w'?'':`<div class="field"><span class="lbl">Facial hair</span><div class="chips">${BEARDS.map(h=>`<button class="chip${c.look.beard===h?' on':''}" data-act="crl" data-k="beard" data-v="${h}">${h}</button>`).join('')}</div></div>`}
     <div class="field"><span class="lbl">Physique</span><div class="chips">${opt('bt',BODYTYPES)}</div></div>
     <div class="field"><span class="lbl">Nose</span><div class="chips">${opt('nose',NOSES)}</div></div>
     <div class="field"><span class="lbl">Scars</span><div class="chips">${opt('scar',SCARS)}</div></div>
@@ -178,7 +180,7 @@ SCR.create=()=>{
     <div class="field"><span class="lbl">Trim</span><div class="chips">${sw('trim',COLORS)}</div></div>
     <div class="field"><span class="lbl">Gloves</span><div class="chips">${sw('gloves',COLORS)}</div></div></div>`}
   if(c.step===2){const nat=crNatural(c);const reach=c.height+ARMS[c.arms].d;
-    body=`<div class="col"><div class="field"><span class="lbl">Height: ${ftIn(c.height)}</span><input type="range" id="f_h" min="62" max="78" value="${c.height}" style="accent-color:var(--gold)"></div>
+    body=`<div class="col"><div class="field"><span class="lbl">Height: ${ftIn(c.height)}</span><input type="range" id="f_h" min="${c.circuit==='w'?58:62}" max="${c.circuit==='w'?74:78}" value="${c.height}" style="accent-color:var(--gold)"></div>
     <div class="field"><span class="lbl">Build</span><div class="chips">${Object.keys(BUILDS).map(k=>`<button class="chip${c.build===k?' on':''}" data-act="cr" data-k="build" data-v="${k}">${BUILDS[k].name}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Arm length</span><div class="chips">${Object.keys(ARMS).map(k=>`<button class="chip${c.arms===k?' on':''}" data-act="cr" data-k="arms" data-v="${k}">${ARMS[k].name}</button>`).join('')}</div></div>
     <div class="card flat col"><div class="row sp"><span class="lbl">Natural division</span><b class="ui goldt" style="font-size:20px;text-transform:uppercase">${DIVS[nat].name}</b></div>
@@ -343,12 +345,12 @@ SCR.fightnight=()=>{
   const L=f.legend?LEGEND_BY[f.legend]:null;
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="topbar"><button class="btn sm back" data-go="home">◀</button><div class="t">Fight night</div>${o.venue?`<span class="pill">${esc(o.venue)}</span>`:''}</div>
-    ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(ch.intro)}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
+    ${ch?`<div class="hero"><div class="in"><div class="kicker">Story chapter</div><h1 class="disp" style="font-size:28px">${esc(ch.title)}</h1><p>${esc(gtxt(ch.intro))}</p><p class="dim" style="font-size:12.5px">Inspired by ${esc(ch.homage)}</p></div></div>`:''}
     <div class="card col"><div class="kicker" style="text-align:center">${esc(o.label)} · ${o.rounds} rounds${o.title&&!o.title.regional?' · '+o.title.belts.join(' / ')+' '+DIVS[b.div].name+' title':''}</div>
       <div class="vsrow"><div><img src="${portrait(playerLook())}" alt=""><div class="nm">${esc(b.first)} ${esc(b.last)}</div></div><div class="vs">VS</div><div><img src="${portrait(f.look)}" alt=""><div class="nm">${esc(f.first)} ${esc(f.last)}</div></div></div>
       <div class="tape">${row('Record',`${b.record.w}-${b.record.l}${b.record.d?'-'+b.record.d:''}`,recStr(f))}${row('Age',ageOf(b.born),ageOf(f.born),cmp(ageOf(f.born),ageOf(b.born)))}
       ${row('Height',ftIn(b.height),ftIn(f.height),cmp(b.height,f.height))}${row('Reach',b.reach+'″',f.reach+'″',cmp(b.reach,f.reach))}
-      ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',DIVS[b.div].lb+' lb',DIVS[b.div].lb+' lb')}</div>
+      ${row('Stance',b.stance,f.stance)}${row('Style',ARCH[b.arch].name,ARCH[f.arch].name)}${row('Overall',ps,os,cmp(ps,os))}${row('Weight',divLb(b.div)+' lb',divLb(b.div)+' lb')}</div>
       <p style="text-align:center" class="muted">Odds: <b>${esc(odds)}</b>${L?` · <span class="goldt">Homage to ${esc(L.homage)}</span>`:''}</p>
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
@@ -368,7 +370,7 @@ function pressLine(f){const L=f.legend?LEGEND_BY[f.legend]:null;const ex=(f.look
   if(f.rival)return `"Last time doesn't count. Saturday I settle this for good."`;
   if(L&&L.ai&&L.ai.trash)return `"I'm too pretty and too fast for this one. Pick the round, I'll make it happen."`;
   const P={cocky:[`"I'll be home before the main event starts."`,`"He's a nice story. Saturday the story ends."`],grit:[`"He's in for the worst night of his life."`,`"I don't talk. I hurt people."`],stern:[`"I respect him. I'm still taking his spot."`,`"Good fighter. Not good enough."`],calm:[`"Nothing to say. See you Saturday."`,`"We trained for everything he does."`]};
-  const a=P[ex]||P.stern;return a[hashStr(f.id)%a.length]}
+  const a=P[ex]||P.stern;return gtxt(a[hashStr(f.id)%a.length])}
 function pressHTML(n,f,o){
   if(o.amateur||!G||G.phase!=='pro')return '';
   if(n.press){const c=PRESS[n.press];return `<div class="card flat"><span class="lbl">Press conference</span><p style="margin:6px 0 2px"><b>${esc(c.name)}.</b> ${esc(c.fx)}</p></div>`}
@@ -377,7 +379,7 @@ function pressHTML(n,f,o){
 function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   const nm=x=>x.nick?`${x.first} "${x.nick}" ${x.last}`:`${x.first} ${x.last}`;
   const L=[o.label];
-  if(o.title&&!o.title.regional)L.push(`Ladies and gentlemen, ${o.rounds} rounds for the ${o.title.belts.join(' and ')} ${DIVS[b.div].name} championship of the world!`);
+  if(o.title&&!o.title.regional)L.push(`Ladies and gentlemen, ${o.rounds} rounds for the ${o.title.belts.join(' and ')} ${isW()?"women's ":''}${DIVS[b.div].name} championship of the world!`);
   else L.push(b.hype>40?`Ladies and gentlemen, it's main event time! ${o.rounds} rounds.`:`This bout is scheduled for ${o.rounds} rounds in the ${DIVS[b.div].name} division.`);
   L.push(`In the blue corner, from ${f.home}, with a record of ${rec(f)}: ${nm(f)}!`);
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
@@ -519,7 +521,7 @@ SCR.skills=()=>{
 SCR.division=()=>{
   const b=B();
   const rows=DIVS.map((d,i)=>{const diff=i-b.natural,ok=Math.abs(diff)<=2,wi=ok?weightInfo(i):null;const ch=G.world.champs[i];const cnames=[...new Set(BODIES.map(x=>ch[x.k]).filter(Boolean))].map(id=>id==='P'?'You':shortName(G.world.f[id])).slice(0,2).join(', ');
-    return `<div class="card row sp" style="${i===b.div?'border-color:var(--gold)':''}${ok?'':'opacity:.45'}"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${d.name}</b> <span class="dim num">${d.lb} lb</span>
+    return `<div class="card row sp" style="${i===b.div?'border-color:var(--gold)':''}${ok?'':'opacity:.45'}"><div class="grow"><b class="ui" style="font-size:18px;text-transform:uppercase;letter-spacing:.04em">${d.name}</b> <span class="dim num">${divLb(i)} lb</span>
       <div class="muted" style="font-size:13px">${ok?`${wi.label}${i===b.natural?' (natural)':''}. ${wi.note}`:'Out of your range.'}${cnames?' Champions: '+esc(cnames)+'.':''}</div></div>
       ${i===b.div?'<span class="pill gold">Current</span>':ok&&G.phase==='pro'?`<button class="btn sm" data-act="movediv" data-d="${i}">Move</button>`:''}</div>`}).join('');
   return shell('division','Division',`<h2 class="sec">Weight class</h2><p class="muted" style="font-size:13.5px">You can only change divisions between fights. Moving carries 62% of your ranking points and vacates any belts. Champions in more than one division earn big legacy.</p>${G.next?'<div class="card warnt">You have a fight booked. Finish it first.</div>':''}<div class="col">${rows}</div>`);
@@ -557,7 +559,7 @@ SCR.rankings=d=>{
     <h2 class="sec">${DIVS[d].name}</h2><div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">${champs}</div>
     <div class="tblw"><table class="t"><tr><th>#</th><th>Fighter</th><th class="r">Record</th><th class="r">OVR</th><th class="r">Pts</th></tr>
     ${list.map((e,i)=>{if(e.id==='P'){const b=B();return `<tr class="me"><td>${i+1}</td><td>${esc(b.first)} ${esc(b.last)} (you)${beltsOf('P',d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${b.record.w}-${b.record.l}</td><td class="r">${playerOvr()}</td><td class="r">${b.pts}</td></tr>`}
-      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${recStr(f)}</td><td class="r">${Math.round(f.rating)}</td><td class="r">${f.pts}</td></tr>`}).join('')}</table></div>`);
+      const f=e.f;return `<tr><td>${i+1}</td><td>${esc(shortName(f))}${f.legend?' <span class="pill gold">Legend</span>':''}${f.rival?' <span class="pill red">Rival</span>':''}${beltsOf(f.id,d).map(k=>` <span class="belt">${k}</span>`).join('')}</td><td class="r">${recStr(f)}</td><td class="r">${Math.round(f.rating)}</td><td class="r">${Math.round(f.pts)}</td></tr>`}).join('')}</table></div>`);
 };
 
 /* ---------- record ---------- */
@@ -585,13 +587,13 @@ function recordsCard(){const R=G.records||{};const rows=[
   return `<div class="card"><h3>Personal records</h3><div class="tblw"><table class="t">${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="num goldt">${esc(String(r[1]))}</td><td class="muted">${esc(r[2]||'')}</td></tr>`).join('')}</table></div></div>`}
 SCR.record=()=>{
   const b=B(),h=[...G.history].reverse();
-  const ch=CHAPTER_INFO.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
+  const chI=CHAPTER_INFO.filter(c=>!c.circ||c.circ===(G.circuit||'m'));const ch=chI.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
   return shell('record','Record',`${progressCharts()}${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
     <div class="card"><span class="lbl">Amateur</span><p class="rec num">${b.am.w}-${b.am.l}</p><p class="muted">${G.flags.am_gold_0?'Golden Gloves gold ':''}${G.flags.am_gold_1?'· National gold':''}</p></div>
     <div class="card"><span class="lbl">Titles</span><p class="rec num">${b.titleWins} won · ${b.defenses} defenses</p><p class="muted">${b.titleDivs.map(d=>DIVS[d].short).join(', ')||'None yet'}</p></div></div>
     <div class="card"><h3>Fight history</h3><div class="tblw"><table class="t"><tr><th>Date</th><th>Res</th><th>Opponent</th><th>Method</th><th>Fight</th></tr>
     ${h.map(x=>`<tr><td class="num">${dateStr(x.w)}</td><td class="${x.res==='W'?'good':x.res==='L'?'bad':''}"><b>${x.res}</b></td><td>${esc(x.opp)} <span class="dim">(${esc(x.oppRec)})</span></td><td>${x.method}${['KO','TKO','RTD'].includes(x.method)?' R'+x.round:''}</td><td>${esc(x.label||'')}${x.title?' <span class="belt">'+esc(x.title)+'</span>':''}${x.pro?'':' <span class="pill">Am</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No fights yet.</td></tr>'}</table></div></div>
-    <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${CHAPTER_INFO.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
+    <div class="card col"><h3>Story chapters</h3><p class="muted" style="font-size:13.5px">${G.chapters.length} of ${chI.length} discovered. Each is modeled on a famous moment in boxing history.</p><div class="grid3" style="gap:8px">${ch}</div></div>`);
 };
 SCR.news=()=>shell('news','News',`<h2 class="sec">The boxing wire</h2><div class="card">${G.newsList.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #262c4a;font-size:14.5px" class="${n.tone==='gold'?'goldt':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('')}</div>`);
 
@@ -683,15 +685,17 @@ const ACT={
   new(el){UI.cr=crDefault();UI.cr.slot=+el.dataset.n;UI.go('create')},
   load(el){const g=Save.read(+el.dataset.n);if(!g){toast('That save could not be loaded.');return}loadCareer(g);UI.go('home');setTimeout(()=>checkEvent(),300)},
   practice(){practiceModal()},
-  cr(el){const c=UI.cr,k=el.dataset.k;let v=el.dataset.v;if(k==='age')v=+v;c[k]=v;UI.render()},
+  cr(el){const c=UI.cr,k=el.dataset.k;let v=el.dataset.v;if(k==='age')v=+v;
+    if(k==='circuit'&&v!==c.circuit){const w=v==='w';c.look.fem=w?1:undefined;c.height=w?65:70;if(w){c.look.beard='none';if(c.look.hair==='short')c.look.hair='ponytail'}else if(['ponytail','bun','twinbraids'].includes(c.look.hair))c.look.hair='short'}
+    c[k]=v;UI.render()},
   crl(el){const k=el.dataset.k;let v=el.dataset.v;if(k==='skin'||k==='hc')v=+v;UI.cr.look[k]=v;UI.render()},
   crface(){UI.cr.look.fs=Math.floor(Math.random()*10000);UI.render()},
-  crrandom(){const c=UI.cr;c.first=pick(FIRST);c.last=pick(LAST);c.nick=chance(.5)?pick(NICKS):'';c.home=pick(HOMES);UI.render()},
+  crrandom(){const c=UI.cr;c.first=pick(c.circuit==='w'?FIRST_W:FIRST);c.last=pick(LAST);c.nick=chance(.5)?pick(NICKS):'';c.home=pick(HOMES);UI.render()},
   crstep(el){
     const c=UI.cr,d=+el.dataset.d;
     if(c.step===0&&d>0){if(!c.first.trim()||!c.last.trim()){toast('Give your boxer a first and last name.');return}}
     if(c.step===4&&d>0){
-      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:Object.assign({},c.look,{band:c.last.trim().toUpperCase().slice(0,10)}),height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff};
+      const o={slot:c.slot,first:c.first.trim(),last:c.last.trim(),nick:c.nick.trim(),home:c.home.trim()||'Philadelphia, PA',age:c.age,stance:c.stance,look:Object.assign({},c.look,{band:c.last.trim().toUpperCase().slice(0,10)}),height:c.height,build:c.build,arms:c.arms,arch:c.arch,diff:c.diff,circuit:c.circuit};
       o.name=o.first+' '+o.last;newCareer(o);Save.write();Sfx.bell(2);UI.go('home');
       setTimeout(()=>modal(`<div class="kicker">${dateStr()}</div><h2 class="sec">Welcome to the gym</h2><p>Pops Delgado tapes your hands. "First the Golden Gloves. Three fights, three rounds each. Train hard in camp, and remember: watch the gloves, not the eyes."</p><p class="muted" style="font-size:13.5px">Tip: Practice spar from the title screen any time. Fight hints show in your first bout.</p><button class="btn primary" data-close="ok">Let's go</button>`),250);
       return;

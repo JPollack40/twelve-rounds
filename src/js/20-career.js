@@ -10,10 +10,17 @@ function useCareerRng(){const r=careerRng();RNG.cur=r?r.career:null}
 const B=()=>G.boxer;
 function ageOf(born){return Math.floor((G.week-born)/52)}
 function dateStr(w){w=w??G.week;const y=START_YEAR+Math.floor(w/52);const m=Math.min(11,Math.floor((w%52)/52*12));return MONTHS[m]+' '+y}
+/* circuit: every career is in the men's or the women's world; legends, names, frames and pronouns follow it */
+function isW(){return !!(typeof G!=='undefined'&&G&&G.circuit==='w')}
+function inCircuit(x){return !!x.w===isW()}
+function divLb(d){return isW()&&DIVS[d].lbW?DIVS[d].lbW:DIVS[d].lb}
+const W_HAIRS=['ponytail','ponytail','ponytail','bun','bun','twinbraids','twinbraids','braids','short','curly','afro','slick','buzz','topknot'];
+/* fighter text is written with he/him; the women's world swaps the pronouns */
+function gtxt(t){if(!isW()||!t)return t;const m={he:'she',He:'She',him:'her',Him:'Her',his:'her',His:'Her',himself:'herself',men:'women',man:'woman'};return t.replace(/\b(he|He|him|Him|his|His|himself|men|man)\b/g,w=>m[w])}
 function fullName(f){return f.nick?`${f.first} “${f.nick}” ${f.last}`:`${f.first} ${f.last}`}
 function shortName(f){return `${f.first} ${f.last}`}
 function recStr(f){return `${f.w}-${f.l}${f.d?'-'+f.d:''}`}
-function randomLook(){return {skin:randi(0,SKIN.length-1),hair:pick(HAIRS),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:chance(.6)?'none':pick(BEARDS),trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS),
+function randomLook(){const w=isW();return {skin:randi(0,SKIN.length-1),hair:pick(w?W_HAIRS:HAIRS.slice(0,11)),hc:chance(.8)?randi(0,2):randi(0,HAIRC.length-1),beard:w||chance(.6)?'none':pick(BEARDS),fem:w?1:undefined,trunks:pick(COLORS),trim:pick(COLORS),gloves:chance(.5)?'#d8392f':pick(COLORS),
   nose:pick(['straight','straight','broken','flat']),scar:chance(.28)?pick(['brow','cheek','nose']):'none',ear:chance(.15)?'cauliflower':'normal',expr:pick(['grit','stern','stern','calm','cocky']),fs:randi(0,9999)}}
 /* visual traits for fighters made before the inked renderer: derived from a hash so the world RNG stream is untouched */
 function fillLook(f){const L=f.look=f.look||{};const r=new Rng(hashStr(String(f.id||f.last||'x')));const p=a=>a[Math.floor(r.next()*a.length)];
@@ -30,8 +37,8 @@ function statsFromRating(r,arch){const base=ARCH[arch].base,s={};for(const k of 
 /* ---------- world ---------- */
 function makeFighter(div,rating,age,o={}){
   const arch=o.arch||pick(Object.keys(ARCH));
-  const h=[63,65,66,68,70,72,74,76][div]+randi(-2,2);
-  const f={id:'f'+uid(),first:o.first||pick(FIRST),last:o.last||pick(LAST),nick:o.nick!==undefined?o.nick:(chance(.55)?pick(NICKS):''),
+  const h=(isW()?[60,62,63,65,66,68,70,72]:[63,65,66,68,70,72,74,76])[div]+randi(-2,2);
+  const f={id:'f'+uid(),first:o.first||pick(isW()?FIRST_W:FIRST),last:o.last||pick(LAST),nick:o.nick!==undefined?o.nick:(chance(.55)?pick(NICKS):''),
     home:o.home||pick(HOMES),div,arch,rating:Math.round(clamp(rating,25,99)),born:G.week-age*52-randi(0,51),w:0,l:0,d:0,ko:0,pts:0,
     look:o.look||randomLook(),stance:o.southpaw?'southpaw':(chance(.18)?'southpaw':'orthodox'),height:h,reach:h+randi(-1,4)+(o.reach||0),
     legend:o.legend||null,active:true,pot:o.pot||Math.round(clamp(rating+rand(0,18),40,97)),quirk:o.legend?null:(chance(.65)?pick(Object.keys(QUIRKS)):null)};
@@ -45,7 +52,7 @@ function makeFighter(div,rating,age,o={}){
   return f;
 }
 function legendFighter(L){
-  const look=Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:hashStr(L.id)%10000,band:L.last.toUpperCase()},LEGEND_VIS[L.id]||{},{legendVis:1});
+  const look=Object.assign({skin:L.skin,hair:L.hair,hc:L.hc||0,beard:L.beard||'none',fem:L.w?1:undefined,trunks:L.trunks,trim:'#f4efe3',gloves:L.trunks==='#d8392f'?'#f4efe3':'#d8392f',nose:'straight',scar:'none',ear:'normal',expr:'stern',fs:hashStr(L.id)%10000,band:L.last.toUpperCase()},LEGEND_VIS[L.id]||{},{legendVis:1});
   const f=makeFighter(L.div,L.rating,L.age,{first:L.first,last:L.last,nick:L.nick,home:L.home,arch:L.arch,look,southpaw:L.southpaw,reach:L.reach||0,legend:L.id,pot:L.rating});
   f.pts=Math.round(clamp(f.rating*10-120+rand(0,40),600,1000));
   return f;
@@ -55,8 +62,8 @@ function genWorld(){
   for(let d=0;d<8;d++){
     const ids=[];
     const add=f=>{W.f[f.id]=f;ids.push(f.id)};
-    LEGENDS.filter(l=>l.div===d).forEach(l=>add(legendFighter(l)));
-    SIGNATURES.filter(x=>x.div===d).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
+    LEGENDS.filter(l=>l.div===d&&inCircuit(l)).forEach(l=>add(legendFighter(l)));
+    SIGNATURES.filter(x=>x.div===d&&inCircuit(x)).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
     const tiers=[[2,85,91],[6,75,85],[10,63,75],[18,40,63]];
     for(const [n,a,b] of tiers)for(let i=0;i<n;i++)add(makeFighter(d,rand(a,b),randi(20,35)));
     W.divs.push(ids);
@@ -103,7 +110,7 @@ function weightInfo(div){
     '-1':{pow:1.06,chin:1.05,spd:1,sta:.9,miss:.06,label:'Weight cut',tone:'warn',note:'Size advantage, slight stamina cost.'},
     '0':{pow:1,chin:1,spd:1,sta:1,miss:0,label:'Natural weight',tone:'good',note:'No penalties.'},
     '1':{pow:.92,chin:.92,spd:1.06,sta:1.04,miss:0,label:'Moved up',tone:'warn',note:'Faster than them, but they hit harder.'},
-    '2':{pow:.84,chin:.84,spd:1.1,sta:1.06,miss:0,label:'Way above natural',tone:'bad',note:'Fighting much bigger men.'},
+    '2':{pow:.84,chin:.84,spd:1.1,sta:1.06,miss:0,label:'Way above natural',tone:'bad',note:'Fighting much bigger opponents.'},
   }[String(d)];
   if(!T)return null;
   const r=Object.assign({},T);
@@ -118,7 +125,8 @@ function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
   if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};
   if(u.title&&!b.titleWins)return {ok:false,why:'Win a world title'};
   if(u.amgold&&!(G.flags.am_gold_0||G.flags.am_gold_1))return {ok:false,why:'Win amateur gold'};
-  if(u.legend&&!b.legendsBeaten.includes(u.legend)){const L=LEGEND_BY[u.legend];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
+  const lg=isW()&&u.legendW?u.legendW:u.legend;
+  if(lg&&!b.legendsBeaten.includes(lg)){const L=LEGEND_BY[lg];return {ok:false,why:`Beat ${L.first} "${L.nick}" ${L.last}`}}
   return {ok:true}}
 function gearEquipped(){const st=gearState();return Object.values(st.eq).map(id=>GEAR_BY[id]).filter(Boolean)}
 function gearMods(){const m={};for(const g of gearEquipped())for(const k in g.fx||{})m[k]=(m[k]||0)+g.fx[k];for(const k in m)m[k]=clamp(m[k],-5,5);return m}
@@ -156,12 +164,12 @@ function slotsCount(){return B().level>=15?3:2}
 /* ---------- new career ---------- */
 function newCareer(o){
   const seed=(o.seed??RNG.seed())>>>0;
-  G={v:SAVE_V,slot:o.slot,created:Date.now(),diff:o.diff,week:0,phase:'amateur',seed,rng:{career:seed,world:(seed^0x5bd1e995)>>>0},sandbox:!!o.sandbox,
+  G={v:SAVE_V,slot:o.slot,created:Date.now(),diff:o.diff,circuit:o.circuit==='w'?'w':'m',week:0,phase:'amateur',seed,rng:{career:seed,world:(seed^0x5bd1e995)>>>0},sandbox:!!o.sandbox,
     boxer:null,world:null,rival:null,promoter:null,trainer:'pops',gym:'basement',staff:{cutman:false,nutri:false},
     offers:[],next:null,newsList:[],flags:{},chapters:[],history:[],am:{stage:0,round:0,opps:[],results:[]},pending:[],seen:{}};
   useCareerRng();
   const base=ARCH[o.arch].base,stats={};for(const k of STAT_KEYS)stats[k]=base[k];
-  const natural=clamp(Math.round((o.height-62)/2+BUILDS[o.build].off),0,7);
+  const natural=clamp(Math.round((o.height-(G.circuit==='w'?58:62))/2+BUILDS[o.build].off),0,7);
   G.boxer={name:o.name,first:o.first,last:o.last,nick:o.nick,home:o.home,stance:o.stance,look:o.look,height:o.height,build:o.build,
     reach:o.height+ARMS[o.arms].d,arch:o.arch,born:-(o.age*52)-randi(0,40),natural,div:natural,stats,level:1,xp:0,statPts:0,skillPts:1,
     skills:[],abilities:[ARCH[o.arch].ability],equipped:[ARCH[o.arch].ability],damage:0,injuries:[],hype:5,money:1500,pts:0,
@@ -180,7 +188,7 @@ function counterArch(a){return {outboxer:'swarmer',slugger:'counter',swarmer:'ou
 function rivalF(){return G.rival?G.world.f[G.rival.id]:null}
 
 /* ---------- news ---------- */
-function news(t,tone){G.newsList.unshift({w:G.week,t,tone:tone||''});if(G.newsList.length>80)G.newsList.length=80}
+function news(t,tone){G.newsList.unshift({w:G.week,t:gtxt(t),tone:tone||''});if(G.newsList.length>80)G.newsList.length=80}
 
 /* ---------- amateurs ---------- */
 const AM_TOURNEYS=[
@@ -249,7 +257,7 @@ function genOffers(){
   // a callout or rematch demanded in the post-fight interview
   if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);offers.push(mkOffer(cf,'grudge',cf.id===(last&&last.oppId)?'Rematch':'Callout Fight',cf.id===(last&&last.oppId)?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`))}}
   // chapters first
-  for(const ch of CHAPTERS){if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
+  for(const ch of CHAPTERS){if(ch.circ&&ch.circ!==(G.circuit||'m'))continue;if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
     const cont=ranking(d).filter(e=>e.id!=='P'&&!beltsOf(e.id,d).length);
     const mand=cont[0]?.f;if(mand&&!used.has(mand.id)){used.add(mand.id);offers.push(mkOffer(mand,'world','Mandatory Title Defense',`The ${myBelts.join(', ')} ordered this one. Your #1 contender.`,{title:{belts:myBelts.slice(),defense:true}}))}
@@ -487,7 +495,7 @@ function oppCombat(f,o={}){
   const ai=deep(ARCH[f.arch].ai);if(L?.ai)Object.assign(ai,deep(L.ai));
   const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
   if(ai.weak==='glass')st.chin=Math.max(15,st.chin-15);
-  const scout=L?L.ai?.scout:(Q?Q.scout:'');
+  const scout=gtxt(L?L.ai?.scout:(Q?Q.scout:''));
   return {scout,quirk:Q?Q.name:null,name:shortName(f),first:f.first,last:f.last,stats:st,look:fillLook(f),arch:f.arch,height:f.height,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
 }
 function playerCombat(){

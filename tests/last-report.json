@@ -1,5 +1,5 @@
 {
- "when": "2026-10-28T21:10:21.092Z",
+ "when": "2026-10-28T21:34:29.545Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -144,15 +144,15 @@
     0.05,
     0.6
    ],
-   "winRate": 0.2,
+   "winRate": 0.4,
    "n": 5,
-   "kos": 1,
+   "kos": 2,
    "koed": 0,
    "ok": true,
-   "avgLanded": 152.2,
-   "avgAcc": 0.5,
-   "avgOppAcc": 0.33,
-   "results": "o:DECR6 o:DECR6 o:DECR6 p:KOR5 o:DECR6"
+   "avgLanded": 142.2,
+   "avgAcc": 0.57,
+   "avgOppAcc": 0.41,
+   "results": "p:KOR4 o:DECR6 o:DECR6 o:DECR6 p:KOR2"
   },
   {
    "id": "human_legend_hollis",
@@ -161,40 +161,45 @@
     0.3,
     1
    ],
-   "winRate": 0.8,
+   "winRate": 1,
    "n": 5,
-   "kos": 4,
+   "kos": 5,
    "koed": 0,
    "ok": true,
-   "avgLanded": 164.2,
-   "avgAcc": 0.56,
-   "avgOppAcc": 0.57,
-   "results": "o:DECR6 p:KOR5 p:KOR5 p:KOR6 p:KOR4"
+   "avgLanded": 163.6,
+   "avgAcc": 0.58,
+   "avgOppAcc": 0.68,
+   "results": "p:KOR6 p:KOR5 p:KOR6 p:KOR4 p:KOR3"
   }
  ],
  "careers": {
   "n": 500,
   "retireAgeMed": 37,
   "winsMed": 46,
-  "lossesMed": 23,
+  "lossesMed": 22,
   "titlesMed": 2,
-  "titlesAvg": 1.76,
+  "titlesAvg": 1.77,
   "champShare": 0.97,
-  "undisputedShare": 0.04,
+  "undisputedShare": 0.06,
   "multiDivShare": 0,
-  "legendsAvg": 1.48,
-  "chaptersAvg": 1.03,
-  "moneyMed": 39137529,
-  "hofMed": 319,
+  "legendsAvg": 1.44,
+  "chaptersAvg": 1.05,
+  "moneyMed": 38647832,
+  "womenN": 166,
+  "womenChampShare": 0.98,
+  "womenLegendsAvg": 1.29,
+  "crossCircuitLegends": 0,
+  "hofMed": 337,
   "tiers": {
-   "Hall of Famer": 211,
-   "Champion": 175,
-   "All-Time Great": 74,
-   "Contender": 36,
-   "Journeyman": 4
+   "Hall of Famer": 225,
+   "Champion": 158,
+   "All-Time Great": 79,
+   "The Greatest of All Time": 3,
+   "Contender": 30,
+   "Journeyman": 5
   },
   "forcedRetireShare": 0,
-  "dmgMed": 71
+  "dmgMed": 70
  },
  "errors": [],
  "careerChecks": [
@@ -227,7 +232,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1.03,
+   "v": 1.05,
    "band": [
     0.3,
     5
@@ -236,13 +241,40 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.48,
+   "v": 1.44,
    "band": [
     0.2,
     6
    ],
    "ok": true
+  },
+  {
+   "k": "womenChampShare",
+   "v": 0.98,
+   "band": [
+    0.4,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "k": "womenLegendsAvg",
+   "v": 1.29,
+   "band": [
+    0.1,
+    6
+   ],
+   "ok": true
+  },
+  {
+   "k": "crossCircuitLegends",
+   "v": 0,
+   "band": [
+    0,
+    0
+   ],
+   "ok": true
   }
  ],
- "seconds": 77
+ "seconds": 73
 }
