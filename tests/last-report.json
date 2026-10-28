@@ -1,0 +1,248 @@
+{
+ "when": "2026-10-28T06:15:55.857Z",
+ "fights": [
+  {
+   "id": "human_eq_champ",
+   "why": "a decent player should usually beat an equal opponent",
+   "band": [
+    0.55,
+    0.95
+   ],
+   "winRate": 0.4,
+   "n": 5,
+   "kos": 2,
+   "koed": 0,
+   "ok": false,
+   "avgLanded": 109.8,
+   "avgAcc": 0.6,
+   "avgOppAcc": 0.34,
+   "results": "o:DECR6 o:DECR6 p:KOR1 o:DECR6 p:KOR2"
+  },
+  {
+   "id": "human_eq_legend",
+   "why": "Legend difficulty should bite",
+   "band": [
+    0.25,
+    0.8
+   ],
+   "winRate": 0.2,
+   "n": 5,
+   "kos": 1,
+   "koed": 0,
+   "ok": false,
+   "avgLanded": 120.8,
+   "avgAcc": 0.51,
+   "avgOppAcc": 0.36,
+   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 p:KOR3"
+  },
+  {
+   "id": "human_eq_contender",
+   "why": "Contender is the learning setting",
+   "band": [
+    0.7,
+    1
+   ],
+   "winRate": 1,
+   "n": 5,
+   "kos": 5,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 134.8,
+   "avgAcc": 0.64,
+   "avgOppAcc": 0.19,
+   "results": "p:KOR4 p:KOR4 p:KOR4 p:KOR4 p:TKOR4"
+  },
+  {
+   "id": "human_plus15",
+   "why": "a +15 rated opponent should be a real underdog fight",
+   "band": [
+    0.1,
+    0.65
+   ],
+   "winRate": 0.6,
+   "n": 5,
+   "kos": 3,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 124.8,
+   "avgAcc": 0.57,
+   "avgOppAcc": 0.5,
+   "results": "o:DECR6 o:DECR6 p:KOR4 p:KOR3 p:KOR4"
+  },
+  {
+   "id": "novice_eq_contender",
+   "why": "a slow reader should still have a chance on Contender",
+   "band": [
+    0.35,
+    0.9
+   ],
+   "winRate": 1,
+   "n": 5,
+   "kos": 5,
+   "koed": 0,
+   "ok": false,
+   "avgLanded": 98.4,
+   "avgAcc": 0.72,
+   "avgOppAcc": 0.24,
+   "results": "p:KOR4 p:KOR4 p:TKOR2 p:KOR3 p:KOR1"
+  },
+  {
+   "id": "expert_plus20",
+   "why": "skill should beat ratings",
+   "band": [
+    0.1,
+    0.9
+   ],
+   "winRate": 0.2,
+   "n": 5,
+   "kos": 1,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 159,
+   "avgAcc": 0.52,
+   "avgOppAcc": 0.14,
+   "results": "o:DECR6 p:KOR6 o:DECR6 o:DECR6 o:DECR6"
+  },
+  {
+   "id": "masher_eq",
+   "why": "button mashing must not work",
+   "band": [
+    0,
+    0.4
+   ],
+   "winRate": 0,
+   "n": 5,
+   "kos": 0,
+   "koed": 5,
+   "ok": true,
+   "avgLanded": 79.6,
+   "avgAcc": 0.28,
+   "avgOppAcc": 0.82,
+   "results": "o:KOR5 o:KOR5 o:KOR5 o:KOR4 o:KOR5"
+  },
+  {
+   "id": "turtle_eq",
+   "why": "frame-perfect blocking should not dominate (and never KO)",
+   "band": [
+    0,
+    0.75
+   ],
+   "winRate": 0,
+   "n": 5,
+   "kos": 0,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 85.6,
+   "avgAcc": 0.26,
+   "avgOppAcc": 0.31,
+   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 o:DECR6"
+  },
+  {
+   "id": "human_legend_tyrell",
+   "why": "legends are the hardest fights, even for an 85-rated player",
+   "band": [
+    0.05,
+    0.6
+   ],
+   "winRate": 0.4,
+   "n": 5,
+   "kos": 2,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 143,
+   "avgAcc": 0.54,
+   "avgOppAcc": 0.39,
+   "results": "o:DECR6 p:KOR3 o:DECR6 p:KOR4 o:DECR6"
+  },
+  {
+   "id": "human_legend_hollis",
+   "why": "legends are the hardest fights, even for an 85-rated player",
+   "band": [
+    0.05,
+    0.6
+   ],
+   "winRate": 1,
+   "n": 5,
+   "kos": 4,
+   "koed": 0,
+   "ok": false,
+   "avgLanded": 178.8,
+   "avgAcc": 0.56,
+   "avgOppAcc": 0.68,
+   "results": "p:KOR6 p:DECR6 p:KOR6 p:KOR4 p:TKOR5"
+  }
+ ],
+ "careers": {
+  "n": 500,
+  "retireAgeMed": 37,
+  "winsMed": 46,
+  "lossesMed": 23,
+  "titlesMed": 2,
+  "titlesAvg": 1.72,
+  "champShare": 0.97,
+  "undisputedShare": 0.05,
+  "multiDivShare": 0,
+  "legendsAvg": 1.51,
+  "chaptersAvg": 1.02,
+  "moneyMed": 38839918,
+  "hofMed": 286,
+  "tiers": {
+   "Champion": 220,
+   "Hall of Famer": 173,
+   "Contender": 48,
+   "All-Time Great": 57,
+   "Journeyman": 2
+  },
+  "forcedRetireShare": 0,
+  "dmgMed": 72
+ },
+ "errors": [],
+ "careerChecks": [
+  {
+   "k": "retireAgeMed",
+   "v": 37,
+   "band": [
+    31,
+    40
+   ],
+   "ok": true
+  },
+  {
+   "k": "champShare",
+   "v": 0.97,
+   "band": [
+    0.4,
+    1
+   ],
+   "ok": true
+  },
+  {
+   "k": "forcedRetireShare",
+   "v": 0,
+   "band": [
+    0,
+    0.4
+   ],
+   "ok": true
+  },
+  {
+   "k": "chaptersAvg",
+   "v": 1.02,
+   "band": [
+    0.3,
+    5
+   ],
+   "ok": true
+  },
+  {
+   "k": "legendsAvg",
+   "v": 1.51,
+   "band": [
+    0.2,
+    6
+   ],
+   "ok": true
+  }
+ ],
+ "seconds": 54
+}

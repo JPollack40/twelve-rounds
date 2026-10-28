@@ -1,0 +1,1 @@
+{"name":"twelve-rounds","private":true,"scripts":{"build":"bash build.sh","test":"node tests/suite.js","test:quick":"node tests/suite.js --quick","test:strict":"node tests/suite.js --strict"}}

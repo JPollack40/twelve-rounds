@@ -8,10 +8,10 @@ const isWide=()=>innerWidth>=680;
 let _rw=isWide();
 window.addEventListener('resize',()=>{const w=isWide();if(w!==_rw){_rw=w;if(!$('.fight')&&!$('.mg')&&!$('.modal'))UI.render()}});
 
-function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
+function toast(t){if(UI.silent)return;const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
 function modal(html,opts={}){
   const el=document.createElement('div');el.className='modal';el.innerHTML=`<div class="box${opts.wide?' wide':''}">${html}</div>`;
-  document.body.appendChild(el);
+  if(!UI.silent)document.body.appendChild(el);
   el.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b){el.remove();opts.onClose&&opts.onClose(b.dataset.close)}});
   return el;
 }
@@ -241,15 +241,15 @@ SCR.camp=()=>{
   const n=G.next;if(!n){UI.cur='home';return SCR.home()}
   const o=n.offer,f=G.world.f[o.oppId],wi=weightInfo(),oc=oppCombat(f);
   const fav=Object.entries(oc.ai.w||{}).sort((a,b)=>b[1]-a[1])[0][0];
-  const scout=n.scout>=1?`<p style="font-size:14px">Scouting: favorite punch is the <b>${PUNCH[fav].name.toLowerCase()}</b>. ${(oc.ai.body||0)>.35?'Works the body a lot. ':''}${(oc.ai.counter||0)>.5?'A patient counter-puncher. ':''}${(oc.ai.agg||0)>.7?'Comes forward relentlessly. ':''}Their guard is usually ${(oc.ai.guard||['high'])[0]}.</p>`:`<p class="muted" style="font-size:13.5px">Do some film study to scout their habits.</p>`;
-  const acts=Object.keys(CAMP).map(k=>{const C=CAMP[k];const off=(k==='cut'&&(!wi||wi.diff>=0))||(k==='film'&&n.scout>=2);return `<button class="navb" data-act="camp" data-k="${k}"${off?' disabled style="opacity:.4"':''}><b>${C.name}</b><small>${C.desc}</small></button>`}).join('');
+  const scout=n.scout>=1?`<p style="font-size:14px">${oc.scout?'<b>Scouting report:</b> '+esc(oc.scout)+' ':''}Favorite punch is the <b>${PUNCH[fav].name.toLowerCase()}</b>. ${(oc.ai.body||0)>.35?'Works the body a lot. ':''}${(oc.ai.counter||0)>.5?'A patient counter-puncher. ':''}${(oc.ai.agg||0)>.7?'Comes forward relentlessly. ':''}Their guard is usually ${(oc.ai.guard||['high'])[0]}.</p>`:`<p class="muted" style="font-size:13.5px">Do some film study to scout their habits.</p>`;
+  const keys=keyDrills(f);const acts=Object.keys(CAMP).map(k=>{const C=CAMP[k];const off=(k==='cut'&&(!wi||wi.diff>=0))||(k==='film'&&n.scout>=2);const key=keys.find(x=>x[0]===k);const done=n.edge&&n.edge[k];return `<button class="navb${key?' on':''}" data-act="camp" data-k="${k}"${off?' disabled style="opacity:.4"':''}>${key?`<span class="pill gold" style="position:absolute;top:6px;right:6px;font-size:10px">${done?'✓ edge':'key drill'}</span>`:''}<b>${C.name}</b><small>${key?esc(key[1]):C.desc}</small></button>`}).join('');
   const fat=n.fatigue;
   return shell('fight','Training camp',`<div class="card col"><div class="row sp"><h3>Training camp</h3><span class="pill ${n.weeksLeft?'gold':'red'}">${n.weeksLeft} week${n.weeksLeft!==1?'s':''} left</span></div>${oppCard(f)}${scout}</div>
     ${n.weeksLeft>0?`<div class="card col"><div class="row sp"><span class="lbl">Fatigue</span><span class="num ${fat>60?'bad':fat>35?'warnt':''}">${Math.round(fat)}</span></div><div class="bar r"><i style="width:${Math.min(100,fat)}%"></i></div>
       <p class="muted" style="font-size:13px">Above 60, every hard session risks an injury. Training at ${esc(GYMS[G.gym].name)} with ${esc(TRAINERS[G.trainer].name)} (x${campBoosts().toFixed(2)} gains).</p>
       ${wi&&wi.diff<0?`<p class="warnt" style="font-size:13.5px">${wi.label}: stamina at ${Math.round(wi.sta*100)}% on fight night. Weight management helps.</p>`:''}</div>
       <div class="nav" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${acts}</div>
-      <div class="row"><button class="btn grow" data-act="autocamp">Auto-train the rest (fewer gains)</button></div>`:
+      <div class="row"><button class="btn gold grow" data-act="quickcamp">Quick camp (key drills first, fewer gains)</button></div>`:
       `<button class="btn primary" data-go="fightnight">Fight night: walk to the ring</button>`}
     ${n.sessions.length?`<div class="card"><span class="lbl">This camp</span><p style="font-size:13.5px;margin-top:4px">${n.sessions.map(s=>`${CAMP[s.kind].name}${s.q?' '+s.q+'%':''}`).join(' · ')}</p></div>`:''}`);
 };
@@ -313,7 +313,7 @@ function startFight(sim){
   const rob=(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
-    cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
+    edge:Object.keys(n.edge||{}).length,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
   fight.mount();
@@ -536,9 +536,10 @@ const ACT={
   wait(){advanceWeeks(2);G.offers=[];genOffers();Save.write();UI.render();toast('Two weeks pass. New offers are in.');checkEvent()},
   restheal(){const w=Math.max(...B().injuries.map(i=>i.wk));advanceWeeks(w);G.offers=[];genOffers();Save.write();UI.render();toast(`${w} weeks of rest. You're healthy.`)},
   camp(el){doCamp(el.dataset.k)},
+  quickcamp(el){ACT.autocamp(el)},
   autocamp(){
     const n=G.next;const lines=[];let xp=0,ups=0;
-    while(n.weeksLeft>0){const k=n.fatigue>45?'rest':pick(['bag','speed','rope','mitts','film']);const r=campResult(k,.55,true);xp+=r.xp||0;ups+=r.ups||0;lines.push(...r.lines)}
+    while(n.weeksLeft>0){const todo=(n.keys||[]).filter(k=>!(n.edge&&n.edge[k])&&CAMP[k]&&k!=='spar');const k=n.fatigue>45?'rest':todo.length?todo[0]:pick(['bag','speed','rope','mitts','film']);const r=campResult(k,todo.length&&k===todo[0]?.65:.55,true);xp+=r.xp||0;ups+=r.ups||0;lines.push(...r.lines)}
     Save.write();UI.render();
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },

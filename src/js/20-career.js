@@ -25,7 +25,7 @@ function makeFighter(div,rating,age,o={}){
   const f={id:'f'+uid(),first:o.first||pick(FIRST),last:o.last||pick(LAST),nick:o.nick!==undefined?o.nick:(chance(.55)?pick(NICKS):''),
     home:o.home||pick(HOMES),div,arch,rating:Math.round(clamp(rating,25,99)),born:G.week-age*52-randi(0,51),w:0,l:0,d:0,ko:0,pts:0,
     look:o.look||randomLook(),stance:o.southpaw?'southpaw':(chance(.18)?'southpaw':'orthodox'),height:h,reach:h+randi(-1,4)+(o.reach||0),
-    legend:o.legend||null,active:true,pot:o.pot||Math.round(clamp(rating+rand(0,18),40,97))};
+    legend:o.legend||null,active:true,pot:o.pot||Math.round(clamp(rating+rand(0,18),40,97)),quirk:o.legend?null:(chance(.65)?pick(Object.keys(QUIRKS)):null)};
   const n=clamp(Math.round((age-19)*2.3+rand(-3,3)),0,55);
   const wp=clamp(.3+f.rating/150+rand(-.08,.08),.3,1);
   f.w=Math.round(n*wp);f.l=n-f.w;f.d=chance(.25)?randi(0,2):0;
@@ -252,7 +252,7 @@ function genOffers(){
 
 /* ---------- fight booking & camp ---------- */
 function acceptOffer(o){
-  G.next={offer:o,weeksLeft:o.weeks,sessions:[],fatigue:0,scout:0,cutWork:0,gameplan:0};
+  G.next={offer:o,weeksLeft:o.weeks,sessions:[],fatigue:0,scout:0,cutWork:0,gameplan:0,keys:keyDrills(G.world.f[o.oppId]).map(k=>k[0]),edge:{}};
   G.offers=[];
   if(o.chapter)G.flags['ch_'+o.chapter+'_off']=true;
   const f=G.world.f[o.oppId];
@@ -292,6 +292,7 @@ function campResult(kind,q,auto){
     const id=pick(['knee','ribs','hand','shoulder']);addInjury(id,true);out.lines.push(`Overtraining injury: ${INJ[id].name}!`);out.injury=id;
   }
   n.sessions.push({kind,q:Math.round(q*100)});
+  if(q>=.6&&G.next&&G.next.keys&&G.next.keys.includes(kind)){n.edge=n.edge||{};if(!n.edge[kind]){n.edge[kind]=1;out.lines.push('Key drill done: fight-night edge.')}}
   n.weeksLeft--;
   advanceWeeks(1,true);
   return out;
@@ -386,7 +387,10 @@ function oppCombat(f,o={}){
   const st=statsFromRating(f.rating+(o.spar?-6:0),f.arch);
   if(L?.ai?.chinBonus)st.chin=Math.min(99,st.chin+L.ai.chinBonus);
   const ai=deep(ARCH[f.arch].ai);if(L?.ai)Object.assign(ai,deep(L.ai));
-  return {name:shortName(f),first:f.first,last:f.last,stats:st,look:f.look,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
+  const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
+  if(ai.weak==='glass')st.chin=Math.max(15,st.chin-15);
+  const scout=L?L.ai?.scout:(Q?Q.scout:'');
+  return {scout,quirk:Q?Q.name:null,name:shortName(f),first:f.first,last:f.last,stats:st,look:f.look,stance:f.stance,reach:f.reach,ai,abilities:L?[L.ab]:(f.rating>=80?[ARCH[f.arch].ability]:[]),mods:{},legend:f.legend,rival:!!f.rival};
 }
 function playerCombat(){
   const b=B();
@@ -454,7 +458,7 @@ function applyResult(o,res){
   b.hype=clamp(b.hype+hy,0,100);
   // damage & injuries
   const dur=skillMods().durable||0;
-  const dmg=(res.dmgTaken*.008+res.kdAgainst*.8+(loss&&ko?3:0))*(1-dur)*(pro?1:.5)*(b.injuries.some(i=>i.id==='concussion')?1.6:1);
+  const dmg=(res.dmgTaken*.0045+res.kdAgainst*.5+(loss&&ko?2:0))*(1-dur)*(pro?1:.5)*(b.injuries.some(i=>i.id==='concussion')?1.6:1);
   b.damage=clamp(b.damage+dmg,0,100);out.damage=dmg;
   const injP=.05+res.dmgTaken/1600+res.kdAgainst*.05+(b.injuries.length?.05:0);
   const inj=[];
@@ -513,7 +517,7 @@ function checkStripped(){
 function simFight(o){
   const pc=playerCombat(),f=G.world.f[o.oppId],oc=oppCombat(f);
   const ps=ovr(pc.stats),os=ovr(oc.stats)*({contender:.95,champion:1,legend:1.04}[G.diff]);
-  const pw=1/(1+Math.pow(10,(os-ps)/11));
+  const pw=1/(1+Math.pow(10,(os-ps)/9.5));
   const r=R(),draw=r<.04,win=!draw&&R()<pw;
   const ko=chance(.35+Math.abs(ps-os)/80);
   const round=ko?randi(1,o.rounds):o.rounds;
@@ -560,4 +564,17 @@ function legacy(){
   const tiers=[[0,'Journeyman'],[60,'Contender'],[150,'Champion'],[300,'Hall of Famer'],[500,'All-Time Great'],[800,'The Greatest of All Time']];
   let tier=tiers[0][1],next=null;for(let i=0;i<tiers.length;i++){if(score>=tiers[i][0]){tier=tiers[i][1];next=tiers[i+1]||null}}
   return {score,tier,parts,next};
+}
+
+/* key drills: which camp sessions matter most against this opponent */
+function keyDrills(f){
+  const oc=oppCombat(f),ai=oc.ai,out=[];
+  const g=(ai.guard||['high'])[0];
+  if(g==='high'||g==='peek')out.push(['bag','Their guard is high: heavy-bag body work.']);
+  if((ai.counter||0)>.5)out.push(['mitts','They counter: sharpen reactions on the mitts.']);
+  if((ai.agg||0)>.7)out.push(['rope','They pressure: build the tank on the rope.']);
+  if(oc.stats.spd>=60)out.push(['speed','Fast hands: speed-bag timing.']);
+  if(ai.weak==='body')out.push(['bag','Soft body: heavy bag.']);
+  if(!out.length)out.push(['spar','An even matchup: live sparring.']);
+  const seen=new Set();return out.filter(x=>!seen.has(x[0])&&seen.add(x[0])).slice(0,2);
 }

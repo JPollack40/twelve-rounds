@@ -139,7 +139,7 @@ function logView(L){
   const grid=`<div class="tblw"><table class="t"><tr><th>Their punch</th><th class="r">n</th><th class="r">dodged</th><th class="r">blocked</th><th class="r">hit you</th><th class="r">missed</th></tr>
     ${types.map(t=>{const r=resp[t];const pc=k=>r.n?Math.round(r[k]/r.n*100)+'%':'–';return `<tr><td style="color:${TELL_COL[t]}">${t}</td><td class="r">${r.n}</td><td class="r good">${pc('dodged')}</td><td class="r">${pc('blocked')}</td><td class="r bad">${pc('hit')}</td><td class="r">${pc('missed')}</td></tr>`}).join('')}</table></div>`;
   // timeline canvas per round
-  const rounds=Math.max(1,...ev.map(e=>e.r||1));
+  const rounds=Math.max(1,...ev.map(e=>e.rd||1));
   const tl=`<canvas id="tlcv" data-log="${L.id}" width="900" height="${rounds*46+10}" style="width:100%;height:auto;background:var(--ink);border-radius:8px"></canvas>`;
   const stats=L.res?.stats;
   return `<div class="card col"><div class="row sp"><h3>${esc(L.meta.p)} vs ${esc(L.meta.o)}</h3><span class="pill">${esc(L.meta.diff)} · ${L.meta.rounds}×${L.meta.roundLen}s · seed ${L.meta.seed}</span></div>
@@ -151,14 +151,13 @@ function logView(L){
     <div class="row"><button class="btn sm" data-act="logreplay" data-id="${L.id}">Replay this seed in the lab</button></div></div>`;
 }
 function drawTimeline(cv,L){
-  const x=cv.getContext('2d'),W=cv.width,ev=L.ev,len=L.meta.roundLen||45,rounds=Math.max(1,...ev.map(e=>e.r||1));
+  const x=cv.getContext('2d'),W=cv.width,ev=L.ev,len=L.meta.roundLen||45,rounds=Math.max(1,...ev.map(e=>e.rd||1));
   x.fillStyle='#0d0f1d';x.fillRect(0,0,W,cv.height);
   const X=t=>60+(t/len)*(W-70);
-  const rt0={};for(const e of ev){if(e.ev==='tell'&&rt0[e.r]==null)rt0[e.r]=0}
-  // time within round: events carry absolute fight time; subtract the round's first time
-  const first={};for(const e of ev){if(first[e.r]==null)first[e.r]=e.t}
+    // time within round: events carry absolute fight time; subtract the round's first time
+  const first={};for(const e of ev){if(first[e.rd]==null)first[e.rd]=e.t}
   for(let r=1;r<=rounds;r++){const y=10+(r-1)*46;x.fillStyle='#a0a7c6';x.font='12px Barlow Condensed, sans-serif';x.fillText('R'+r,10,y+20);x.fillStyle='#1a1f38';x.fillRect(60,y+4,W-70,30)}
-  for(const e of ev){const y=10+((e.r||1)-1)*46,t=e.t-(first[e.r]||0);if(t<0||t>len+1)continue;const px=X(t);
+  for(const e of ev){const y=10+((e.rd||1)-1)*46,t=e.t-(first[e.rd]||0);if(t<0||t>len+1)continue;const px=X(t);
     if(e.ev==='tell'){x.fillStyle=TELL_COL[e.type]||'#fff';x.fillRect(px,y+6,Math.max(2,(e.dur/len)*(W-70)),8)}
     else if(e.ev==='in'&&(e.a.startsWith('slip')||e.a==='duck'||e.a==='block')){x.fillStyle='#7fb0ff';x.fillRect(px,y+16,2,8)}
     else if(e.ev==='res'&&e.who==='o'&&e.r==='hit'){x.fillStyle='#f05a55';x.fillRect(px-1,y+26,3,8)}
@@ -224,6 +223,9 @@ function finishScenario(msg){
   if(ev)setTimeout(()=>checkEvent(true,ev),200);
 }
 function simYears(n){
+  UI.silent=true;try{return simYearsInner(n)}finally{UI.silent=false}
+}
+function simYearsInner(n){
   const weeks=n*52,w0=G.week,out=[],b=B();let fights=0,inj=0,evs=0;const t0=performance.now();
   const start={pts:b.pts,rank:playerRank(),money:b.money,level:b.level,ovr:playerOvr(),rec:recStr(b.record),belts:playerBelts().length,age:ageOf(b.born)};
   let guard=0;

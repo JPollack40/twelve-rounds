@@ -16,7 +16,7 @@ function mkC(src,side){
     hp:100,maxHp:100,sta:100*sta0,maxSta:100*sta0,meter:0,state:'idle',t:0,dur:0,pu:null,guard:'high',guardT:1,think:1.2,
     kd:0,kdTotal:0,cut:0,hurt:0,buffs:[],next:null,combo:0,comboT:0,seq:[],queue:null,qT:0,dodge:null,iframe:0,regenDelay:0,
     clinches:0,clinchCD:0,counterWin:0,sway:0,dmgTaken:0,unans:[],reactIn:0,reactTo:null,pendingCounter:false,recDur:.2,blockLevel:'high',
-    dmg:{swellL:0,swellR:0,cheek:0},hits:0,cutProne:src.cutProne||0,
+    dmg:{swellL:0,swellR:0,cheek:0},hits:0,cutProne:(src.cutProne||0)+(src.ai&&src.ai.weak==='cuts'?1.5:0),
     stats:{thrown:0,landed:0,jabT:0,jabL:0,powT:0,powL:0,bodyL:0,dmg:0,kd:0,perfect:0,abil:0},rs:{score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0}};
 }
 /* ---- pose helpers ---- */
@@ -48,7 +48,7 @@ class Fight{
     const rob=cfg.robbery||0;
     this.judges=[0,1,2].map(()=>({agg:rand(-.35,.35),noise:.07+rob*.12,lean:rob?rand(0,rob*.18):0}));
     this.held={block:false,body:false};this.bodyT=0;this.count=null;this.res={seed:this.seed};this.cornerPick='breathe';
-    this.scout=cfg.scout||0;this.gameplan=0;this.ended=false;this.pBlocks=0;
+    this.scout=(cfg.scout||0)+(cfg.edge||0)*.4;this.gameplan=0;this.edgeDmg=1+(cfg.edge||0)*.05;this.ended=false;this.pBlocks=0;
     this.cam={x:0,y:0,rot:0,zoom:1};
     this.oPose=null;this.oFrom=null;this.oBlend=1;this.oKey='';
     this.pG={L:{x:0,y:0,r:1},R:{x:0,y:0,r:1}};
@@ -57,7 +57,7 @@ class Fight{
     RNG.use(prev);
     Logs.start({seed:this.seed,p:this.p.name,o:this.o.name,oLegend:cfg.o.legend||null,rounds:cfg.rounds,roundLen:cfg.roundLen,diff:cfg.diff,label:cfg.label||'',sparring:!!cfg.sparring,practice:!!cfg.practice});
   }
-  log(o){o.t=+this.time.toFixed(3);o.r=this.round;Logs.ev(o)}
+  log(o){o.t=+this.time.toFixed(3);o.rd=this.round;Logs.ev(o)}
   /* ---------- mount / dom ---------- */
   mount(){
     const left=Settings.lefty;
@@ -149,7 +149,8 @@ class Fight{
     const p=this.p;
     if(p.seq.length)return;
     if(p.sta<PUNCH[type].sta*(1-(p.m.cost||0))){this.text('GASSED','#9fb3ff',200,330,.5,16);return}
-    if(p.state==='idle'||p.state==='block'||(p.state==='rec'&&p.t>p.dur*.5)||(p.state==='dodge'&&p.t>p.iframe*.8)){this.throwP(p,type,body,{});return}
+    if(p.state==='idle'||(p.state==='block'&&p.t>=.12)||(p.state==='rec'&&p.t>p.dur*.5)||(p.state==='dodge'&&p.t>p.iframe*.8)){this.throwP(p,type,body,{});return}
+    if(p.state==='block'){p.queue={type,body};p.qT=.2;return}
     if(['wind','act','rec','stagger','dodge'].includes(p.state)){p.queue={type,body};p.qT=.32}
   }
   pressDodge(kind){
@@ -197,7 +198,8 @@ class Fight{
       if(this.cheats.tellMul)w*=this.cheats.tellMul;
     }
     if(opts.instant)w=.05;
-    const cost=P.sta*(1-(c.m.cost||0))*(c.side==='o'?.9:1);
+    if(c.side==='p'){c.rep=(type===c.lastType&&!body===!c.lastBody)?Math.min(5,(c.rep||0)+1):0;c.lastType=type;c.lastBody=body}
+    const cost=P.sta*(1-(c.m.cost||0))*(c.side==='o'?.9:1)*(1+(c.rep||0)*.3);
     c.sta=Math.max(0,c.sta-cost);
     c.pu={type,body,opts};c.state='wind';c.t=0;c.dur=w;c.flashed=false;
     c.stats.thrown++;c.rs.thrown++;if(type==='jab')c.stats.jabT++;else c.stats.powT++;
@@ -218,6 +220,8 @@ class Fight{
     a.state='act';a.t=0;a.dur=P.act;
     const base=a.side==='p'?P.rec*this.spdF(a):P.rec*(1.5-a.st.spd*.005);
     a.recDur=base*(r==='miss'?1.5:r==='block'?1.15:1)+(a.recBonus||0);a.recBonus=0;
+    if(a.side==='o'&&a.ai.weak==='openAfterHook'&&pu.type==='hook'&&r!=='hit'){a.recDur*=1.7;a.guard='open';a.guardT=.8}
+    if(a.side==='o'&&a.ai.weak==='flurry'&&!a.seq.length&&a.sigT!=null&&this.time-a.sigT<2.5)a.recDur*=1.5;
     if(r==='miss')a.sta=Math.max(0,a.sta-P.sta*.5);
     if(r==='block')a.sta=Math.max(0,a.sta-P.sta*.2);
     if(r==='miss'||r==='block')a.combo=0;
@@ -229,6 +233,7 @@ class Fight{
     if(d.state==='clinch')return rec('block');
     if(d.side==='p'&&this.cheats.god)return rec('block');
     let mult=1;const flags={};
+    if(a.side==='p'&&a.sta<25&&!o.instant&&chance(.3+(25-a.sta)/70)){this.text('ARM-WEARY','#9fb3ff',200,300,.5,15);Sfx.whoosh();a.combo=0;return rec('miss',0,'tired')}
     if(d.state==='dodge'&&d.t<d.iframe&&!o.instant){
       if(this.dodgeWorks(d.dodge,P.kind,side)){this.onDodged(a,d,pu);return rec('miss',0,'dodge')}
       mult*=1.25;flags.into=true;
@@ -250,10 +255,10 @@ class Fight{
         const dm=this.dmg(a,d,pu,{blocked:true})*(1-ab);
         d.hp-=dm;d.dmgTaken+=dm;d.sta=Math.max(0,d.sta-P.sta*(d.side==='p'?1.1:.7)*(1-(d.m.blockSta||0)));
         const drain=this.bmax(d,'drainOnBlock');if(drain)a.sta=Math.max(0,a.sta-drain);
-        d.meter=Math.min(300,d.meter+5);
+        d.meter=Math.min(300,d.meter+5);a.rs.score+=P.score*.3;
         Sfx.block();if(d.side==='p')buzz(8);
         const pos=this.hitPos(d,pu);this.spark(pos.x,pos.y,'#bcd2ff',5);
-        if(d.side==='o'&&chance((d.ai.counter||.3)*.7*this.D.agg+.1)&&['idle','block'].includes(d.state))d.pendingCounter=true;
+        if(d.side==='o'&&chance((d.ai.counter||.3)*.7*this.D.agg+.1+(a.rep||0)*.15)&&['idle','block'].includes(d.state))d.pendingCounter=true;
         if(d.hp<=0)d.hp=1;
         return rec('block',dm);
       }
@@ -271,8 +276,9 @@ class Fight{
   }
   dmg(a,d,pu,flags){
     const P=PUNCH[pu.type],o=pu.opts||{};
-    let dm=P.dmg*(.5+a.st.pow*.011)*(1+(a.m.dmg||0))*this.bmul(a,'dmg');
+    let dm=P.dmg*(.5+a.st.pow*.011)*(1+(a.m.dmg||0))*this.bmul(a,'dmg')*(a.side==='p'?this.edgeDmg:1);
     if(pu.type==='jab')dm*=this.bmul(a,'jabDmg');
+    if(a.side==='p'&&a.rep)dm*=Math.max(.55,1-a.rep*.12);
     if(pu.type==='hook')dm*=this.bmul(a,'hookDmg');
     if(pu.body)dm*=(1+(a.m.bodyDmg||0))*this.bmul(a,'bodyDmg');
     dm*=a.sta<20?.6:a.sta<40?.82:1;
@@ -282,6 +288,9 @@ class Fight{
     if(a.combo>=2)dm*=1+Math.min(a.combo,6)*.05*(1+(a.m.combo||0));
     if(a.next&&pu.type!=='jab'&&!flags.blocked){dm*=a.next.mult;flags.hay=true;a.next=null}
     if(a.side==='o')dm*=this.D.dmg;
+    if(d.side==='o'&&d.ai.weak){const wk=d.ai.weak;
+      if(wk==='body'&&pu.body)dm*=1.35;if(wk==='upper'&&pu.type==='upper')dm*=1.35;if(wk==='jab'&&pu.type==='jab')dm*=1.3;if(wk==='counter'&&flags.counter)dm*=1.3;
+      if(wk==='flurry'&&(d.state==='rec'||d.state==='stagger')&&d.sigT!=null&&this.time-d.sigT<2.5)dm*=1.3}
     if(!pu.body){dm*=1.42-d.st.chin*.0085;dm*=1-(d.m.chinRes||0)}else dm*=1.15-d.st.sta*.003;
     if(pu.type==='jab')dm*=1+clamp((a.reach-d.reach)*.015,-.12,.12);
     dm*=this.bmul(d,'dmgTaken')*(this.mods.dmg||1)*(this.cfg.amateur?.85:1)*(this.cfg.sparring?.8:1);
@@ -359,7 +368,7 @@ class Fight{
       if(dc)d.autoCounter={mult:dc,type:PUNCH[pu.type].kind==='hook'?'upper':'hook'};
     }else{
       this.text('MISS','#cfd8ff',200,120,.6,16);
-      if(chance((d.ai.counter||.3)*this.D.agg))d.pendingCounter=true;
+      if(chance((d.ai.counter||.3)*this.D.agg+(a.rep||0)*.15))d.pendingCounter=true;
     }
   }
   aiReact(pu,wind){
@@ -370,7 +379,7 @@ class Fight{
     if(pu.opts?.instant)return;
     const covered=this.covers(o,{body:pu.body,type:pu.type});
     if(covered&&!chance((o.ai.dodge||.3)*.45))return;
-    let p=(.05+o.st.def*.005+o.st.iq*.003+(covered?0:.18))*this.D.react*(1-(this.p.m.sneaky||0));
+    let p=(.05+o.st.def*.005+o.st.iq*.003+(covered?0:.18)+(this.p.rep||0)*.12)*this.D.react*(1-(this.p.m.sneaky||0));
     if(o.sta<25)p*=.6;if(this.cfg.sparring)p*=.75;
     if(!chance(clamp(p,0,.85)))return;
     const rt=clamp(.2-o.st.spd*.0012,.07,.2)/this.D.react;
@@ -397,6 +406,12 @@ class Fight{
     const o=this.o,ai=o.ai,cb=(ai.combo||.3)+this.D.combo;let n=1;
     if(chance(cb))n++;if(chance(cb*.6))n++;if(chance(cb*.3))n++;
     if(this.p.hurt>0)n++;
+    if(ai.sig&&!opts.quick&&chance(ai.sigP||.4)){
+      const seq=ai.sig.map((s,i)=>{const body=s[0]==='b'&&s!=='feint';return {type:s==='feint'?'feint':body?s.slice(1):s,body,opts:i?{follow:1}:opts}});
+      const first=seq.shift();o.sigT=this.time;
+      if(first.type==='feint'){this.feint(o);o.seq=seq;return}
+      o.seq=seq;this.throwP(o,first.type,first.body,first.opts);return;
+    }
     const w=Object.assign({},ai.w||{jab:3,cross:3,hook:3,upper:2}),turtle=(this.pBlocks||0)>2.5;
     if(turtle){w.upper=(w.upper||1)*3;w.jab=(w.jab||1)*.5}
     const seq=[];for(let i=0;i<n;i++)seq.push({type:wpick(w),body:chance((ai.body||.2)+(turtle?.35:0)),opts:i?{follow:1}:opts});
@@ -442,7 +457,7 @@ class Fight{
     if(Settings.slowmo)this.slow=.8;this.flash=.6;this.shake=18;Sfx.roar(.35,2.5);Sfx.hit(2,false);buzz([60,40,120]);
     if(Settings.hitstop)this.stop=Math.max(this.stop,.14);
     this.text(d.side==='o'?'DOWN!':'YOU\'RE DOWN!','#fff',200,150,1.4,40);
-    if(this.cfg.longCount&&d.side==='p'&&!this.longUsed){this.longUsed=true;this.count.t=-4.6;this.res.longCount=true;setTimeout(()=>this.text('THE LONG COUNT!','#ffd34d',200,80,3,22),900)}
+    if(this.cfg.longCount&&d.side==='p'&&!this.longUsed){this.longUsed=true;this.count.t=-4.6;this.res.longCount=true;if(!this.cfg.headless)setTimeout(()=>this.text('THE LONG COUNT!','#ffd34d',200,80,3,22),900)}
     if((!this.cfg.amateur&&d.kd>=3)||(this.cfg.amateur&&d.kdTotal>=3))this.count.tko=true;
     if(d.side==='o'){
       let p=.28+d.st.chin*.0065+(d.maxHp/100)*.22-(d.kdTotal-1)*.2-(a.m.finisher||0);
@@ -450,7 +465,7 @@ class Fight{
       this.count.rise=chance(p)?randi(3,9):99;
     }else{
       this.count.need=Math.max(6,Math.round(10+(d.kdTotal-1)*7+(100-d.st.chin)*.13+(100-d.maxHp)*.12-(d.m.getup||0)*12));
-      setTimeout(()=>{if(this.phase==='down'&&this.count?.d===d&&!this.count.tko)this.showGetUp()},700);
+      if(!this.cfg.headless)setTimeout(()=>{if(this.phase==='down'&&this.count?.d===d&&!this.count.tko)this.showGetUp()},700);
     }
   }
   showGetUp(){
@@ -489,6 +504,8 @@ class Fight{
       this.judges.forEach((j,i)=>{
         let sp=P.score*(1+j.agg*(P.pow/(P.landed+1)))+P.thrown*.04,so=O.score*(1+j.agg*(O.pow/(O.landed+1)))+O.thrown*.04;
         sp*=rand(1-j.noise,1+j.noise);so*=rand(1-j.noise,1+j.noise)*(1+j.lean);
+        // judges punish a fighter who spends the round behind his gloves
+        sp*=1-clamp(((P.blockT||0)/this.cfg.roundLen-.2)*1.5,0,.6);so*=1-clamp(((O.blockT||0)/this.cfg.roundLen-.2)*1.5,0,.6);
         let a=10,b=10;
         if(Math.abs(sp-so)>Math.max(sp,so)*.06+.5){if(sp>so)b=9;else a=9}
         if(P.kd>O.kd)b=Math.max(6,10-(P.kd-O.kd)-1),a=10;
@@ -520,11 +537,12 @@ class Fight{
     Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,
       stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut,note});
     this.log({ev:'end',winner,method,round:this.round});
-    this.res.log=Logs.end(this.res);
+    this.res.log=this.cfg.headless?(Logs.cur=null):Logs.end(this.res);
     Sfx.bell(3);Sfx.roar(.4,3);
     const big=winner==='p'?(method==='KO'?'KNOCKOUT!':method==='TKO'?'TKO!':method==='RTD'?'THEY QUIT!':'FINAL BELL'):winner==='o'?(method==='KO'?'KNOCKED OUT':method==='TKO'?'STOPPED':method==='RTD'?'CORNER STOPS IT':'FINAL BELL'):'FINAL BELL';
     this.ov.className='fov';this.ov.innerHTML=`<div class="bigtxt">${big}</div>${note?`<div class="pill">${esc(note)}</div>`:''}`;
     if(winner==='p'&&['KO','TKO'].includes(method)&&Settings.slowmo)this.slow=1.2;
+    if(this.cfg.headless)return;
     setTimeout(()=>{this.destroy();this.cfg.onEnd(this.res)},2600);
   }
   showCorner(){
@@ -593,6 +611,24 @@ class Fight{
     const c=x=>({hp:+x.hp.toFixed(1),maxHp:+x.maxHp.toFixed(1),sta:+x.sta.toFixed(1),state:x.state,hurt:+x.hurt.toFixed(2),kd:x.kdTotal,cut:+x.cut.toFixed(0),meter:+x.meter.toFixed(0),stats:x.stats});
     return {seed:this.seed,round:this.round,clock:+this.clock.toFixed(2),time:+this.time.toFixed(2),p:c(this.p),o:c(this.o),cards:this.cards,tells:this.tells.slice(-6),events:(Logs.cur?.ev||[]).slice(-40),cfg:{o:this.o.name,legend:this.cfg.o.legend,rounds:this.cfg.rounds,diff:this.cfg.diff,label:this.cfg.label}};
   }
+  /* ---------- headless run (tests, sims): no canvas, no timers; bot(fight) is called 60x per sim second ---------- */
+  headless(bot,opts={}){
+    const el=document.createElement('div');el.className='fight';el.style.display='none';el.innerHTML='<div class="fov" id="fov"></div>';document.body.appendChild(el);
+    this.el=el;this.ov=$('#fov',el);this.stage=el;this.spBtns=[];this.hud=null;this.updHud=()=>{};this.draw=()=>{};
+    this.startRoundIntro();
+    const prev=RNG.use(this.rng);let steps=0,acc=0,tap=0;const max=opts.maxSteps||400000;
+    while(!this.ended&&steps<max){
+      if(this.phase==='between'){const c=$('.corner',el);if(c)c.remove();this.cornerPick=this.p.cut>45?'cut':'breathe';this.applyCorner();this.round++;this.clock=this.cfg.roundLen;this.startRoundIntro()}
+      if(this.phase==='down'&&this.count&&this.count.d===this.p){tap+=STEP;if(tap>=1/(opts.tapsPerSec||8)){tap=0;this.count.prog+=1;if(this.count.prog>=this.count.need)this.count.ready=true}}
+      this.update(STEP,STEP);acc+=STEP;
+      if(acc>=1/60){acc-=1/60;if(bot)bot(this);if(this.texts.length>200)this.texts.length=0;if(this.fx.length>100)this.fx.length=0;if(this.parts.length>200)this.parts.length=0}
+      if(this.phase==='intro'&&this.phaseT<=1.7){this.phaseT=1.8}
+      steps++;
+    }
+    RNG.use(prev);
+    if(!this.ended){this.ended=true;this.phase='end';Object.assign(this.res,{winner:'draw',method:'TIMEOUT',round:this.round,cards:this.cards,stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut});Logs.cur=null}
+    el.remove();this.res.steps=steps;return this.res;
+  }
   /* ---------- loop ---------- */
   loop(ts){
     this.raf=requestAnimationFrame(t=>this.loop(t));
@@ -649,12 +685,14 @@ class Fight{
   tickC(c,dt){
     c.t+=dt;c.hurt=Math.max(0,c.hurt-dt);c.counterWin=Math.max(0,c.counterWin-dt);c.regenDelay-=dt;c.clinchCD=Math.max(0,c.clinchCD-dt);
     if(c.comboT>0){c.comboT-=dt;if(c.comboT<=0)c.combo=0}
+    if(c.state==='block')c.rs.blockT=(c.rs.blockT||0)+dt;
     c.buffs=c.buffs.filter(b=>(b.t-=dt)>0);
     if(c.next){c.next.t-=dt;if(c.next.t<=0)c.next=null}
     if(c.state!=='down'){
       let rg=(c.state==='block'?3.5:c.state==='idle'?7:3)*(.55+c.st.sta*.009)*(1+(c.m.regen||0))*(this.mods.heat||1);
       if(c.state==='block'&&this.bmax(c,'blockRegen'))rg*=2.5;
       if(c.side==='o'&&c.ai.fadeLate&&this.round>=5)rg*=.7;
+      if(c.side==='o'&&c.ai.weak==='fader'&&this.round>=4)rg*=.65;
       c.sta=Math.min(c.maxSta,c.sta+rg*dt);
       if(c.regenDelay<=0)c.hp=Math.min(c.maxHp,c.hp+(.8+c.st.chin*.006)*dt*(c.hurt>0?.4:1));
     }
@@ -664,7 +702,7 @@ class Fight{
       case 'act':if(c.t>=c.dur){c.state='rec';c.t=0;c.dur=c.recDur}break;
       case 'rec':if(c.t>=c.dur)this.afterRec(c);break;
       case 'dodge':if(c.t>=c.dur){c.state='idle';c.dodge=null;this.afterDodge(c)}break;
-      case 'stagger':case 'feint':case 'clinch':if(c.t>=c.dur){const was=c.state;c.state='idle';c.pu=null;if(was==='feint'&&c.side==='o'&&chance(.55))this.aiAttack({quick:1});if(was==='clinch'&&c.side==='p')this.text('BREAK!','#fff',200,200,.6,18)}break;
+      case 'stagger':case 'feint':case 'clinch':if(c.t>=c.dur){const was=c.state;c.state='idle';c.pu=null;if(was==='feint'&&c.side==='o'){if(c.seq.length){const n=c.seq.shift();this.throwP(c,n.type,n.body,{quick:1})}else if(chance(.55))this.aiAttack({quick:1})}if(was==='clinch'&&c.side==='p')this.text('BREAK!','#fff',200,200,.6,18)}break;
       case 'block':if(c.side==='o'&&c.t>=c.dur){c.state='idle';if(c.pendingCounter){c.pendingCounter=false;this.aiAttack({quick:1})}}break;
     }
   }
@@ -681,7 +719,7 @@ class Fight{
   playerTick(dt){
     const p=this.p;
     if(p.queue){p.qT-=dt;if(p.qT<=0)p.queue=null;
-      else if(p.state==='idle'||p.state==='block'){const q=p.queue;p.queue=null;if(q.dodge)this.pressDodge(q.dodge);else this.throwP(p,q.type,q.body,{})}}
+      else if(p.state==='idle'||(p.state==='block'&&(p.t>=.12||p.queue.dodge))){const q=p.queue;p.queue=null;if(q.dodge)this.pressDodge(q.dodge);else this.throwP(p,q.type,q.body,{})}}
     if(p.state==='idle'&&this.held.block)p.state='block';
   }
   aiTick(dt){
@@ -698,13 +736,18 @@ class Fight{
     let agg=(ai.agg||.5)*this.D.agg;
     if(o.sta<30)agg*=.5;if(o.hurt>0)agg*=.45;if(p.hurt>0||p.state==='stagger')agg*=1.6;
     if(ai.fadeLate&&this.round>=5)agg*=.75;if(this.cfg.sparring)agg*=.8;
+    if(ai.weak==='fader'&&this.round>=4)agg*=.7;
+    if(ai.weak==='slowStart'&&this.round<=2)agg*=.55;
+    if(ai.weak==='frustrates'&&this.round>=2&&p.stats.landed>o.stats.landed*1.3){agg*=1.45;if(chance(.3))o.guard='open'}
     if((p.state==='rec'||p.state==='wind')&&chance(.6))agg*=1.7;
     if(p.sta<25)agg*=1.3;
+    let feintP=.2;
+    if((this.pBlocks||0)>2.5||(p.state==='block'&&p.t<1.2)){agg*=.4;feintP=.5}
     const ab=o.abilities[0]&&AB[o.abilities[0]];
     if(o.hurt>0&&o.clinchCD<=0&&chance(.33))this.clinch(o);
     else if(ab&&o.meter>=ab.cost*100&&chance(.4))this.useAbility(o,0);
     else if(chance(agg))this.aiAttack();
-    else if(chance(.2))this.feint(o);
+    else if(chance(feintP))this.feint(o);
     o.think=rand(.22,.8)*(1.2-(ai.agg||.5)*.5)/this.D.agg;
   }
   /* ---------- fx ---------- */
