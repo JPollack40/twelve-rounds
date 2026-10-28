@@ -224,6 +224,8 @@ function genOffers(){
   const rv=rivalF();
   if(rv)used.add(rv.id);
   const myBelts=beltsOf('P',d);
+  // a callout or rematch demanded in the post-fight interview
+  if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);offers.push(mkOffer(cf,'grudge',cf.id===(last&&last.oppId)?'Rematch':'Callout Fight',cf.id===(last&&last.oppId)?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`))}}
   // chapters first
   for(const ch of CHAPTERS){if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
@@ -298,6 +300,7 @@ function campResult(kind,q,auto){
     else{if(g)gain(C.stat,g);if(chance(q*.45))gain(C.alt,1)}
     if(!auto){G.pb=G.pb||{};if(q>(G.pb[kind]||0)){if(G.pb[kind]!=null)out.pb=true;G.pb[kind]=q}out.best=G.pb[kind]}
     n.fatigue+=kind==='spar'?22:13;
+    if(G.flags.teamBoost){G.flags.teamBoost=0;n.fatigue=Math.max(0,n.fatigue-14);out.lines.push('Your team is fired up: fatigue down.')}
     const ups=addXP(out.xp);out.ups=ups;
     if(kind==='spar'){n.scout=Math.min(2,n.scout+.5)}
   }else if(kind==='film'){n.scout=Math.min(2,n.scout+1);out.lines.push('Their tells will last longer on fight night.');n.fatigue=Math.max(0,n.fatigue-6);addXP(25)}

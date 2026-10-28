@@ -56,6 +56,7 @@ class Fight{
     if(cfg.press==='trash'){this.o.ai.agg=Math.min(1,(this.o.ai.agg||.5)+.15);this.o.ai.counter=(this.o.ai.counter||.3)*.8;this.o.st.pow=Math.min(99,this.o.st.pow+3)}
     if(this.o.ai.intimidate&&!cfg.sparring&&cfg.press!=='respect'){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
     RNG.use(prev);
+    if(cfg.resume)this.restore(cfg.resume);
     Logs.start({seed:this.seed,p:this.p.name,o:this.o.name,oLegend:cfg.o.legend||null,rounds:cfg.rounds,roundLen:cfg.roundLen,diff:cfg.diff,label:cfg.label||'',sparring:!!cfg.sparring,practice:!!cfg.practice});
   }
   log(o){o.t=+this.time.toFixed(3);o.rd=this.round;Logs.ev(o)}
@@ -98,6 +99,7 @@ class Fight{
     this.onBlur=()=>this.releaseAll();window.addEventListener('blur',this.onBlur);
     Sfx.crowdStart();
     this.startRoundIntro();
+    if(this.cfg.announce&&!this.resumed)this.announce();
     this.last=performance.now();this.lastDraw=0;
     this.raf=requestAnimationFrame(t=>this.loop(t));
     try{navigator.wakeLock?.request('screen').then(l=>this.wl=l).catch(()=>{})}catch(e){}
@@ -515,6 +517,7 @@ class Fight{
   }
   /* ---------- rounds ---------- */
   startRoundIntro(){
+    if(this.cfg.onCheckpoint)try{this.cfg.onCheckpoint(this.checkpoint())}catch(e){}
     this.phase='intro';this.phaseT=0;
     const r=this.round,last=r===this.cfg.rounds;
     this.ov.className='fov';
@@ -675,6 +678,18 @@ class Fight{
       if(k==='done'){Settings.layouts=Settings.layouts||{};Settings.layouts[key]=L;saveSettings();this.el.removeEventListener('pointerdown',onDown,true);bar.remove();this.el.classList.remove('editing');
         this.allBtns.forEach(x=>x.classList.remove('sel'));this.editing=false;this.applyLayout();if(o.onDone)o.onDone();else{this.paused=false;this.pause()}}};
   }
+  /* round-start checkpoint so an interrupted career fight can pick up where it left off */
+  checkpoint(){const pk=c=>({hp:c.hp,maxHp:c.maxHp,sta:c.sta,maxSta:c.maxSta,cut:c.cut,meter:c.meter,kdTotal:c.kdTotal,kd:c.kd,dmg:deep(c.dmg),stats:deep(c.stats),hits:c.hits,clinches:c.clinches});
+    return {seed:this.seed,round:this.round,rng:this.rng.s,jrng:this.jrng.s,cards:deep(this.cards),roundCards:deep(this.roundCards),roundStats:deep(this.roundStats),hitBy:deep(this.hitBy),p:pk(this.p),o:pk(this.o),oai:deep(this.o.ai),time:this.time}}
+  restore(cp){this.round=cp.round;this.rng.s=cp.rng;this.jrng.s=cp.jrng;this.cards=deep(cp.cards);this.roundCards=deep(cp.roundCards);this.roundStats=deep(cp.roundStats||[]);this.hitBy=deep(cp.hitBy||{});
+    Object.assign(this.p,deep(cp.p));Object.assign(this.o,deep(cp.o));this.o.ai=deep(cp.oai);this.time=cp.time||0;this.introNote=cp.round>1?`Resumed at round ${cp.round}`:null;this.resumed=true}
+  /* ring announcer: a short, skippable introduction before the opening bell */
+  announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
+    const el=document.createElement('div');el.className='annc';
+    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+'<div class="skip">Tap to skip</div>';
+    this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
+    const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
+    el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
   snapshot(){
     const c=x=>({hp:+x.hp.toFixed(1),maxHp:+x.maxHp.toFixed(1),sta:+x.sta.toFixed(1),state:x.state,hurt:+x.hurt.toFixed(2),kd:x.kdTotal,cut:+x.cut.toFixed(0),meter:+x.meter.toFixed(0),stats:x.stats});

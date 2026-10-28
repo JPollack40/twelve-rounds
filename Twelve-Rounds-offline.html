@@ -203,6 +203,11 @@ table.t td.r,table.t th.r{text-align:right}
 .fight.editing .fb{outline:2px dashed rgba(255,255,255,.55);outline-offset:2px}
 .fight .fb.sel{outline:3px solid var(--gold)}
 .lyb{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:9;width:min(94%,480px);background:rgba(14,14,22,.94);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.annc{position:absolute;inset:0;z-index:8;background:radial-gradient(circle at 50% 40%,rgba(30,24,10,.95),rgba(0,0,0,.98));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
+.annc .al{opacity:0;font-family:var(--f-ui);font-weight:800;font-size:clamp(17px,4.6vw,24px);letter-spacing:.03em;max-width:560px;animation:alIn .5s ease-out forwards}
+.annc .al.k{color:var(--gold);font-size:13px;letter-spacing:.16em;text-transform:uppercase}
+.annc .skip{position:absolute;bottom:14px;font-size:12px;color:#fff8;letter-spacing:.1em;text-transform:uppercase}
+@keyframes alIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .coachb.on{opacity:1;transform:translate(-50%,0)}
 .tipb{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;width:min(92vw,520px);background:var(--panel2);border:1px solid var(--gold);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px #000a}
 .tipb p{margin:0;font-size:14.5px;flex:1}.tipb b{color:var(--gold)}
@@ -881,6 +886,8 @@ function genOffers(){
   const rv=rivalF();
   if(rv)used.add(rv.id);
   const myBelts=beltsOf('P',d);
+  // a callout or rematch demanded in the post-fight interview
+  if(G.callout){const cf=G.world.f[G.callout];G.callout=null;if(cf&&cf.active&&cf.div===d){used.add(cf.id);offers.push(mkOffer(cf,'grudge',cf.id===(last&&last.oppId)?'Rematch':'Callout Fight',cf.id===(last&&last.oppId)?`You demanded the rematch with ${shortName(cf)}. You got it.`:`You called out ${shortName(cf)} on live TV. The fight is on.`))}}
   // chapters first
   for(const ch of CHAPTERS){if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
@@ -955,6 +962,7 @@ function campResult(kind,q,auto){
     else{if(g)gain(C.stat,g);if(chance(q*.45))gain(C.alt,1)}
     if(!auto){G.pb=G.pb||{};if(q>(G.pb[kind]||0)){if(G.pb[kind]!=null)out.pb=true;G.pb[kind]=q}out.best=G.pb[kind]}
     n.fatigue+=kind==='spar'?22:13;
+    if(G.flags.teamBoost){G.flags.teamBoost=0;n.fatigue=Math.max(0,n.fatigue-14);out.lines.push('Your team is fired up: fatigue down.')}
     const ups=addXP(out.xp);out.ups=ups;
     if(kind==='spar'){n.scout=Math.min(2,n.scout+.5)}
   }else if(kind==='film'){n.scout=Math.min(2,n.scout+1);out.lines.push('Their tells will last longer on fight night.');n.fatigue=Math.max(0,n.fatigue-6);addXP(25)}
@@ -2391,6 +2399,7 @@ class Fight{
     if(cfg.press==='trash'){this.o.ai.agg=Math.min(1,(this.o.ai.agg||.5)+.15);this.o.ai.counter=(this.o.ai.counter||.3)*.8;this.o.st.pow=Math.min(99,this.o.st.pow+3)}
     if(this.o.ai.intimidate&&!cfg.sparring&&cfg.press!=='respect'){this.p.sta-=15;this.introNote='The stare-down shook you. -15 stamina.'}
     RNG.use(prev);
+    if(cfg.resume)this.restore(cfg.resume);
     Logs.start({seed:this.seed,p:this.p.name,o:this.o.name,oLegend:cfg.o.legend||null,rounds:cfg.rounds,roundLen:cfg.roundLen,diff:cfg.diff,label:cfg.label||'',sparring:!!cfg.sparring,practice:!!cfg.practice});
   }
   log(o){o.t=+this.time.toFixed(3);o.rd=this.round;Logs.ev(o)}
@@ -2433,6 +2442,7 @@ class Fight{
     this.onBlur=()=>this.releaseAll();window.addEventListener('blur',this.onBlur);
     Sfx.crowdStart();
     this.startRoundIntro();
+    if(this.cfg.announce&&!this.resumed)this.announce();
     this.last=performance.now();this.lastDraw=0;
     this.raf=requestAnimationFrame(t=>this.loop(t));
     try{navigator.wakeLock?.request('screen').then(l=>this.wl=l).catch(()=>{})}catch(e){}
@@ -2850,6 +2860,7 @@ class Fight{
   }
   /* ---------- rounds ---------- */
   startRoundIntro(){
+    if(this.cfg.onCheckpoint)try{this.cfg.onCheckpoint(this.checkpoint())}catch(e){}
     this.phase='intro';this.phaseT=0;
     const r=this.round,last=r===this.cfg.rounds;
     this.ov.className='fov';
@@ -3010,6 +3021,18 @@ class Fight{
       if(k==='done'){Settings.layouts=Settings.layouts||{};Settings.layouts[key]=L;saveSettings();this.el.removeEventListener('pointerdown',onDown,true);bar.remove();this.el.classList.remove('editing');
         this.allBtns.forEach(x=>x.classList.remove('sel'));this.editing=false;this.applyLayout();if(o.onDone)o.onDone();else{this.paused=false;this.pause()}}};
   }
+  /* round-start checkpoint so an interrupted career fight can pick up where it left off */
+  checkpoint(){const pk=c=>({hp:c.hp,maxHp:c.maxHp,sta:c.sta,maxSta:c.maxSta,cut:c.cut,meter:c.meter,kdTotal:c.kdTotal,kd:c.kd,dmg:deep(c.dmg),stats:deep(c.stats),hits:c.hits,clinches:c.clinches});
+    return {seed:this.seed,round:this.round,rng:this.rng.s,jrng:this.jrng.s,cards:deep(this.cards),roundCards:deep(this.roundCards),roundStats:deep(this.roundStats),hitBy:deep(this.hitBy),p:pk(this.p),o:pk(this.o),oai:deep(this.o.ai),time:this.time}}
+  restore(cp){this.round=cp.round;this.rng.s=cp.rng;this.jrng.s=cp.jrng;this.cards=deep(cp.cards);this.roundCards=deep(cp.roundCards);this.roundStats=deep(cp.roundStats||[]);this.hitBy=deep(cp.hitBy||{});
+    Object.assign(this.p,deep(cp.p));Object.assign(this.o,deep(cp.o));this.o.ai=deep(cp.oai);this.time=cp.time||0;this.introNote=cp.round>1?`Resumed at round ${cp.round}`:null;this.resumed=true}
+  /* ring announcer: a short, skippable introduction before the opening bell */
+  announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
+    const el=document.createElement('div');el.className='annc';
+    el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+'<div class="skip">Tap to skip</div>';
+    this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
+    const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
+    el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
   snapshot(){
     const c=x=>({hp:+x.hp.toFixed(1),maxHp:+x.maxHp.toFixed(1),sta:+x.sta.toFixed(1),state:x.state,hurt:+x.hurt.toFixed(2),kd:x.kdTotal,cut:+x.cut.toFixed(0),meter:+x.meter.toFixed(0),stats:x.stats});
@@ -3765,6 +3788,8 @@ function ensureState(){
 SCR.home=()=>{
   ensureState();
   const b=B();let hero='';
+  if(G.fightSave&&G.next&&G.fightSave.offerId===G.next.offer.id){const f=G.world.f[G.next.offer.oppId];
+    return shell('home','Home',`<div class="hero"><div class="in"><div class="kicker">Fight interrupted</div><h1 class="disp" style="font-size:28px">Round ${G.fightSave.round} vs ${esc(f?f.last:'your opponent')}</h1><p class="muted">The fight was cut off. It picks up at the start of round ${G.fightSave.round} with the scorecards, damage and stamina as they were.</p><button class="btn primary wide" data-act="resumefight" style="min-height:56px;font-size:19px">Resume the fight</button></div></div>`)}
   if(G.phase==='retired')hero=`<div class="hero"><div class="in"><div class="kicker">Retired</div><h1 class="disp" style="font-size:30px">Career over</h1><button class="btn gold" data-go="legacy">See your legacy</button></div></div>`;
   else if(G.phase==='amateur'&&G.am.done){
     hero=`<div class="hero"><div class="in"><div class="kicker">Amateur career</div><h1 class="disp" style="font-size:28px">${G.flags['am_gold_'+G.am.stage]?'Gold medal!':'Tournament over'}</h1>
@@ -3911,10 +3936,20 @@ function pressHTML(n,f,o){
   if(n.press){const c=PRESS[n.press];return `<div class="card flat"><span class="lbl">Press conference</span><p style="margin:6px 0 2px"><b>${esc(c.name)}.</b> ${esc(c.fx)}</p></div>`}
   return `<div class="card col"><span class="lbl">Press conference</span><p style="margin:4px 0"><b>${esc(f.last)}:</b> ${esc(pressLine(f))}</p>
     <div class="col" style="gap:6px">${Object.entries(PRESS).map(([k,c])=>`<button class="arch" data-act="press" data-k="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div></div>`}
-function startFight(sim){
+function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
+  const nm=x=>x.nick?`${x.first} "${x.nick}" ${x.last}`:`${x.first} ${x.last}`;
+  const L=[o.label];
+  if(o.title&&!o.title.regional)L.push(`Ladies and gentlemen, ${o.rounds} rounds for the ${o.title.belts.join(' and ')} ${DIVS[b.div].name} championship of the world!`);
+  else L.push(b.hype>40?`Ladies and gentlemen, it's main event time! ${o.rounds} rounds.`:`This bout is scheduled for ${o.rounds} rounds in the ${DIVS[b.div].name} division.`);
+  L.push(`In the blue corner, from ${f.home}, with a record of ${rec(f)}: ${nm(f)}!`);
+  L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
+  if(b.hype>60)L.push('The crowd is on its feet!');
+  L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
+function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
+  if(!sim&&!resume&&G.fightSave&&G.fightSave.offerId===o.id)resume=G.fightSave;
   o.foughtHurt=B().injuries.length>0;
-  if(wi&&wi.miss&&chance(wi.miss)&&!o.amateur){o.missedWeight=true;news('You missed weight at the weigh-in. 20% of your purse goes to your opponent.','red');toast('Missed weight! 20% purse fine')}
+  if(!resume&&wi&&wi.miss&&chance(wi.miss)&&!o.amateur){o.missedWeight=true;news('You missed weight at the weigh-in. 20% of your purse goes to your opponent.','red');toast('Missed weight! 20% purse fine')}
   if(sim){afterFight(o,simFight(o));return}
   const pc=playerCombat();if(o.missedWeight)pc.stats.sta=Math.round(pc.stats.sta*.9);
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))pc.cutProne=1;
@@ -3924,12 +3959,15 @@ function startFight(sim){
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
     edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
+    seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?{lines:announceLines(o,f)}:null,
+    onCheckpoint:cp=>{G.fightSave=Object.assign(cp,{offerId:o.id});Save.write()},
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
-  fight.mount();
+  fight.mount();window.__fight=fight;
 }
 function afterFight(o,res){
   if(res.longCount&&!G.chapters.includes('longcount')){G.chapters.push('longcount');news('Chapter: The Long Count. The referee gave you extra seconds on the canvas.','gold')}
+  delete G.fightSave;
   const sum=applyResult(o,res);
   UI.lastResult={o,res,sum};
   Save.write();
@@ -3951,6 +3989,19 @@ function coachNotes(res,win){
   if(win&&!out.length)out.push('Clean work. Keep doing what got you here.');
   return out.slice(0,3);
 }
+/* post-fight interview: one choice with a real consequence */
+function calloutTarget(beaten){const b=B(),d=b.div,rv=rivalF();
+  if(rv&&rv.active&&rv.div===d&&rv.id!==beaten.id)return rv;
+  const ch=Object.values(G.world.champs[d]||{}).map(id=>id&&id!=='P'?G.world.f[id]:null).find(f=>f&&f.active&&f.id!==beaten.id);
+  if(ch&&(playerRank()||99)<=10)return ch;
+  const r=ranking(d).filter(e=>e.id!=='P'&&e.id!==beaten.id&&!beltsOf(e.id,d).length).map(e=>e.f);const me=playerRank()||99;
+  return r.find((f,i)=>i+1<me)||r[0]||null}
+function interviewOpts(){const {o,res}=UI.lastResult,f=G.world.f[o.oppId],win=res.winner==='p',dec=!['KO','TKO','RTD','DQ'].includes(res.method);
+  if(win){const t=calloutTarget(f);return [t&&{k:'callout',t:`Call out ${shortName(t)}`,fx:`Hype +4. ${shortName(t)} is offered to you next.`,id:t.id},{k:'team',t:'Thank your team',fx:'Your camp is fired up: your next camp starts with less fatigue.'},{k:'humble',t:'Stay humble',fx:'Purists respect it: +1 Ring IQ.'}].filter(Boolean)}
+  return [{k:'rematch',t:`Demand a rematch with ${f.last}`,fx:`${shortName(f)} is offered to you again next.`,id:f.id},{k:'noexcuse',t:'No excuses',fx:'Fans respect it: hype +2.'},dec&&{k:'judges',t:'Blame the judges',fx:'The media eats it up: hype +3. The purists roll their eyes.'}].filter(Boolean)}
+function interviewHTML(){const L=UI.lastResult;if(!L||L.o.amateur||G.phase!=='pro')return '';
+  if(L.iv)return `<div class="card flat"><span class="lbl">Post-fight interview</span><p style="margin:6px 0 0">${esc(L.iv)}</p></div>`;
+  return `<div class="card col"><span class="lbl">Post-fight interview</span><p class="muted" style="margin:2px 0 4px">The microphone is in your face. What do you say?</p>${interviewOpts().map(c=>`<button class="arch" data-act="interview" data-k="${c.k}"><b>${esc(c.t)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}
 SCR.result=()=>{
   const {o,res,sum}=UI.lastResult,f=G.world.f[o.oppId],b=B();
   const win=res.winner==='p',draw=res.winner==='draw';
@@ -3979,7 +4030,7 @@ SCR.result=()=>{
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
       <div class="card"><span class="lbl">Health</span><p class="num">Recovery: ${sum.recovery} week${sum.recovery!==1?'s':''}</p>${sum.injuries.length?`<p class="bad">${sum.injuries.map(i=>INJ[i].name).join(', ')}</p>`:''}<p class="muted num" style="font-size:13px">Long-term damage ${Math.round(b.damage)}/100</p></div>
     </div>
-    ${cn}${cards}${cbx}${mny}
+    ${interviewHTML()}${cn}${cards}${cbx}${mny}
     <button class="btn primary wide" data-act="resultdone">Continue</button></div></div>`;
 };
 
@@ -4189,6 +4240,15 @@ const ACT={
     else if(k==='respect')news(`Press conference: you praised ${f.last}. Fans and media liked it.`);else news(`Press conference: you kept it short and went back to the film room.`);
     Save.write();Sfx.click();UI.render()},
   walk(){startFight(false)},
+  interview(el){const L=UI.lastResult;if(!L||L.iv)return;const c=interviewOpts().find(x=>x.k===el.dataset.k);if(!c)return;const b=B();
+    if(c.k==='callout'){b.hype=Math.min(100,b.hype+4);G.callout=c.id;const t=G.world.f[c.id];news(`You call out ${shortName(t)} after the fight.`,'gold');L.iv=`You called out ${shortName(t)}. Expect the offer.`}
+    if(c.k==='team'){G.flags.teamBoost=1;L.iv='You thanked your team. They will be fired up for camp.'}
+    if(c.k==='humble'){gainStat('iq',1);L.iv='You kept it humble. +1 Ring IQ.'}
+    if(c.k==='rematch'){G.callout=c.id;L.iv=`You demanded a rematch with ${G.world.f[c.id].last}. Expect the offer.`}
+    if(c.k==='noexcuse'){b.hype=Math.min(100,b.hype+2);L.iv='No excuses. The fans respect it.'}
+    if(c.k==='judges'){b.hype=Math.min(100,b.hype+3);news('You blast the judges on live TV.','red');L.iv='You blamed the judges. The clip goes viral.'}
+    Save.write();Sfx.click();UI.render()},
+  resumefight(){if(G.fightSave)startFight(false,G.fightSave)},
   simfight(){startFight(true)},
   resultdone(){
     const {o}=UI.lastResult;
