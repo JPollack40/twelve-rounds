@@ -99,6 +99,8 @@ function settingsHTML(inCareer){
     ${tg('hints','Fight hints','Show the how-to-fight card in practice and your first bout.')}
     ${tg('lefty','Swap control sides','Punches on the left thumb, defense on the right.')}
     ${tg('audioTells','Audio tells','A different wind-up sound for each punch, and a chime before power shots.')}
+    ${tg('gfx3d','3D fighters','Stylized 3D opponent and gloves. Off uses the 2D renderer.')}
+    ${tg('gfxHi','High detail','Shadows, antialiasing and a sharper render. Turn off on a hot or slow phone.')}
     ${tg('hitstop','Hit-stop','A split-second freeze on heavy punches and knockdowns.')}
     ${tg('fps60','Battery saver (60 fps)','Caps the fight at 60 frames per second. Off for 120 Hz.')}
     ${tg('lowlat','Low-latency drawing','Draws to the screen sooner. Turn off if you see tearing.')}

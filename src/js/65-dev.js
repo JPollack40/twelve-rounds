@@ -201,7 +201,7 @@ function labFight(seedOverride){
   const F=new Fight({p:pc,o:oc,rounds:+L.rounds,roundLen:Settings.roundLen,diff:L.diff,practice:true,corner:2,trainerName:'Lab',label,seed,overlay:L.overlay,
     cheats:{god:L.god,onehit:L.onehit,freeze:L.freeze,dummy:L.dummy||null,tellMul:L.tellMul!==1?L.tellMul:0,timescale:L.timescale!==1?L.timescale:0},
     onEnd:res=>{DevState.lastLog=res.log?.id||null;DevState.tab='logs';UI.go('dev')}});
-  F.mount();
+  F.mount();window.__fight=F;
 }
 function runScenario(id,seed){
   const s=SCENARIOS.find(x=>x.id===id);if(!s)return;

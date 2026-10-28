@@ -1,55 +1,53 @@
-# Regression report 2026-10-28T06:15:55.857Z
+# Regression report 2026-10-28T08:07:34.256Z
 
-5 fights per matchup, 500 simulated careers, 54s.
+2 fights per matchup, 60 simulated careers, 10s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
 |---|---|---|---|---|---|
-| human_eq_champ | 40% | 55.00000000000001–95 | 2/0 | 0.6/0.34 | ❌ |
-| human_eq_legend | 20% | 25–80 | 1/0 | 0.51/0.36 | ❌ |
-| human_eq_contender | 100% | 70–100 | 5/0 | 0.64/0.19 | ✅ |
-| human_plus15 | 60% | 10–65 | 3/0 | 0.57/0.5 | ✅ |
-| novice_eq_contender | 100% | 35–90 | 5/0 | 0.72/0.24 | ❌ |
-| expert_plus20 | 20% | 10–90 | 1/0 | 0.52/0.14 | ✅ |
-| masher_eq | 0% | 0–40 | 0/5 | 0.28/0.82 | ✅ |
-| turtle_eq | 0% | 0–75 | 0/0 | 0.26/0.31 | ✅ |
-| human_legend_tyrell | 40% | 5–60 | 2/0 | 0.54/0.39 | ✅ |
-| human_legend_hollis | 100% | 5–60 | 4/0 | 0.56/0.68 | ❌ |
+| human_eq_champ | 0% | 30–90 | 0/0 | 0.47/0.27 | ❌ |
+| human_eq_legend | 0% | 10–70 | 0/0 | 0.42/0.33 | ❌ |
+| human_eq_contender | 100% | 70–100 | 2/0 | 0.67/0.14 | ✅ |
+| human_plus15 | 0% | 10–65 | 0/0 | 0.48/0.26 | ❌ |
+| novice_eq_contender | 100% | 50–100 | 2/0 | 0.67/0.23 | ✅ |
+| expert_plus20 | 50% | 10–90 | 1/0 | 0.52/0.11 | ✅ |
+| masher_eq | 0% | 0–40 | 0/2 | 0.28/0.81 | ✅ |
+| turtle_eq | 0% | 0–75 | 0/0 | 0.3/0.28 | ✅ |
+| human_legend_tyrell | 0% | 5–60 | 0/0 | 0.43/0.26 | ❌ |
+| human_legend_hollis | 50% | 30–100 | 0/0 | 0.51/0.6 | ✅ |
 
 ## Careers
 ```
 {
- "n": 500,
+ "n": 60,
  "retireAgeMed": 37,
- "winsMed": 46,
+ "winsMed": 45,
  "lossesMed": 23,
  "titlesMed": 2,
- "titlesAvg": 1.72,
- "champShare": 0.97,
- "undisputedShare": 0.05,
+ "titlesAvg": 1.78,
+ "champShare": 0.98,
+ "undisputedShare": 0.03,
  "multiDivShare": 0,
- "legendsAvg": 1.51,
- "chaptersAvg": 1.02,
- "moneyMed": 38839918,
- "hofMed": 286,
+ "legendsAvg": 1.45,
+ "chaptersAvg": 1.03,
+ "moneyMed": 31560672,
+ "hofMed": 249,
  "tiers": {
-  "Champion": 220,
-  "Hall of Famer": 173,
-  "Contender": 48,
-  "All-Time Great": 57,
-  "Journeyman": 2
+  "Hall of Famer": 15,
+  "Champion": 39,
+  "Contender": 6
  },
  "forcedRetireShare": 0,
- "dmgMed": 72
+ "dmgMed": 70
 }
 ```
 
 | check | value | band | ok |
 |---|---|---|---|
 | retireAgeMed | 37 | 31–40 | ✅ |
-| champShare | 0.97 | 0.4–1 | ✅ |
+| champShare | 0.98 | 0.4–1 | ✅ |
 | forcedRetireShare | 0 | 0–0.4 | ✅ |
-| chaptersAvg | 1.02 | 0.3–5 | ✅ |
-| legendsAvg | 1.51 | 0.2–6 | ✅ |
+| chaptersAvg | 1.03 | 0.3–5 | ✅ |
+| legendsAvg | 1.45 | 0.2–6 | ✅ |
 
 No page errors.

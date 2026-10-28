@@ -80,8 +80,9 @@ class Fight{
     <div class="fctl">${left?off+def:def+off}</div>`;
     document.body.appendChild(el);this.el=el;
     this.cv=$('canvas',el);
-    this.ctx=this.cv.getContext('2d',{alpha:false,desynchronized:!!Settings.lowlat});
     this.stage=$('.fstage',el);this.ov=$('#fov',el);
+    this.r3d=null;if(R3D.ok()){try{this.r3d=new Render3D(this,this.stage)}catch(e){console.warn('3D renderer unavailable, using 2D',e);this.r3d=null}}
+    this.ctx=this.cv.getContext('2d',{alpha:!!this.r3d,desynchronized:!!Settings.lowlat});
     this.hud={pb:$$('.hb.p .fbar',el),ob:$$('.hb.o .fbar',el),rd:$('#frd',el),tm:$('#ftm',el),pm:$('#fmeter',el),om:$('#ometer',el)};
     this.spBtns=$$('.fb.spc',el);this.bodyBtn=$('.fb.body',el);
     this.resize();
@@ -101,6 +102,7 @@ class Fight{
     cancelAnimationFrame(this.raf);this.ro?.disconnect();document.removeEventListener('visibilitychange',this.onVis);window.removeEventListener('blur',this.onBlur);
     window.removeEventListener('keydown',this.kd);window.removeEventListener('keyup',this.ku);
     Sfx.crowdStop();try{this.wl?.release()}catch(e){}
+    this.r3d?.destroy();
     this.el.remove();
   }
   resize(){
@@ -108,7 +110,8 @@ class Fight{
     const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));
     this.cv.width=w;this.cv.height=h;this.W=w;this.H=h;this.dpr=dpr;
     const sc=Math.min(w/335,h/430);this.sc=sc;this.ox=(w-400*sc)/2;this.oy=(h-430*sc)*.85;
-    this.arena=buildArena(w,h,sc,this.ox,this.oy,{heat:this.mods.heat,seed:7,logo:this.cfg.logo});
+    this.arena=buildArena(w,h,sc,this.ox,this.oy,{heat:this.mods.heat,seed:7,logo:this.cfg.logo,lite:!!this.r3d});
+    this.r3d?.resize();
   }
   /* ---------- input ---------- */
   bindInput(){
@@ -892,6 +895,10 @@ class Fight{
     c.setTransform(1,0,0,1,0,0);
     const px=this.ox+200*sc,py=this.oy+300*sc;
     const world=()=>{c.setTransform(1,0,0,1,0,0);c.translate(px+shx*sc,py+shy*sc);c.rotate(cam.rot);c.scale(sc*cam.zoom,sc*cam.zoom);c.translate(-200+cam.x,-300+cam.y)};
+    const r3=this.r3d;
+    if(r3){r3.render(rdt,op,this.oGlow);c.clearRect(0,0,W,H);world();
+      if(this.phase==='down'&&this.count){c.save();c.font='64px "Alfa Slab One",Georgia,serif';c.textAlign='center';c.lineWidth=8;c.strokeStyle='rgba(0,0,0,.8)';c.strokeText(this.count.n,200,60);c.fillStyle='#fff';c.fillText(this.count.n,200,60);c.restore()}
+    }else{
     c.fillStyle='#04050b';c.fillRect(0,0,W,H);
     const layer=(img,par)=>{c.setTransform(1,0,0,1,0,0);c.translate(W/2,H*.55);c.rotate(cam.rot*.6);const z=cam.zoom*.5+.5;c.scale(z,z);c.translate(-W/2,-H*.55);c.drawImage(img,-A.pad+cam.x*sc*par+shx*sc*par,cam.y*sc*par*.6+shy*sc*par)};
     layer(A.bg,.08);
@@ -908,6 +915,7 @@ class Fight{
     c.restore();
     if(this.o.buffs.length){c.save();c.globalAlpha=.25+.1*Math.sin(this.time*8);c.strokeStyle='#f0be48';c.lineWidth=4;c.beginPath();c.ellipse(200+op.chest[0],240,100,140,0,0,7);c.stroke();c.restore()}
     if(this.phase==='down'&&this.count){drawRef(c,this.count.d.side==='o'?92:300,150,this.count.n)}
+    }
     for(const p of this.parts){const k=p.t/p.life;c.globalAlpha=1-k;c.fillStyle=p.col;c.beginPath();if(p.puff)c.arc(p.x,p.y,p.r*(1+k*1.5),0,7);else c.ellipse(p.x,p.y,p.r,p.r*1.8,Math.atan2(p.vy,p.vx)+Math.PI/2,0,7);c.fill()}
     c.globalAlpha=1;
     for(const f of this.fx){const k=f.t/f.life;c.save();c.translate(f.x,f.y);c.rotate(f.rot);c.strokeStyle=f.col;c.globalAlpha=1-k;c.lineWidth=3*f.s;c.lineCap='round';
@@ -916,7 +924,7 @@ class Fight{
     c.setTransform(1,0,0,1,0,0);
     this.playerGloves(rdt);
     const r=this.pR,look=this.p.look;
-    for(const h of ['L','R']){const g=this.pG[h];drawPlayerGlove(c,g.x+shx*2,g.y+shy*2,r*g.r,look.gloves,h==='L'?-1:1,{look,glow:g.g,gc:'#fff'})}
+    if(!r3)for(const h of ['L','R']){const g=this.pG[h];drawPlayerGlove(c,g.x+shx*2,g.y+shy*2,r*g.r,look.gloves,h==='L'?-1:1,{look,glow:g.g,gc:'#fff'})}
     world();
     for(const tx of this.texts){const k=tx.t/tx.life;const pop=Math.min(1,tx.t/.12);const s=ease.back(pop);c.save();c.translate(tx.x,tx.y-Math.max(0,k-.5)*40);c.scale(s,s);c.globalAlpha=k>.7?(1-k)/.3:1;c.font=`${tx.size}px "Alfa Slab One",Georgia,serif`;c.textAlign='center';
       c.lineWidth=6;c.strokeStyle='rgba(0,0,0,.85)';c.strokeText(tx.txt,0,0);c.fillStyle=tx.col;c.fillText(tx.txt,0,0);c.restore()}

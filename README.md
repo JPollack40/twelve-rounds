@@ -14,3 +14,11 @@ difficulties and legends, plus 500 Monte Carlo careers. `npm run test:quick` is 
 `--strict` makes band failures fail the process. The report lands in `tests/last-report.md`.
 The bands are drift detectors calibrated to the bots, not a statement of the intended difficulty: real play on the
 phone decides that, and the bands should be moved as the game is tuned.
+
+## 3D fight renderer (beta)
+`src/js/35-render3d.js` renders the fight with Three.js (r160): a sculpted-head opponent rig driven by the engine's 2D pose through
+two-bone IK, first-person gloves parented to the camera, a lit ring and instanced crowd. The 2D canvas stays on top as the effects and
+HUD overlay, and is the automatic fallback when WebGL or Three.js is missing (Settings > 3D fighters). `High detail` toggles shadows,
+antialiasing and the 1.5x pixel ratio; the renderer also lowers detail by itself when frames run slow.
+Builds: the hosted page loads Three.js from cdnjs; the offline file and the PWA inline `src/vendor/three.min.js`.
+`dist/twelve-rounds.html` is the frozen alpha build; the beta is `dist/twelve-rounds-beta.html`.

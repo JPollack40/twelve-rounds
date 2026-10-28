@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# Builds three targets from src/:
-#   dist/twelve-rounds.html   hosted claude.ai page (no document skeleton)
-#   Twelve-Rounds-offline.html single offline file
-#   docs/index.html + sw.js + manifest  PWA served by GitHub Pages
+# Builds from src/:
+#   dist/twelve-rounds-beta.html   hosted claude.ai page (no document skeleton; Three.js from cdnjs)
+#   Twelve-Rounds-offline.html     single offline file (Three.js inlined)
+#   docs/index.html + sw.js + manifest  PWA served by GitHub Pages (Three.js inlined)
+# dist/twelve-rounds.html is the frozen alpha build and is not touched.
 set -euo pipefail
 cd "$(dirname "$0")"
 VER=$(date -u +%Y%m%d%H%M)
 mkdir -p dist docs
 JS=$(cat src/js/*.js)
+THREE_CDN='<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>'
 {
   cat src/head.html
+  echo "$THREE_CDN"
   echo '<div id="app"></div>'
   echo '<script>'
   echo "$JS"
   echo '</script>'
-} > dist/twelve-rounds.html
+} > dist/twelve-rounds-beta.html
 page(){ # $1 = extra head, $2 = extra script prefix
   echo '<!doctype html><html lang="en"><head><meta charset="utf-8">'
   echo '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">'
@@ -24,25 +27,27 @@ page(){ # $1 = extra head, $2 = extra script prefix
   echo '</head><body>'
   echo '<div id="app"></div>'
   echo '<script>'
+  cat src/vendor/three.min.js
+  echo
+  echo '</script><script>'
   echo "$2"
   echo "$JS"
   echo '</script></body></html>'
 }
 page "" "" > Twelve-Rounds-offline.html
 page '<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon-192.png"><link rel="apple-touch-icon" href="./icon-192.png">' "const PWA_BUILD='$VER';" > docs/index.html
-cat > docs/manifest.json <<EOF
+cat > docs/manifest.json <<EOM
 {"name":"Twelve Rounds","short_name":"12 Rounds","start_url":"./index.html","scope":"./","display":"fullscreen","orientation":"any","background_color":"#0d0f1d","theme_color":"#0d0f1d",
  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
-EOF
-cat > docs/sw.js <<EOF
+EOM
+cat > docs/sw.js <<EOM
 const V='tr-$VER';const FILES=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(FILES)))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
   const u=new URL(e.request.url);
   if(u.origin!==location.origin){return}
-  // network first for the page so updates land on the next open, cache as the offline fallback
   e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(V).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html'))));
 });
-EOF
-echo "build $VER"; wc -c dist/twelve-rounds.html Twelve-Rounds-offline.html docs/index.html | tail -1
+EOM
+echo "build $VER"; wc -c dist/twelve-rounds-beta.html Twelve-Rounds-offline.html docs/index.html | tail -1

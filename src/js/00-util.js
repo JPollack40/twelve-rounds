@@ -40,7 +40,7 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings)}
 
 function buzz(p){if(!Settings.haptics)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
