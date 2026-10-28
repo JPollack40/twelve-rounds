@@ -1,5 +1,5 @@
 {
- "when": "2026-10-28T23:30:34.751Z",
+ "when": "2026-10-28T23:41:31.740Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -8,15 +8,15 @@
     0.3,
     0.9
    ],
-   "winRate": 0.8,
-   "n": 5,
-   "kos": 4,
+   "winRate": 1,
+   "n": 2,
+   "kos": 2,
    "koed": 0,
-   "ok": true,
-   "avgLanded": 121.4,
-   "avgAcc": 0.65,
-   "avgOppAcc": 0.28,
-   "results": "p:KOR6 p:KOR6 p:KOR1 o:DECR6 p:TKOR2"
+   "ok": false,
+   "avgLanded": 156,
+   "avgAcc": 0.58,
+   "avgOppAcc": 0.18,
+   "results": "p:KOR6 p:KOR6"
   },
   {
    "id": "human_eq_legend",
@@ -25,15 +25,15 @@
     0.1,
     0.7
    ],
-   "winRate": 0.2,
-   "n": 5,
-   "kos": 1,
+   "winRate": 0,
+   "n": 2,
+   "kos": 0,
    "koed": 0,
-   "ok": true,
-   "avgLanded": 121.4,
-   "avgAcc": 0.51,
-   "avgOppAcc": 0.35,
-   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 p:KOR3"
+   "ok": false,
+   "avgLanded": 105.5,
+   "avgAcc": 0.41,
+   "avgOppAcc": 0.34,
+   "results": "o:DECR6 o:DECR6"
   },
   {
    "id": "human_eq_contender",
@@ -43,14 +43,14 @@
     1
    ],
    "winRate": 1,
-   "n": 5,
-   "kos": 5,
+   "n": 2,
+   "kos": 2,
    "koed": 0,
    "ok": true,
-   "avgLanded": 104.4,
-   "avgAcc": 0.71,
-   "avgOppAcc": 0.24,
-   "results": "p:TKOR3 p:TKOR2 p:KOR2 p:TKOR4 p:KOR3"
+   "avgLanded": 100.5,
+   "avgAcc": 0.73,
+   "avgOppAcc": 0.19,
+   "results": "p:TKOR3 p:TKOR2"
   },
   {
    "id": "human_plus15",
@@ -59,15 +59,15 @@
     0.1,
     0.65
    ],
-   "winRate": 0.6,
-   "n": 5,
-   "kos": 3,
+   "winRate": 0,
+   "n": 2,
+   "kos": 0,
    "koed": 0,
-   "ok": true,
-   "avgLanded": 121.8,
-   "avgAcc": 0.58,
-   "avgOppAcc": 0.48,
-   "results": "o:DECR6 o:DECR6 p:KOR3 p:KOR3 p:KOR4"
+   "ok": false,
+   "avgLanded": 130,
+   "avgAcc": 0.48,
+   "avgOppAcc": 0.26,
+   "results": "o:DECR6 o:DECR6"
   },
   {
    "id": "novice_eq_contender",
@@ -77,14 +77,14 @@
     1
    ],
    "winRate": 1,
-   "n": 5,
-   "kos": 5,
+   "n": 2,
+   "kos": 2,
    "koed": 0,
    "ok": true,
-   "avgLanded": 83.4,
-   "avgAcc": 0.74,
-   "avgOppAcc": 0.25,
-   "results": "p:KOR3 p:TKOR3 p:TKOR2 p:KOR3 p:KOR1"
+   "avgLanded": 105.5,
+   "avgAcc": 0.72,
+   "avgOppAcc": 0.23,
+   "results": "p:KOR3 p:TKOR3"
   },
   {
    "id": "expert_plus20",
@@ -93,15 +93,15 @@
     0.1,
     0.9
    ],
-   "winRate": 0.4,
-   "n": 5,
+   "winRate": 0.5,
+   "n": 2,
    "kos": 1,
    "koed": 0,
    "ok": true,
-   "avgLanded": 164.6,
-   "avgAcc": 0.56,
-   "avgOppAcc": 0.12,
-   "results": "o:DECR6 p:KOR5 o:DECR6 o:DECR6 p:DECR6"
+   "avgLanded": 162.5,
+   "avgAcc": 0.57,
+   "avgOppAcc": 0.1,
+   "results": "o:DECR6 p:KOR5"
   },
   {
    "id": "masher_eq",
@@ -111,14 +111,14 @@
     0.4
    ],
    "winRate": 0,
-   "n": 5,
+   "n": 2,
    "kos": 0,
-   "koed": 5,
+   "koed": 2,
    "ok": true,
-   "avgLanded": 75,
-   "avgAcc": 0.27,
-   "avgOppAcc": 0.82,
-   "results": "o:TKOR3 o:KOR5 o:KOR5 o:KOR5 o:KOR5"
+   "avgLanded": 70.5,
+   "avgAcc": 0.28,
+   "avgOppAcc": 0.81,
+   "results": "o:TKOR3 o:KOR5"
   },
   {
    "id": "turtle_eq",
@@ -128,14 +128,14 @@
     0.75
    ],
    "winRate": 0,
-   "n": 5,
+   "n": 2,
    "kos": 0,
    "koed": 0,
    "ok": true,
-   "avgLanded": 85.6,
-   "avgAcc": 0.26,
-   "avgOppAcc": 0.31,
-   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 o:DECR6"
+   "avgLanded": 100,
+   "avgAcc": 0.3,
+   "avgOppAcc": 0.28,
+   "results": "o:DECR6 o:DECR6"
   },
   {
    "id": "human_legend_tyrell",
@@ -144,15 +144,15 @@
     0.05,
     0.6
    ],
-   "winRate": 0.4,
-   "n": 5,
-   "kos": 2,
+   "winRate": 0.5,
+   "n": 2,
+   "kos": 1,
    "koed": 0,
    "ok": true,
-   "avgLanded": 142.2,
-   "avgAcc": 0.57,
-   "avgOppAcc": 0.41,
-   "results": "p:KOR4 o:DECR6 o:DECR6 o:DECR6 p:KOR2"
+   "avgLanded": 139.5,
+   "avgAcc": 0.53,
+   "avgOppAcc": 0.43,
+   "results": "p:KOR4 o:DECR6"
   },
   {
    "id": "human_legend_hollis",
@@ -162,14 +162,14 @@
     1
    ],
    "winRate": 1,
-   "n": 5,
-   "kos": 5,
+   "n": 2,
+   "kos": 2,
    "koed": 0,
    "ok": true,
-   "avgLanded": 163.6,
-   "avgAcc": 0.58,
-   "avgOppAcc": 0.68,
-   "results": "p:KOR6 p:KOR5 p:KOR6 p:KOR4 p:KOR3"
+   "avgLanded": 188.5,
+   "avgAcc": 0.56,
+   "avgOppAcc": 0.67,
+   "results": "p:KOR6 p:KOR5"
   },
   {
    "id": "daily_40_days",
@@ -190,30 +190,28 @@
   }
  ],
  "careers": {
-  "n": 500,
+  "n": 60,
   "retireAgeMed": 37,
   "winsMed": 46,
-  "lossesMed": 22,
+  "lossesMed": 21,
   "titlesMed": 2,
-  "titlesAvg": 2.03,
-  "champShare": 0.99,
-  "undisputedShare": 0.04,
+  "titlesAvg": 2.02,
+  "champShare": 0.97,
+  "undisputedShare": 0.03,
   "multiDivShare": 0,
-  "legendsAvg": 1.27,
-  "chaptersAvg": 0.95,
-  "moneyMed": 47685994,
-  "womenN": 166,
+  "legendsAvg": 1.42,
+  "chaptersAvg": 0.85,
+  "moneyMed": 46453646,
+  "womenN": 20,
   "womenChampShare": 1,
-  "womenLegendsAvg": 1.11,
+  "womenLegendsAvg": 1.43,
   "crossCircuitLegends": 0,
   "hofMed": 404,
   "tiers": {
-   "Champion": 100,
-   "Hall of Famer": 274,
-   "All-Time Great": 114,
-   "Contender": 8,
-   "The Greatest of All Time": 3,
-   "Journeyman": 1
+   "Champion": 11,
+   "Hall of Famer": 32,
+   "Contender": 2,
+   "All-Time Great": 15
   },
   "forcedRetireShare": 0,
   "dmgMed": 70
@@ -231,7 +229,7 @@
   },
   {
    "k": "champShare",
-   "v": 0.99,
+   "v": 0.97,
    "band": [
     0.4,
     1
@@ -249,7 +247,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 0.95,
+   "v": 0.85,
    "band": [
     0.3,
     5
@@ -258,7 +256,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.27,
+   "v": 1.42,
    "band": [
     0.2,
     6
@@ -276,7 +274,7 @@
   },
   {
    "k": "womenLegendsAvg",
-   "v": 1.11,
+   "v": 1.43,
    "band": [
     0.1,
     6
@@ -293,5 +291,5 @@
    "ok": true
   }
  ],
- "seconds": 156
+ "seconds": 24
 }

@@ -120,6 +120,8 @@ class Fight{
     try{navigator.wakeLock?.request('screen').then(l=>this.wl=l).catch(()=>{})}catch(e){}
   }
   destroy(){
+    // the finger that threw the last punch (or skipped the replay) lifts after the result screen appears; swallow that click
+    UI.tapGuard=performance.now()+1000;
     cancelAnimationFrame(this.raf);this.ro?.disconnect();document.removeEventListener('visibilitychange',this.onVis);window.removeEventListener('blur',this.onBlur);
     window.removeEventListener('keydown',this.kd);window.removeEventListener('keyup',this.ku);
     Sfx.crowdStop();try{this.wl?.release()}catch(e){}

@@ -800,6 +800,8 @@ const ACT={
   retire(){confirmBox('Retire?','Your career ends now and your legacy is final.','Retire',()=>retireNow())},
   totitle(){Save.write();G=null;UI.go('title')},
 };
+/* ghost-tap guard: ignore every click for a moment after a fight ends, so a punch tap can't pick a post-fight choice */
+document.addEventListener('click',e=>{if(performance.now()<(UI.tapGuard||0)){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g&&!g.closest('.fight')){const a=g.dataset.arg;UI.go(g.dataset.go,a!=null?+a:undefined);return}
   const a=e.target.closest('[data-act]');if(a&&!a.closest('.fight')&&!a.closest('.modal [data-act="sign"]')&&ACT[a.dataset.act]){if(a.hasAttribute('disabled'))return;ACT[a.dataset.act](a)}

@@ -2902,6 +2902,8 @@ class Fight{
     try{navigator.wakeLock?.request('screen').then(l=>this.wl=l).catch(()=>{})}catch(e){}
   }
   destroy(){
+    // the finger that threw the last punch (or skipped the replay) lifts after the result screen appears; swallow that click
+    UI.tapGuard=performance.now()+1000;
     cancelAnimationFrame(this.raf);this.ro?.disconnect();document.removeEventListener('visibilitychange',this.onVis);window.removeEventListener('blur',this.onBlur);
     window.removeEventListener('keydown',this.kd);window.removeEventListener('keyup',this.ku);
     Sfx.crowdStop();try{this.wl?.release()}catch(e){}
@@ -4879,6 +4881,8 @@ const ACT={
   retire(){confirmBox('Retire?','Your career ends now and your legacy is final.','Retire',()=>retireNow())},
   totitle(){Save.write();G=null;UI.go('title')},
 };
+/* ghost-tap guard: ignore every click for a moment after a fight ends, so a punch tap can't pick a post-fight choice */
+document.addEventListener('click',e=>{if(performance.now()<(UI.tapGuard||0)){e.stopPropagation();e.preventDefault()}},true);
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g&&!g.closest('.fight')){const a=g.dataset.arg;UI.go(g.dataset.go,a!=null?+a:undefined);return}
   const a=e.target.closest('[data-act]');if(a&&!a.closest('.fight')&&!a.closest('.modal [data-act="sign"]')&&ACT[a.dataset.act]){if(a.hasAttribute('disabled'))return;ACT[a.dataset.act](a)}
