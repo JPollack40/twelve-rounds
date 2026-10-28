@@ -40,7 +40,7 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,vol:1,volFx:1,volCrowd:1,volTell:1,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
 function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 
@@ -56,30 +56,34 @@ const Sfx={
       this.ctx=new C();
       this.out=this.ctx.createGain();this.out.gain.value=.8;
       const comp=this.ctx.createDynamicsCompressor();this.out.connect(comp);comp.connect(this.ctx.destination);
+      this.bus={};for(const k of ['fx','tell','crowd']){this.bus[k]=this.ctx.createGain();this.bus[k].connect(this.out)}this.applyVol();
       const len=this.ctx.sampleRate*2,b=this.ctx.createBuffer(1,len,this.ctx.sampleRate),d=b.getChannelData(0);
       for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
       this.nb=b;
     }catch(e){this.ctx=null}
   },
   ok(){return Settings.sound&&this.ctx&&this.ctx.state==='running'},
+  dst(){return (this.bus&&this.bus[this.cur||'fx'])||this.out},
+  applyVol(){if(!this.ctx||!this.bus)return;this.out.gain.value=.8*(Settings.vol??1);this.bus.fx.gain.value=Settings.volFx??1;this.bus.tell.gain.value=Settings.volTell??1;this.bus.crowd.gain.value=Settings.volCrowd??1},
   noise(dur,{type='lowpass',f=1000,f2=null,q=1,g=.5,att=.004,delay=0}={}){
     if(!this.ok())return;const c=this.ctx,t=c.currentTime+delay;
     const s=c.createBufferSource();s.buffer=this.nb;s.loop=true;
     const fl=c.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;
     const gn=c.createGain();gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+att);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
-    s.connect(fl);fl.connect(gn);gn.connect(this.out);s.start(t,Math.random()*1.5);s.stop(t+dur+.05);
+    s.connect(fl);fl.connect(gn);gn.connect(this.dst());s.start(t,Math.random()*1.5);s.stop(t+dur+.05);
   },
   tone(f,dur,{type='sine',g=.3,f2=null,att=.005,delay=0}={}){
     if(!this.ok())return;const c=this.ctx,t=c.currentTime+delay;
     const o=c.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
     const gn=c.createGain();gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+att);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
-    o.connect(gn);gn.connect(this.out);o.start(t);o.stop(t+dur+.05);
+    o.connect(gn);gn.connect(this.dst());o.start(t);o.stop(t+dur+.05);
   },
   hit(power=1,body=false){const p=Math.min(power,1.6);this.noise(.08+.05*p,{f:body?520:1500,f2:body?140:280,g:.45+.3*p});this.tone(body?68:96,.15+.08*p,{f2:38,g:.42*p+.1})},
   block(){this.noise(.07,{type:'bandpass',f:900,q:1.4,g:.32});this.tone(170,.07,{g:.12,f2:90})},
   whoosh(){this.noise(.18,{type:'bandpass',f:500,f2:2400,q:2,g:.12,att:.05})},
   /* audio tells: one voice per punch type so you can play by ear */
-  tell(type,dur){
+  tell(type,dur){const pc=this.cur;this.cur='tell';try{this._tell(type,dur)}finally{this.cur=pc}},
+  _tell(type,dur){
     if(!Settings.audioTells)return;
     const d=Math.min(.5,Math.max(.12,dur*.8));
     if(type==='jab'){this.noise(d*.6,{type:'bandpass',f:1800,f2:2600,q:3,g:.08,att:.02})}
@@ -87,7 +91,7 @@ const Sfx={
     else if(type==='hook'){this.tone(140,d,{type:'square',g:.05,f2:260,att:.05});this.noise(d,{type:'lowpass',f:400,f2:1400,g:.12,att:.06})}
     else{this.tone(90,d,{type:'sawtooth',g:.08,f2:330,att:.04});this.noise(d,{type:'bandpass',f:300,f2:900,q:4,g:.1,att:.08})}
   },
-  flash(){if(!Settings.audioTells)return;this.tone(2200,.07,{type:'sine',g:.07});this.tone(3300,.09,{type:'sine',g:.05,delay:.03})},
+  flash(){if(!Settings.audioTells)return;const pc=this.cur;this.cur='tell';this.tone(2200,.07,{type:'sine',g:.07});this.tone(3300,.09,{type:'sine',g:.05,delay:.03});this.cur=pc},
   bell(n=1){for(let i=0;i<n;i++){const d=i*.32;[1,2.76,5.4].forEach((m,j)=>this.tone(880*m,1.3-j*.3,{g:.16/(j+1),delay:d}))}},
   tick(){this.tone(1200,.04,{g:.05,type:'square'})},
   count(){this.tone(210,.2,{g:.22,type:'triangle'});this.noise(.08,{type:'highpass',f:2000,g:.05})},
@@ -96,7 +100,7 @@ const Sfx={
     const s=c.createBufferSource();s.buffer=this.nb;s.loop=true;
     const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=650;f.Q.value=.5;
     const g=c.createGain();g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.045,c.currentTime+1.2);
-    s.connect(f);f.connect(g);g.connect(this.out);s.start();this.crowd=s;this.crowdGain=g;
+    s.connect(f);f.connect(g);g.connect(this.bus?this.bus.crowd:this.out);s.start();this.crowd=s;this.crowdGain=g;
   },
   roar(a=.22,dur=1.8){if(!this.crowdGain||!this.ok())return;const t=this.ctx.currentTime,g=this.crowdGain.gain;g.cancelScheduledValues(t);g.setValueAtTime(Math.max(.0001,g.value),t);g.linearRampToValueAtTime(a,t+.12);g.linearRampToValueAtTime(.045,t+dur)},
   crowdStop(){if(this.crowd){try{this.crowd.stop()}catch(e){}this.crowd=null;this.crowdGain=null}},

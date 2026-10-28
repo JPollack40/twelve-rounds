@@ -8,6 +8,9 @@ const isWide=()=>innerWidth>=680;
 let _rw=isWide();
 window.addEventListener('resize',()=>{const w=isWide();if(w!==_rw){_rw=w;if(!$('.fight')&&!$('.mg')&&!$('.modal'))UI.render()}});
 
+/* volume sliders: live update, with a short preview of the channel being changed */
+document.addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input.vol'))return;Settings[t.dataset.k]=+t.value/100;saveSettings();Sfx.init();Sfx.applyVol();
+  clearTimeout(t._pv);t._pv=setTimeout(()=>{const k=t.dataset.k;if(k==='volTell')Sfx.tell('hook',.4);else if(k==='volCrowd'){Sfx.crowdStart();Sfx.roar(.3,1);setTimeout(()=>{if(!document.querySelector('.fight'))Sfx.crowdStop()},1600)}else Sfx.hit(1,false)},120)});
 /* first-visit coaching for career screens: one line, shown once per device */
 const TIPS={
   home:'Book a fight, train in camp, then walk out. Losses sting but your career keeps going.',
@@ -107,6 +110,10 @@ function settingsHTML(inCareer){
   const tg=(k,l,d)=>`<div class="row sp card flat"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">${l}</b><div class="muted" style="font-size:13px">${d}</div></div><button class="btn sm ${Settings[k]?'gold':''}" data-act="toggle" data-k="${k}">${Settings[k]?'On':'Off'}</button></div>`;
   return `<div class="col">
     ${tg('sound','Sound','Punches, bell and crowd, all synthesized.')}
+    <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Volume</b>
+    ${[['vol','Master'],['volFx','Punches and bell'],['volTell','Wind-up tells'],['volCrowd','Crowd']].map(([k,l])=>`<label class="row" style="gap:10px;align-items:center"><span style="min-width:128px;font-size:14px">${l}</span><input type="range" class="vol grow" min="0" max="100" value="${Math.round((Settings[k]??1)*100)}" data-k="${k}" style="accent-color:var(--gold)"></label>`).join('')}</div>
+    ${inCareer&&typeof G!=='undefined'&&G?`<div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Difficulty</b><div class="muted" style="font-size:13px">Change it any time. It sets tell speed, AI sharpness and XP rate from your next fight on.</div>
+    <div class="chips">${Object.keys(DIFF).map(k=>`<button class="chip${G.diff===k?' on':''}" data-act="setdiff" data-k="${k}">${DIFF[k].name}</button>`).join('')}</div></div>`:''}
     ${tg('haptics','Vibration','Buzz on big hits and knockdowns, where the browser allows it.')}
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Vibration strength</b>
     <div class="chips">${[[.5,'Light'],[1,'Normal'],[1.6,'Strong']].map(([v,l])=>`<button class="chip${(Settings.hapticStr??1)===v?' on':''}" data-act="setv" data-k="hapticStr" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -237,7 +244,8 @@ SCR.home=()=>{
   const nw=G.newsList.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:1px solid #262c4a;font-size:14px" class="${n.tone==='gold'?'goldt':n.tone==='red'?'':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('');
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
-  return shell('home','Home',`${prof}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
+  ensureGoals();const goals=(G.goals||[]).length?`<div class="card"><h3>Goals</h3><div class="col" style="gap:6px;margin-top:6px">${G.goals.map(g=>{const d=GOALS.find(x=>x.id===g.id);return d?`<div class="row sp"><span>${esc(d.t)}</span><span class="pill gold">+${d.xp} XP</span></div>`:''}).join('')}</div></div>`:'';
+  return shell('home','Home',`${prof}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
 };
 function pathHTML(){
   const b=B();
@@ -538,6 +546,23 @@ SCR.rankings=d=>{
 };
 
 /* ---------- record ---------- */
+/* progress over the career: one measure per chart (no dual axes), gold line, hover/tap targets on each fight */
+function lineChart(vals,title,lo,hi){if(vals.length<2)return '';const W=320,H=96,P=10,n=vals.length;
+  const x=i=>P+i*(W-2*P)/(n-1),y=v=>H-P-(v-lo)/(hi-lo||1)*(H-2*P);
+  const pts=vals.map((v,i)=>`${x(i).toFixed(1)},${y(v.v).toFixed(1)}`).join(' ');const last=vals[n-1];
+  return `<div class="card flat" style="padding:8px 10px"><div class="row sp"><span class="lbl">${esc(title)}</span><b class="num">${last.v}</b></div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;margin-top:4px" role="img" aria-label="${esc(title)} over ${n} fights, now ${last.v}">
+      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="currentColor" stroke-opacity=".18" stroke-width="1"/>
+      <polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(n-1)}" cy="${y(last.v)}" r="4" fill="var(--gold)"/>
+      ${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v.v)}" r="9" fill="transparent" class="hitpt" data-tip="${esc(v.tip)}"><title>${esc(v.tip)}</title></circle>`).join('')}
+    </svg><div class="muted tipline" style="font-size:12.5px;min-height:16px"></div></div>`}
+function progressCharts(){const h=G.history.filter(x=>x.pro);if(h.length<2)return '';
+  const ov=h.map(x=>({v:x.ovr,tip:`${x.res} vs ${x.opp}: overall ${x.ovr}`})),pt=h.map(x=>({v:Math.round(x.ptsAfter),tip:`${x.res} vs ${x.opp}: ${Math.round(x.ptsAfter)} ranking points`}));
+  const mn=Math.min(...ov.map(v=>v.v)),mx=Math.max(...ov.map(v=>v.v));
+  return `<div class="grid2">${lineChart(ov,'Overall rating',Math.max(0,mn-3),Math.min(99,mx+3))}${lineChart(pt,'Ranking points',0,Math.max(100,...pt.map(v=>v.v)))}</div>`}
+document.addEventListener('pointerover',e=>{const t=e.target;if(t.classList&&t.classList.contains('hitpt')){const c=t.closest('.card');const l=c&&c.querySelector('.tipline');if(l)l.textContent=t.dataset.tip}});
+document.addEventListener('click',e=>{const t=e.target;if(t.classList&&t.classList.contains('hitpt')){const c=t.closest('.card');const l=c&&c.querySelector('.tipline');if(l)l.textContent=t.dataset.tip}});
 function recordsCard(){const R=G.records||{};const rows=[
   R.fastKO&&['Fastest stoppage',`Round ${R.fastKO.round}, ${R.fastKO.time}`,R.fastKO.opp],R.mostLanded&&['Most punches landed',R.mostLanded.n,R.mostLanded.opp],
   R.perfect&&R.perfect.n&&['Most perfect dodges',R.perfect.n,R.perfect.opp],R.streak&&['Longest win streak',R.streak,''],R.upset&&['Biggest upset',`+${R.upset.gap} overall`,R.upset.opp]].filter(Boolean);
@@ -546,7 +571,7 @@ function recordsCard(){const R=G.records||{};const rows=[
 SCR.record=()=>{
   const b=B(),h=[...G.history].reverse();
   const ch=CHAPTER_INFO.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
-  return shell('record','Record',`${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
+  return shell('record','Record',`${progressCharts()}${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
     <div class="card"><span class="lbl">Amateur</span><p class="rec num">${b.am.w}-${b.am.l}</p><p class="muted">${G.flags.am_gold_0?'Golden Gloves gold ':''}${G.flags.am_gold_1?'· National gold':''}</p></div>
     <div class="card"><span class="lbl">Titles</span><p class="rec num">${b.titleWins} won · ${b.defenses} defenses</p><p class="muted">${b.titleDivs.map(d=>DIVS[d].short).join(', ')||'None yet'}</p></div></div>
     <div class="card"><h3>Fight history</h3><div class="tblw"><table class="t"><tr><th>Date</th><th>Res</th><th>Opponent</th><th>Method</th><th>Fight</th></tr>
@@ -697,6 +722,7 @@ const ACT={
     const F=new Fight({p:pc,o:oc,rounds:1,roundLen:60,diff:'champion',practice:true,corner:1,label:'Arrange',cheats:{freeze:true},onEnd:()=>{}});F.mount();
     setTimeout(()=>F.editLayout({onDone:()=>{F.destroy();UI.render();toast('Layout saved')}}),300)},
   layoutreset(){Settings.layouts={};saveSettings();toast('All button layouts reset')},
+  setdiff(el){const k=el.dataset.k;if(!DIFF[k]||G.diff===k)return;G.diff=k;news(`Difficulty changed to ${DIFF[k].name}.`);Save.write();toast(`${DIFF[k].name}: ${DIFF[k].desc}`);UI.render()},
   setv(el){Settings[el.dataset.k]=+el.dataset.v;saveSettings();UI.render()},
   btnsize(el){Settings.btnSize=+el.dataset.v;saveSettings();UI.render()},
   devgo(){UI.go('dev')},

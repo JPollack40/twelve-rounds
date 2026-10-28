@@ -311,6 +311,7 @@ function campResult(kind,q,auto){
   }
   n.sessions.push({kind,q:Math.round(q*100)});
   if(q>=.6&&G.next&&G.next.keys&&G.next.keys.includes(kind)){n.edge=n.edge||{};if(!n.edge[kind]){n.edge[kind]=1;out.lines.push('Key drill done: fight-night edge.')}}
+  checkGoals('camp',Object.assign({auto},out),out.lines);
   n.weeksLeft--;
   advanceWeeks(1,true);
   return out;
@@ -364,6 +365,37 @@ function worldWeekInner(W,rv){
   }
   if(G.week%52===0)yearTick();
   if(rv&&rv.active){rv.rating+=((playerOvr()+rv.edge)-rv.rating)*.03;rv.rating=clamp(rv.rating,30,97)}
+}
+/* ---------- career goals: three short-term targets at a time, with rewards ---------- */
+const GOALS=[
+  {id:'ko',t:'Win a fight by knockout',xp:180,hype:2,fight:c=>c.win&&c.ko},
+  {id:'streak3',t:'Win three fights in a row',xp:260,hype:3,elig:()=>B().streak<3,fight:()=>B().streak>=3},
+  {id:'body10',t:'Land 10 body shots in one fight',xp:160,fight:c=>(c.res.stats.p.bodyL||0)>=10},
+  {id:'perfect5',t:'Make 5 perfect dodges in one fight',xp:180,fight:c=>(c.res.stats.p.perfect||0)>=5},
+  {id:'acc50',t:'Land half your punches in a fight (30+ thrown)',xp:170,fight:c=>c.res.stats.p.thrown>=30&&c.res.stats.p.landed/c.res.stats.p.thrown>=.5},
+  {id:'clean',t:'Win without being knocked down',xp:140,fight:c=>c.win&&!c.res.kdAgainst},
+  {id:'drillS',t:'Score an S grade in a camp drill',xp:120,camp:r=>r.q>=.9&&r.xp&&!r.sloppy},
+  {id:'top10',t:"Break into your division's top 10",xp:300,hype:4,elig:()=>G.phase==='pro'&&(playerRank()||99)>10,fight:()=>(playerRank()||99)<=10},
+  {id:'top3',t:'Climb into the top 3',xp:400,hype:5,elig:()=>G.phase==='pro'&&(playerRank()||99)<=10&&(playerRank()||99)>3,fight:()=>(playerRank()||99)<=3},
+  {id:'title',t:'Win a world title',xp:600,hype:8,elig:()=>G.phase==='pro'&&(playerRank()||99)<=5&&!playerBelts().length,fight:c=>c.win&&c.o.title&&!c.o.title.regional},
+  {id:'defend2',t:'Defend your title twice',xp:500,hype:6,elig:()=>G.phase==='pro'&&playerBelts().length>0,base:()=>B().defenses,fight:(c,g)=>B().defenses>=g.base+2},
+  {id:'legend',t:'Beat a legend',xp:450,hype:6,elig:()=>G.phase==='pro'&&(playerRank()||99)<=15,fight:c=>c.win&&!!c.f.legend},
+  {id:'rival',t:'Beat your rival',xp:350,hype:5,elig:()=>{const r=rivalF();return !!(r&&r.active)},fight:c=>c.win&&!!c.f.rival},
+];
+const GOAL_ONCE=['title','top10','top3','legend'];
+function ensureGoals(){
+  if(!G||G.phase==='retired')return;G.goals=(G.goals||[]).filter(g=>{const d=GOALS.find(x=>x.id===g.id);return d&&(!d.elig||d.elig())});G.goalsDone=G.goalsDone||[];
+  let guard=0;while(G.goals.length<3&&guard++<20){
+    const recent=G.goalsDone.slice(-4);const c=GOALS.filter(d=>!G.goals.some(x=>x.id===d.id)&&(!d.elig||d.elig())&&!recent.includes(d.id)&&!(GOAL_ONCE.includes(d.id)&&G.goalsDone.includes(d.id)));if(!c.length)break;
+    const d=c[hashStr((G.seed||1)+':'+(G.goalsDone.length+G.goals.length)+':'+guard)%c.length];G.goals.push({id:d.id,base:d.base?d.base():0})}
+}
+function checkGoals(kind,ctx,lines){
+  if(!G.goals)ensureGoals();G.goalsDone=G.goalsDone||[];const done=[];
+  for(const g of G.goals){const d=GOALS.find(x=>x.id===g.id);if(!d)continue;
+    if((kind==='fight'&&d.fight&&d.fight(ctx,g))||(kind==='camp'&&d.camp&&d.camp(ctx)))done.push(g)}
+  for(const g of done){const d=GOALS.find(x=>x.id===g.id);G.goals=G.goals.filter(x=>x!==g);G.goalsDone.push(g.id);addXP(d.xp);B().hype=clamp(B().hype+(d.hype||0),0,100);
+    lines&&lines.push(`Goal complete: ${d.t} (+${d.xp} XP)`);news(`Goal complete: ${d.t}.`,'gold')}
+  ensureGoals();return done.length;
 }
 /* ---------- yearly awards and the Hall of Fame ---------- */
 function yrState(){return G.yr=G.yr||{fw:{},ko:null,up:null}}
@@ -547,6 +579,12 @@ function applyResult(o,res){
   }
   if(pro)checkStripped();
   if(prevRank&&pro){const nr=playerRank();out.rank=[prevRank,nr]}
+  // rival reacts
+  {const rv=rivalF();if(pro&&rv&&rv.active&&rv.id!==f.id&&G.week-(G.flags.rivalQ||-99)>=8){const n=shortName(rv),i=b.record.w+b.record.l;
+    const Q=win&&(o.title||f.legend)?['"Enjoy it. That belt is coming to me."','"Big win. Now come fight a real one."','"Everybody looks good until they meet me."']
+      :win&&ko?['"Lucky shot. He hasn\'t fought anybody real yet."','"Knocking out tomato cans. Call me when you\'re ready."','"Nice highlight. I\'d still walk right through him."']
+      :loss?['"Told you he was overrated."','"That\'s what happens when you skip the line."','"I\'d have finished the job."']:null;
+    if(Q){news(`${n}: ${Q[i%Q.length]}`,'red');G.flags.rivalQ=G.week}}}
   // personal records
   if(!o.sim){const R=G.records=G.records||{},P=res.stats.p;const nm=shortName(f);
     const secs=(()=>{const m=/^(\d+):(\d+)/.exec(res.time||'');return m?(res.round-1)*180+(+m[1])*60+(+m[2]):null})();
@@ -555,6 +593,7 @@ function applyResult(o,res){
     if((P.perfect||0)>(R.perfect?.n||0)){if(R.perfect)out.lines.push(`Record: most perfect dodges (${P.perfect})`);R.perfect={n:P.perfect,opp:nm}}
     if(win&&b.streak>(R.streak||0)){if(R.streak&&b.streak>=3)out.lines.push(`Record: ${b.streak}-fight win streak`);R.streak=b.streak}
     if(win&&f.rating-playerOvr()>(R.upset?.gap||5)){if(R.upset)out.lines.push(`Record: biggest upset win (${nm})`);R.upset={gap:Math.round(f.rating-playerOvr()),opp:nm}}}
+  checkGoals('fight',{res,win,ko,o,f},out.lines);
   G.next=null;
   return out;
 }

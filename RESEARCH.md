@@ -57,3 +57,8 @@ division moves, left-handed layout, button sizes, compact calendar with quick ca
 | Design for interruption (mobile session guidance; Undisputed and Real Boxing complaints about lost progress) | Career fights checkpoint at every round start; after a crash, call or closed app, Home offers "Resume the fight" at the start of that round with cards, damage and stamina intact |
 | Presentation and story beats (Undisputed's lack of presentation; Fight Night Champion's story praise) | Skippable ring-announcer introduction for pro fights (title fights get the full championship call) |
 | Every career beat needs a scene or choice | Post-fight interview: after a win, call out a contender (hype, and they're offered next), thank your team (less camp fatigue) or stay humble (+1 Ring IQ); after a loss, demand a rematch, no excuses, or blame the judges |
+| Separate volume controls (Game Accessibility Guidelines) | Master, punches/bell, wind-up tells and crowd sliders with a live preview |
+| Change difficulty during play (Game Accessibility Guidelines) | Difficulty can be changed mid-career from Settings, no penalty beyond the XP rate |
+| Progression that feels "linear, vanilla, unrewarding" (Undisputed) | Career goals: three short-term targets at a time (knockouts, streaks, body work, rankings, titles, legends, rival), with XP and hype rewards |
+| Communicate growth (stat deltas, history) | Overall rating and ranking-point charts on the Record screen, one measure per chart, tap a point for that fight |
+| Career beats with dialogue | Your rival reacts to your big wins and losses in the news, with spacing and variety |
