@@ -155,8 +155,8 @@ const LEGEND_VIS={
   mayfield:{bt:'athletic',expr:'cocky'},chavarria:{bt:'brawler',nose:'flat',scar:'brow',expr:'stern'},raye:{bt:'athletic',expr:'cocky'},
   hurns:{bt:'lanky',expr:'stern'},robbins:{bt:'athletic',expr:'calm'},carver:{bt:'brawler',expr:'grit'},hagan:{bt:'brawler',scar:'nose',expr:'stern'},
   moorland:{bt:'athletic',expr:'calm'},lister:{bt:'anvil',nose:'flat',expr:'stern'},frazee:{bt:'brawler',expr:'grit'},
-  tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
-  hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
+  tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',robe:'hood',robeCol:'#1d1d1f',robeTrim:'#1d1d1f',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
+  hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
 const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
@@ -188,8 +188,9 @@ const GEAR=[
   {id:'w_tight',slot:'wraps',name:'Tight tape job',desc:'Knuckles packed hard.',price:3000,unlock:{level:3},fx:{pow:1}},
   {id:'w_pro',slot:'wraps',name:"Cutman's wraps",desc:'Wrapped by a professional: firm and safe.',price:14000,unlock:{level:8},fx:{pow:1,def:1}},
   {id:'r_none',slot:'robe',name:'No robe',desc:'Just walk out.',price:0},
-  {id:'r_satin',slot:'robe',name:'Satin robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
-  {id:'r_hood',slot:'robe',name:"Hooded fighter's robe",desc:'+2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood'}},
+  {id:'r_satin',slot:'robe',name:'Classic silk robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
+  {id:'r_vest',slot:'robe',name:"Showman's hooded vest",desc:'Sleeveless, frayed, your name on the back. +1 hype for every win.',price:12000,unlock:{level:6},hype:1,look:{robe:'vest'}},
+  {id:'r_hood',slot:'robe',name:"Heavy hooded robe",desc:'Terry cloth, hood pulled low. +2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood',hoodLow:true}},
   {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
 ];
@@ -203,11 +204,11 @@ const SPONSORS=[
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',
-    look:{skin:2,hair:'mohawk',hc:2,beard:'stubble',trunks:'#161616',trim:'#d8392f',gloves:'#2f6fe2',bt:'brawler',nose:'broken',scar:'both',ear:'cauliflower',expr:'grit',band:'BASILIO',fs:4711,shape:{jaw:1.35,chin:1.25,nose:1.15,cheek:1.2,brow:1.55}}},
+    look:{skin:2,hair:'mohawk',hc:2,beard:'stubble',trunks:'#161616',trim:'#d8392f',gloves:'#2f6fe2',bt:'brawler',nose:'broken',scar:'both',ear:'cauliflower',expr:'grit',band:'BASILIO',fs:4711,robe:'vest',robeCol:'#f4efe3',robeTrim:'#2f6fe2',shape:{jaw:1.35,chin:1.25,nose:1.15,cheek:1.2,brow:1.55}}},
   {id:'spike',first:'Jae',last:'Moreno',nick:'Spike',div:2,arch:'outboxer',rating:80,age:23,home:'Los Angeles, CA',
     look:{skin:1,hair:'shaggy',hc:0,beard:'none',trunks:'#f4efe3',trim:'#161616',gloves:'#f4efe3',bt:'lanky',nose:'straight',scar:'none',ear:'normal',expr:'stern',band:'SPIKE',fs:1203,shape:{jaw:.85,chin:1.0,nose:.9,cheek:1.1,brow:1.15}}},
   {id:'anvil',first:'Rocco',last:'Brandt',nick:'The Anvil',div:7,arch:'slugger',rating:84,age:31,home:'Pittsburgh, PA',
-    look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
+    look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,robe:'hood',hoodLow:true,robeCol:'#3a3330',robeTrim:'#3a3330',shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
 ];
 const LEGEND_BY=Object.fromEntries(LEGENDS.map(l=>[l.id,l]));
 

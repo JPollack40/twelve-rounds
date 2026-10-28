@@ -594,8 +594,8 @@ const LEGEND_VIS={
   mayfield:{bt:'athletic',expr:'cocky'},chavarria:{bt:'brawler',nose:'flat',scar:'brow',expr:'stern'},raye:{bt:'athletic',expr:'cocky'},
   hurns:{bt:'lanky',expr:'stern'},robbins:{bt:'athletic',expr:'calm'},carver:{bt:'brawler',expr:'grit'},hagan:{bt:'brawler',scar:'nose',expr:'stern'},
   moorland:{bt:'athletic',expr:'calm'},lister:{bt:'anvil',nose:'flat',expr:'stern'},frazee:{bt:'brawler',expr:'grit'},
-  tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
-  hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
+  tyrell:{bt:'anvil',hair:'buzz',expr:'stern',trim:'#161616',robe:'hood',robeCol:'#1d1d1f',robeTrim:'#1d1d1f',shape:{jaw:1.45,chin:1.15,nose:1.15,cheek:1.3,brow:1.5}},marchetti:{bt:'anvil',nose:'broken',scar:'cheek',expr:'stern'},
+  hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
 const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
@@ -627,8 +627,9 @@ const GEAR=[
   {id:'w_tight',slot:'wraps',name:'Tight tape job',desc:'Knuckles packed hard.',price:3000,unlock:{level:3},fx:{pow:1}},
   {id:'w_pro',slot:'wraps',name:"Cutman's wraps",desc:'Wrapped by a professional: firm and safe.',price:14000,unlock:{level:8},fx:{pow:1,def:1}},
   {id:'r_none',slot:'robe',name:'No robe',desc:'Just walk out.',price:0},
-  {id:'r_satin',slot:'robe',name:'Satin robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
-  {id:'r_hood',slot:'robe',name:"Hooded fighter's robe",desc:'+2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood'}},
+  {id:'r_satin',slot:'robe',name:'Classic silk robe',desc:'+1 hype for every win.',price:5000,unlock:{wins:3},hype:1,look:{robe:'satin'}},
+  {id:'r_vest',slot:'robe',name:"Showman's hooded vest",desc:'Sleeveless, frayed, your name on the back. +1 hype for every win.',price:12000,unlock:{level:6},hype:1,look:{robe:'vest'}},
+  {id:'r_hood',slot:'robe',name:"Heavy hooded robe",desc:'Terry cloth, hood pulled low. +2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood',hoodLow:true}},
   {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
 ];
@@ -642,11 +643,11 @@ const SPONSORS=[
 /* the standard roster: designed recurring contenders from the character sheet */
 const SIGNATURES=[
   {id:'basilio',first:'Nico',last:'Basilio',nick:'Scar Tissue',div:4,arch:'swarmer',rating:82,age:28,home:'Syracuse, NY',
-    look:{skin:2,hair:'mohawk',hc:2,beard:'stubble',trunks:'#161616',trim:'#d8392f',gloves:'#2f6fe2',bt:'brawler',nose:'broken',scar:'both',ear:'cauliflower',expr:'grit',band:'BASILIO',fs:4711,shape:{jaw:1.35,chin:1.25,nose:1.15,cheek:1.2,brow:1.55}}},
+    look:{skin:2,hair:'mohawk',hc:2,beard:'stubble',trunks:'#161616',trim:'#d8392f',gloves:'#2f6fe2',bt:'brawler',nose:'broken',scar:'both',ear:'cauliflower',expr:'grit',band:'BASILIO',fs:4711,robe:'vest',robeCol:'#f4efe3',robeTrim:'#2f6fe2',shape:{jaw:1.35,chin:1.25,nose:1.15,cheek:1.2,brow:1.55}}},
   {id:'spike',first:'Jae',last:'Moreno',nick:'Spike',div:2,arch:'outboxer',rating:80,age:23,home:'Los Angeles, CA',
     look:{skin:1,hair:'shaggy',hc:0,beard:'none',trunks:'#f4efe3',trim:'#161616',gloves:'#f4efe3',bt:'lanky',nose:'straight',scar:'none',ear:'normal',expr:'stern',band:'SPIKE',fs:1203,shape:{jaw:.85,chin:1.0,nose:.9,cheek:1.1,brow:1.15}}},
   {id:'anvil',first:'Rocco',last:'Brandt',nick:'The Anvil',div:7,arch:'slugger',rating:84,age:31,home:'Pittsburgh, PA',
-    look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
+    look:{skin:1,hair:'buzz',hc:1,beard:'stubble',trunks:'#161616',trim:'#cfcfcf',gloves:'#7a1f1f',bt:'anvil',nose:'broken',scar:'cheek',ear:'cauliflower',expr:'stern',band:'ROCCO',fs:8080,robe:'hood',hoodLow:true,robeCol:'#3a3330',robeTrim:'#3a3330',shape:{jaw:1.55,chin:1.3,nose:1.25,cheek:1.3,brow:1.65}}},
 ];
 const LEGEND_BY=Object.fromEntries(LEGENDS.map(l=>[l.id,l]));
 
@@ -1983,7 +1984,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.beard||'none',trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,{noseType:lk.nose||'straight'}),
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
-    robe:lk.robe||null,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
+    robe:lk.robe||null,robeCol:lk.robeCol||null,robeTrim:lk.robeTrim||null,hoodLow:!!lk.hoodLow,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -2182,6 +2183,79 @@ function r3gloveTex(col){const c=document.createElement('canvas');c.width=256;c.
   x.strokeStyle='rgba(29,21,23,.55)';x.lineWidth=3;x.beginPath();x.moveTo(0,50);x.lineTo(256,50);x.stroke();
   x.fillStyle='rgba(255,255,255,.12)';x.fillRect(0,54,256,6);x.strokeStyle='rgba(29,21,23,.35)';x.lineWidth=2;x.beginPath();x.moveTo(64,0);x.lineTo(64,50);x.moveTo(192,0);x.lineTo(192,50);x.stroke();
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=THREE.RepeatWrapping;return t}
+/* ---------- walkout robes (Style A robe sheet) ----------
+   satin: classic silk robe, hood down, shawl collar, metallic trim, belt (The Greatest)
+   gold:  champion's silk, gold with black trim
+   hood:  heavy terry robe, hood up and low over the eyes, belted, bulky (Rocco / Iron Kid)
+   vest:  sleeveless hooded showman's vest, frayed edges, name patches, open front (Basilio)
+   Sleeves are two pieces, one on the upper arm and one on the forearm, so they bend with the arm and the glove comes out of the cuff. */
+const R3_ROBE={
+  satin:{fab:'silk',hood:'down',sleeves:true,len:-.95,gap:.5,bulk:1,pose:'wave'},
+  gold:{fab:'silk',hood:'down',sleeves:true,len:-.95,gap:.5,bulk:1,pose:'wave'},
+  hood:{fab:'terry',hood:'up',sleeves:true,len:-1.0,gap:.3,bulk:1.04,pose:'hunch'},
+  vest:{fab:'silk',hood:'up',sleeves:false,len:-.32,gap:.42,bulk:.96,pose:'punch',fray:true},
+};
+function r3robeTex(base,trim,fab,name,fray){
+  const c=document.createElement('canvas');c.width=512;c.height=512;const x=c.getContext('2d');const bs=new THREE.Color(base).getStyle(),ts=new THREE.Color(trim).getStyle();
+  x.fillStyle=bs;x.fillRect(0,0,512,512);const r=new Rng(11);
+  if(fab==='silk'){for(let i=0;i<40;i++){const px=r.next()*512,w=6+r.next()*22;const g=x.createLinearGradient(px-w,0,px+w,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,`rgba(255,255,255,${.06+r.next()*.1})`);g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(px-w,0,w*2,512)}}
+  else{for(let i=0;i<9000;i++){x.fillStyle=r.next()<.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.09)';x.fillRect(r.next()*512,r.next()*512,2,2)}
+    for(let y=0;y<512;y+=10){x.fillStyle='rgba(0,0,0,.05)';x.fillRect(0,y,512,3)}}
+  x.fillStyle=ts;x.fillRect(0,494,512,18);
+  if(name){x.save();x.fillStyle=ts;x.strokeStyle='#1d1517';x.lineWidth=5;x.font='bold 64px "Alfa Slab One",Georgia,serif';x.textAlign='center';x.textBaseline='middle';
+    x.strokeText(name.slice(0,10),256,150);x.fillText(name.slice(0,10),256,150);
+    if(fray){x.font='bold 30px "Alfa Slab One",Georgia,serif';for(const u of [.14,.86]){x.save();x.translate(u*512,150);x.rotate(u<.5?-.08:.08);x.fillStyle=ts;x.fillRect(-62,-26,124,52);x.fillStyle=bs;x.fillText(name.slice(0,7),0,2);x.restore()}}
+    x.restore()}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t}
+/* frayed bottom edge: alpha mask with a ragged hem */
+function r3frayMask(){if(R3D._fray)return R3D._fray;const c=document.createElement('canvas');c.width=256;c.height=256;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,256,256);x.fillStyle='#000';const r=new Rng(4);
+  x.beginPath();x.moveTo(0,256);for(let i=0;i<=64;i++){x.lineTo(i*4,256-4-r.next()*18)}x.lineTo(256,256);x.fill();const t=new THREE.CanvasTexture(c);t.userData.keep=1;return R3D._fray=t}
+/* open-front shell swept down the body; the front gap half-angle varies with height (V neck that closes at the belt) */
+function r3robeShell(prof,sx,sz,gapAt,segs=40,rad=56){
+  const y0=prof[0][1],y1=prof[prof.length-1][1];
+  const rAt=y=>{for(let i=1;i<prof.length;i++)if(y>=prof[i][1]){const [r0,a]=prof[i-1],[r1,b]=prof[i];const u=(a-y)/(a-b);return r0+(r1-r0)*u}return prof[prof.length-1][0]};
+  const pos=[],uv=[],idx=[];
+  for(let j=0;j<=segs;j++){const t=j/segs,y=y0+(y1-y0)*t,r=rAt(y),g=gapAt(y);
+    for(let k=0;k<=rad;k++){const ph=g+(Math.PI*2-2*g)*k/rad;pos.push(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz);uv.push(k/rad,1-t)}}
+  const W=rad+1;for(let j=0;j<segs;j++)for(let k=0;k<rad;k++){const a=j*W+k,b=a+W;idx.push(a,b,a+1,b,b+1,a+1)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+  return {geo:g,edge:(side)=>{const pts=[];for(let j=0;j<=segs;j+=2){const y=y0+(y1-y0)*j/segs,r=rAt(y)+.006,g=gapAt(y),ph=side>0?g:Math.PI*2-g;pts.push(new THREE.Vector3(Math.sin(ph)*r*sx,y,Math.cos(ph)*r*sz))}return pts},
+    hem:()=>{const pts=[];const r=rAt(y1)+.006,g=gapAt(y1);for(let k=0;k<=24;k++){const ph=g+(Math.PI*2-2*g)*k/24;pts.push(new THREE.Vector3(Math.sin(ph)*r*sx,y1+.01,Math.cos(ph)*r*sz))}return pts}}}
+function r3robe(L,P,m,parts){
+  const R=R3_ROBE[L.robe];if(!R)return;const {spine,headG,arms,al}=parts;
+  const base=L.robeCol||(L.robe==='gold'?'#f0be48':L.trunks),trim=L.robeTrim||(L.robe==='gold'?'#161616':L.trim);
+  const C=P.chest*m*R.bulk,TS=R3_TS;
+  const top=R.hood==='up'?.8:.79;
+  // the body shell hugs the torso (narrower than the shoulder joints) so the arms sit in the sleeves, not under the robe
+  const prof=R.sleeves?[[.17,top],[.3*C,.75],[.4*C,.7],[.43*C,.6],[.43*C,.36],[.4*C,.12],[.43*C,-.12],[.46*C,-.5],[.49*C,R.len]]
+                     :[[.17,top],[.32*C,.76],[.44*C,.7],[.46*C,.6],[.45*C,.36],[.43*C,.12],[.46*C,R.len]];
+  const gapAt=R.fray?(y=>R.gap*(y>.6?.85+(y-.6):1)):(y=>y>.14?.05+R.gap*Math.pow(Math.min(1,(y-.14)/.62),1.15):y<-.55?.05+.16*Math.min(1,(-.55-y)/.4):.05);
+  const sh=r3robeShell(prof,1.2,P.depth/.72*1.08,gapAt);sh.geo.scale(1,TS,1);
+  const tex=r3robeTex(base,trim,R.fab,L.band||'',R.fray);
+  const mat=r3cel(0xffffff,tex,true,R.fab==='terry'?1.15:.85);mat.side=THREE.DoubleSide;
+  if(R.fray){mat.alphaMap=r3frayMask();mat.alphaTest=.5;mat.transparent=false}
+  spine.add(r3mesh(sh.geo,mat,{olw:.0042}));
+  const trimM=r3cel(new THREE.Color(trim).getHex(),null,true,.5);
+  const tube=(pts,r)=>{const g=r3strand(pts.map(p=>new THREE.Vector3(p.x,p.y*TS,p.z)),r,r,40,8,true);return r3mesh(g,trimM,{olw:.0026})};
+  if(!R.fray){spine.add(tube(sh.edge(1),R.fab==='terry'?.016:.022));spine.add(tube(sh.edge(-1),R.fab==='terry'?.016:.022));spine.add(tube(sh.hem(),.014))}
+  // belt with a knot and two hanging ends
+  if(R.sleeves){const bw=.45*C*1.2,bd=.45*C*P.depth/.72*1.08;const bm=r3cel(new THREE.Color(R.fab==='terry'?base:trim).getHex(),null,true,.7);
+    const belt=r3mesh(new THREE.TorusGeometry(1,.035,8,48),bm,{olw:.003});belt.scale.set(bw+.01,bd+.01,1);belt.rotation.x=Math.PI/2;belt.position.y=.12*TS;spine.add(belt);
+    const kx=-.12,kz=bd+.02;const knot=r3mesh(new THREE.SphereGeometry(.045,12,10),bm,{olw:.003});knot.position.set(kx,.12*TS,kz);spine.add(knot);
+    for(const o of [-.03,.04]){spine.add(r3mesh(r3strand([new THREE.Vector3(kx,.12*TS,kz),new THREE.Vector3(kx+o,-.05,kz+.03),new THREE.Vector3(kx+o*1.6,-.24,kz+.02)],.024,.02,10,6,true),bm,{olw:.0026}))}}
+  // sleeves: upper on the shoulder group, lower on the elbow group, flared cuff with trim
+  if(R.sleeves){const smat=r3cel(0xffffff,tex,true,R.fab==='terry'?1.15:.85);const cuffM=r3cel(new THREE.Color(base).lerp(new THREE.Color(0xffffff),.22).getHex(),null,true,1.1);
+    for(const s of [-1,1]){const A=arms[s];const ak=m*P.arm*R.bulk;
+      const up=r3mesh(r3muscle(.5*al,(t,a)=>ak*(.16-.02*t),{seg:8,rad:22,cap:3,ck:.55}),smat,{olw:.004});up.position.y=.07;A.sh.add(up);
+      const lo=r3mesh(r3muscle(.36*al,(t,a)=>ak*(.13+.045*t*t),{seg:8,rad:22,cap:2,ck:.3}),smat,{olw:.004});lo.position.y=.04;A.elbow.add(lo);
+      const cuff=r3mesh(new THREE.TorusGeometry(ak*.17,R.fab==='terry'?.024:.016,6,24),R.fab==='terry'?cuffM:trimM,{olw:.002});cuff.rotation.x=Math.PI/2;cuff.position.y=-.32*al;A.elbow.add(cuff)}}
+  // hood: up (shell over the head, face open; low hoods shade the eyes) or down (rolled collar behind the neck)
+  if(R.hood==='up'){const hm=r3cel(0xffffff,tex,true,R.fab==='terry'?1.15:.85);hm.side=THREE.DoubleSide;if(R.fray){hm.alphaMap=r3frayMask();hm.alphaTest=.5}
+    const hg=new THREE.SphereGeometry(.3,40,24,Math.PI/2+.95,Math.PI*2-1.9,0,Math.PI*.7);const hood=r3mesh(hg,hm,{olw:.004});
+    hood.scale.set(.96,1.1,1.05);hood.position.set(0,.05,-.035);hood.rotation.x=L.hoodLow?.38:.18;headG.add(hood);
+    const cowl=r3mesh(new THREE.TorusGeometry(.2,.065,10,32,Math.PI*1.5),hm,{olw:.003});cowl.rotation.set(Math.PI/2,0,Math.PI*.25);cowl.position.set(0,.77*TS,-.02);cowl.scale.set(1.15,.9,1);spine.add(cowl)}
+  else{const col=r3mesh(new THREE.TorusGeometry(.19,.055,10,32,Math.PI*1.3),r3cel(new THREE.Color(trim).getHex(),null,true,.6),{olw:.003});col.rotation.set(Math.PI/2-.25,0,Math.PI*.35);col.position.set(0,.78*TS,-.03);col.scale.set(1.2,1,1);spine.add(col)}
+}
 /* ---------- boxer rig ---------- */
 function r3boxer(L,opt={}){
   const P=R3_BT[L.bt]||R3_BT.athletic,m=L.mass||1,TS=R3_TS;
@@ -2230,19 +2304,7 @@ function r3boxer(L,opt={}){
     const sole=r3mesh(new THREE.BoxGeometry(.15,.035,.3),r3matte(0x1d1517),{ol:false});sole.position.set(0,-.37*ll-.2,.06);knee.add(sole);
     legs[s]={hip,knee};
   }
-  if(opt.robe&&L.robe){
-    // walkout robe: open-front satin hanging from the shoulders over the arms, with a trim edge; hood or gold variants
-    const col=L.robe==='gold'?'#f0be48':L.trunks,edge=L.robe==='gold'?'#161616':L.trim;
-    const rc=document.createElement('canvas');rc.width=256;rc.height=256;const rx=rc.getContext('2d');rx.fillStyle=new THREE.Color(col).getStyle();rx.fillRect(0,0,256,256);
-    rx.fillStyle=new THREE.Color(edge).getStyle();rx.fillRect(0,0,12,256);rx.fillRect(244,0,12,256);rx.fillRect(0,240,256,16);
-    if(L.band){rx.save();rx.translate(128,92);rx.fillStyle=new THREE.Color(edge).getStyle();rx.font='bold 34px "Alfa Slab One",Georgia,serif';rx.textAlign='center';rx.fillText(L.band.slice(0,10),0,0);rx.restore()}
-    const rt=new THREE.CanvasTexture(rc);rt.colorSpace=THREE.SRGBColorSpace;
-    const C=P.chest*m;const prof=[[.16,.78],[.36*C,.74],[.47*C,.68],[.5*C,.56],[.5*C,.3],[.48*C,0],[.51*C,-.4],[.56*C,-.85],[.6*C,-1.05]];
-    const pts=prof.map(([r,y])=>new THREE.Vector2(r,y)).reverse();const rg=new THREE.LatheGeometry(pts,48,.42,Math.PI*2-.84);rg.scale(1.2,R3_TS,P.depth/.72*1.05);rg.computeVertexNormals();
-    const rm=r3cel(0xffffff,rt,true);rm.side=THREE.DoubleSide;spine.add(r3mesh(rg,rm,{olw:.004}));
-    const sm=r3cel(new THREE.Color(col).getHex(),null,true);for(const s of [-1,1]){const sl=r3mesh(r3muscle(.62*P.len,(t,a)=>(.15+.035*t)*m*P.arm,{seg:8,rad:20,cap:3,ck:.5}),sm,{olw:.004});sl.position.y=.06;arms[s].sh.add(sl)}
-    if(L.robe==='hood'){const hg=new THREE.SphereGeometry(.27,32,16,0,Math.PI*2,0,Math.PI*.62);const hm=r3cel(new THREE.Color(col).getHex(),null,true);hm.side=THREE.DoubleSide;const hood=r3mesh(hg,hm,{olw:.004});hood.rotation.x=-1.05;hood.position.set(0,.02,-.07);headG.add(hood)}
-  }
+  if(opt.robe&&L.robe)r3robe(L,P,m,{spine,headG,arms,al});
   r3outline(root);
   const hy0=pelvis.position.y+spine.position.y+headG.position.y+head.position.y;
   root.userData={pelvis,spine,chest,headG,head,arms,legs,P,legY,hy0};
@@ -2278,12 +2340,13 @@ function r3ik(arm,target,pole){
 /* a static guard pose for portraits and the creator */
 function r3guard(bx,kind='high'){
   const u=bx.userData;bx.updateWorldMatrix(true,true);
-  u.spine.rotation.set(.06,.12,0);u.headG.rotation.set(.06,-.08,0);
+  u.spine.rotation.set(kind==='hunch'?.2:.06,kind==='punch'?-.12:.12,0);u.headG.rotation.set(kind==='hunch'?.22:.06,kind==='punch'?.22:-.08,0);
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
   const hy=u.headG.getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
-  for(const s of [-1,1]){const t=kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
-    r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),new THREE.Vector3(s*.35,-1.5,.7).applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
+  const pose=(s)=>kind==='hunch'?new THREE.Vector3(s*.13,hy-.5,.66):kind==='punch'?(s===1?new THREE.Vector3(.22,hy-.14,.95):new THREE.Vector3(-.2,hy-.3,.4)):kind==='wave'?(s===1?new THREE.Vector3(.5,hy+.12,.22):new THREE.Vector3(-.38,hy-1.05,.12)):null;
+  for(const s of [-1,1]){const pz=pose(s);const t=pz?pz:kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
+    const pole=kind==='wave'&&s===1?new THREE.Vector3(1.6,.2,-.2):new THREE.Vector3(s*.35,-1.5,.7);r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),pole.applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
 }
 function r3dispose(o){o.traverse(m=>{if(m.geometry&&!m.geometry.userData.keep)m.geometry.dispose();const mats=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];for(const mt of mats){if(mt.userData&&mt.userData.keep)continue;for(const k of ['map','alphaMap'])if(mt[k]&&!mt[k].userData.keep)mt[k].dispose();mt.dispose()}})}
 /* ---------- arena ---------- */
@@ -2350,7 +2413,7 @@ const R3P={cache:new Map(),
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
-    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=mode==='full'?(o.robe?-.18:-.42):-.22;this.scene.add(bx);r3guard(bx,o.guard);
+    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=mode==='full'?(o.robe?(L.robe==='vest'?-.55:-.18):-.42):-.22;this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
     r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
     bx.updateWorldMatrix(true,true);const hp=bx.userData.headG.getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
