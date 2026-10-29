@@ -23,6 +23,36 @@ arm=(ax>.17)&(C[:,1]>=-.1)&(C[:,1]<.06)&~yellow&~glove
 head=(C[:,1]>.05)&~arm
 part=np.where(ground|arm|stub,-1,np.where(glove,np.where(C[:,0]>0,2,3),np.where(head,0,1)))  # 0 head 1 body 2 gloveL(+x) 3 gloveR(-x)
 print({n:int((part==k).sum()) for k,n in [(-1,'dropped'),(0,'head'),(1,'body'),(2,'gloveL'),(3,'gloveR')]})
+# cutting the arm tubes off the canister leaves holes in its sides (you would see the dark inside of the outline shell); close each
+# hole on the body with a fan around its centre
+from collections import defaultdict
+weld={};wid=np.zeros(len(P),int)
+for i,pp in enumerate(np.round(P,5)):wid[i]=weld.setdefault(tuple(pp),i)
+bt=np.where(part==1)[0];ec=defaultdict(int);own={}
+for t in bt:
+  a_,b_,c_=I[t]
+  for x,y in ((a_,b_),(b_,c_),(c_,a_)):wx,wy=wid[x],wid[y];ec[(min(wx,wy),max(wx,wy))]+=1;own[(wx,wy)]=(x,y)
+nxt={}
+for (wx,wy),(x,y) in own.items():
+  if ec[(min(wx,wy),max(wx,wy))]==1:nxt[wy]=(wx,x)
+seen=set();newT=[];newP=[];newUV=[]
+for st in list(nxt):
+  if st in seen:continue
+  loop=[];w=st
+  while w in nxt and w not in seen:seen.add(w);wx,x=nxt[w];loop.append(x);w=wx
+  if len(loop)<3 or len(loop)>120:continue
+  ctr=P[loop].mean(0)
+  if abs(ctr[0])<.1 or not(-.25<ctr[1]<.15):continue
+  # its own vertices, all on one canister-coloured texel from the front at the same height, so the patch is a flat fill
+  Cf=P[I].mean(1);fr=np.where((part==1)&(np.abs(Cf[:,0])<.03)&(Cf[:,2]>0)&(np.abs(Cf[:,1]-ctr[1])<.02))[0]
+  if not len(fr):continue
+  uvf=UV[I[fr[0]]].mean(0);base=len(P)+len(newP)
+  for v in loop:newP.append(P[v]);newUV.append(uvf)
+  newP.append(ctr);newUV.append(uvf);ci=base+len(loop)
+  for k in range(len(loop)):newT.append([base+k,base+(k+1)%len(loop),ci])
+if newT:
+  P=np.vstack([P,newP]);UV=np.vstack([UV,newUV]);I=np.vstack([I,np.array(newT,dtype=I.dtype)]);part=np.concatenate([part,np.ones(len(newT),int)])
+print('filled canister holes with',len(newT),'triangles from',len(newP),'loops')
 keep=part>=0;I2=I[keep];part2=part[keep];order=np.argsort(part2,kind='stable');I2=I2[order];part2=part2[order]
 used=np.unique(I2);remap=-np.ones(len(P),int);remap[used]=np.arange(len(used));I2=remap[I2];P2=P[used];UV2=UV[used]
 # scale: 2.45 tall in game units, base on y=0, centred in x/z
@@ -35,6 +65,19 @@ am=arm&(C[:,1]>-.05);sh={}
 for sgn,n in [(1,'L'),(-1,'R')]:
   m=am&(np.sign(C[:,0])==sgn);c=C[m];q=c[c[:,1]>np.percentile(c[:,1],70)].mean(0) if len(c) else np.array([.2*sgn,0,0])
   sh[n]=((q-[0,y0,0])*s).round(4).tolist()
+# the original arms hung against the canister and left dark shadow shapes painted on its sides; repaint those texels with the canister's
+# own colour at the same height (sampled from its front), so the live arms do not appear to have black shards behind them
+from PIL import ImageDraw
+body_t=np.where(part[:len(C)]==1)[0];Cb=C[body_t];lum=col[body_t]@[.299,.587,.114]
+side=(np.abs(Cb[:,0])>.08)&(Cb[:,1]>-.2)&(Cb[:,1]<.1)&(lum<70)
+front=(np.abs(Cb[:,0])<.06)&(Cb[:,2]>0)&(lum>70)
+d=ImageDraw.Draw(img);fixed=0
+for k in np.where(side)[0]:
+  ti=body_t[k];yk=Cb[k,1];ref=front&(np.abs(Cb[:,1]-yk)<.012)
+  if not ref.any():continue
+  c=tuple(int(v) for v in np.median(col[body_t[ref]],0));pts=[(float(UV[v,0]*TW),float(UV[v,1]*TH)) for v in I[ti]]
+  d.polygon(pts,fill=c);fixed+=1
+print('repainted shadow triangles',fixed)
 img=img.resize((1024,1024),Image.LANCZOS);buf=io.BytesIO();img.save(buf,'JPEG',quality=88);jpg=buf.getvalue()
 pos=P2.astype(np.float32).tobytes();uv=UV2.astype(np.float32).tobytes();idx=I2.astype(np.uint32).ravel().tobytes()
 def pad(b):return b+b'\0'*((4-len(b)%4)%4)

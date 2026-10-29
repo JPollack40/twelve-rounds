@@ -49,18 +49,32 @@ function r3duncan(L){
   root.updateMatrixWorld(true);body.bind(new THREE.Skeleton([W0,W1,W2]));
   const hb=r3partBox(M.parts.head);const neckY=hb.min.y;const headG=new THREE.Group();headG.position.y=neckY;core.add(headG);
   const headM=r3cel(0xffffff,M.tex,true,.9);headM.emissive=new THREE.Color(0);const head=r3mesh(M.parts.head,headM,{olw:.0042});head.position.y=-neckY;headG.add(head);
-  const arms={};const sh=M.extras.shoulders||{L:[.44,1.2,0],R:[-.44,1.2,0]};
-  for(const [h,s] of [['L',1],['R',-1]]){const g=M.parts['glove'+h],gb=r3partBox(g);const c=gb.getCenter(new THREE.Vector3()),top=gb.max.y;
+  // arms: a skinned conduit cable on shoulder, elbow and hand bones (bending at a ball joint midway), and the glove fixed to the hand
+  // bone with its cuff on the cable's end, so the two can never come apart. At rest the arm hangs straight down (the same convention the
+  // boxers' arms use), so the motion-capture and IK code drive these bones exactly as they drive a boxer's.
+  const arms={};const sh=M.extras.shoulders||{L:[.44,1.2,0],R:[-.44,1.2,0]},[l1,l2]=MC_DUN_SEG;
+  const tubeM=r3cel(0xffffff,r3conduitTex(),true,.8),ballM=r3cel(0x8a8a8a,null,true,.8);
+  root.updateMatrixWorld(true);
+  for(const [h,s] of [['L',1],['R',-1]]){const g=M.parts['glove'+h],S=new THREE.Vector3(...sh[h]);
     const gm=r3cel(0xffffff,M.tex,true,.9);gm.emissive=new THREE.Color(0);
-    // the glove part is a long cuff with the cable stub at its top: it pivots at the fist, and the cable meets the stub
-    const gf=r3duncanGloveFrame(g),glove=new THREE.Group();root.add(glove);const gmesh=r3mesh(g,gm,{olw:.004});gmesh.position.copy(gf.fist).negate();glove.add(gmesh);glove.position.copy(gf.fist);
-    const elbow=r3mesh(new THREE.SphereGeometry(.07,14,10),null,{olw:.003});root.add(elbow);
-    const shoulder=r3mesh(new THREE.SphereGeometry(.085,14,10),null,{olw:.003});shoulder.position.set(...sh[h]);core.add(shoulder);
-    arms[s]={glove,gm,rest:gf.fist.clone(),wrist:gf.Lg,cuff:gf.cuff,axis:gf.axis,Lg:gf.Lg,sh:new THREE.Vector3(...sh[h]),tube:null,elbow,shoulder,U:new THREE.Vector3(),F:new THREE.Vector3(),fk:false}}
-  const tubeM=r3cel(0xffffff,r3conduitTex(),true,.8);for(const s of [1,-1])arms[s].elbow.material=arms[s].shoulder.material=r3cel(0x8a8a8a,null,true,.8);
+    const shB=new THREE.Bone(),elB=new THREE.Bone(),hB=new THREE.Bone();shB.position.copy(S);core.add(shB);elB.position.y=-l1;shB.add(elB);hB.position.y=-l2;elB.add(hB);
+    const gf=r3duncanGloveFrame(g),cuffM=gf.cuff.clone().add(gf.fist),q0=r3mcAim(new THREE.Quaternion(),gf.axis,_mZ,_mDOWN,_mZ);
+    const gmesh=r3mesh(g,gm,{olw:.004});gmesh.quaternion.copy(q0);gmesh.position.copy(cuffM).applyQuaternion(q0).negate();hB.add(gmesh);
+    const fist=new THREE.Object3D();fist.position.copy(gf.fist).sub(cuffM).applyQuaternion(q0);hB.add(fist);
+    const shoulder=r3mesh(new THREE.SphereGeometry(.085,14,10),ballM,{olw:.003});shB.add(shoulder);
+    const elbow=r3mesh(new THREE.SphereGeometry(.07,14,10),ballM,{olw:.003});elB.add(elbow);
+    // the cable: a cylinder from the shoulder down past the cuff, weighted shoulder -> elbow -> hand with short blends at the joints
+    const Lt=l1+l2+.16,cg=new THREE.CylinderGeometry(.058,.058,Lt,10,30,true);cg.translate(S.x,S.y-Lt/2,S.z);
+    const n=cg.attributes.position.count,si=new Uint16Array(n*4),sw=new Float32Array(n*4);
+    for(let i=0;i<n;i++){const d=S.y-cg.attributes.position.getY(i),a=clamp((d-(l1-.06))/.12,0,1),b=clamp((d-(l1+l2-.03))/.06,0,1);
+      si.set([0,1,2,0],i*4);sw.set([1-a,a*(1-b),a*b,0],i*4)}
+    cg.setAttribute('skinIndex',new THREE.BufferAttribute(si,4));cg.setAttribute('skinWeight',new THREE.BufferAttribute(sw,4));
+    const cable=new THREE.SkinnedMesh(cg,tubeM);cable.castShadow=true;cable.frustumCulled=false;cable.userData.olw=.0032;root.add(cable);
+    root.updateMatrixWorld(true);cable.bind(new THREE.Skeleton([shB,elB,hB]));
+    arms[s]={sh:shB,elbow:elB,hand:hB,glove:fist,gm,S,L1:l1,L2:fist.position.clone().add(new THREE.Vector3(0,-l2,0)).length(),Lf:fist.position.length()}}
   r3outline(root);
-  root.userData={duncan:true,headM,core,waist:[W1,W2],headG,arms,legs:{},hy0:neckY+(hb.max.y-neckY)*.33,legY:0,tubeM,P:{}};
-  r3duncanTubes(root);return root}
+  root.userData={duncan:true,headM,core,waist:[W1,W2],headG,arms,legs:{},hy0:neckY+(hb.max.y-neckY)*.33,legY:0,P:{}};
+  r3duncanGuard(root,'down');return root}
 /* his skinned spring: weights fade from the base bone to the middle and top bones up the coil; everything above is the top bone */
 function r3duncanBodyGeo(M){if(M.dbody)return M.dbody;const g=new THREE.BufferGeometry(),pos=M.geo.attributes.position,n=pos.count;
   for(const k of ['position','uv','normal'])g.setAttribute(k,M.geo.attributes[k]);g.setIndex(M.parts.body.index);
@@ -76,37 +90,22 @@ function r3duncanGloveFrame(g){const p=g.attributes.position,ix=[...new Set(g.in
   for(const i of ix){const y=p.getY(i);y0=Math.min(y0,y);y1=Math.max(y1,y)}
   const avg=f=>{const a=new THREE.Vector3();let n=0;for(const i of ix){v.fromBufferAttribute(p,i);if(f(v)){a.add(v);n++}}return a.multiplyScalar(1/Math.max(1,n))};
   // the sleeve's own axis (top opening toward a slice lower down), which the cable continues; the fist hangs off it at an angle
-  const cuff=avg(q=>q.y>y1-.04),slice=avg(q=>q.y<y1-.14&&q.y>y1-.26),fist=avg(q=>q.y<y0+(y1-y0)*.42);
+  // centres of the opening and of a slice lower down are taken from their bounding boxes (the rim is ragged and unevenly meshed)
+  const ctr=f=>{const bb=new THREE.Box3();for(const i of ix){v.fromBufferAttribute(p,i);if(f(v))bb.expandByPoint(v)}return bb.getCenter(new THREE.Vector3())};
+  const cuff=ctr(q=>q.y>y1-.1),slice=ctr(q=>q.y<y1-.16&&q.y>y1-.28),fist=avg(q=>q.y<y0+(y1-y0)*.42);
   return {cuff:cuff.clone().sub(fist),fist,axis:slice.clone().sub(cuff).normalize(),Lg:cuff.distanceTo(fist)}}
 /* his body as a stack of discs in core space (spring, canister, valve head): elbows, gloves and cable are kept outside it */
-const MC_DUN_SPRING=[.14,.78],MC_DUN_SEG=[.36,.14],MC_DUN_BODY=[[0,.2,.33],[.2,.78,.23],[.78,1.34,.43],[1.34,2.5,.33]];
+const MC_DUN_SPRING=[.14,.78],MC_DUN_SEG=[.34,.3],MC_DUN_BODY=[[0,.2,.33],[.2,.78,.23],[.78,1.34,.43],[1.34,2.5,.33]];
 function r3duncanPush(p,m){for(const [y0,y1,r] of MC_DUN_BODY){if(p.y<y0-m*.5||p.y>y1+m*.5)continue;const dz=p.z+.03,d=Math.hypot(p.x,dz),need=r+m;
     if(d<need){if(d<1e-4){p.z=need-.03;return p}p.x*=need/d;p.z=dz*need/d-.03}}return p}
-/* the conduit arms: shoulder -> cable -> elbow joint -> cable -> glove cuff, the glove continuing the forearm out to the fist.
-   With motion capture the chain follows the clip's upper-arm and forearm directions (A.U, A.F) exactly like a boxer's arm; otherwise
-   the elbow is solved by two-bone IK to reach the fist target (glove.position). Then everything is pushed clear of his body. */
-const _dv=[0,1,2,3,4,5,6,7].map(()=>new THREE.Vector3()),_dm=[new THREE.Matrix4(),new THREE.Matrix4()];
-function r3duncanTubes(root){const u=root.userData;root.updateMatrixWorld(true);
-  const toCore=_dm[0].copy(u.core.matrixWorld).invert().multiply(root.matrixWorld),toRoot=_dm[1].copy(toCore).invert();
-  const [l1,l2]=MC_DUN_SEG,P=(v,m)=>r3duncanPush(v.applyMatrix4(toCore),m).applyMatrix4(toRoot);
-  for(const s of [1,-1]){const A=u.arms[s];
-    const S=_dv[0].copy(A.sh).applyMatrix4(toRoot),E=_dv[1],W=_dv[2],Fi=_dv[3],d=_dv[4];
-    if(A.fk){E.copy(S).addScaledVector(A.U,l1);d.copy(A.F)}
-    else{// reach the fist target with upper arm l1 and forearm l2+glove, elbow down and out
-      const T=_dv[5].copy(A.glove.position),dir=_dv[6].copy(T).sub(S),L2=l2+A.Lg*.9,dist=Math.min(dir.length(),(l1+L2)*.999);dir.normalize();
-      const pole=_dv[7].set(s*.45,-1,-.15),pp=pole.addScaledVector(dir,-pole.dot(dir)).normalize();const ca=clamp((l1*l1+dist*dist-L2*L2)/(2*l1*dist),-1,1);
-      E.copy(S).addScaledVector(dir,ca*l1).addScaledVector(pp,Math.sqrt(1-ca*ca)*l1);d.copy(T).sub(E).normalize()}
-    // the elbow clears the body; the glove (cuff to fist, rigid) clears it as one piece
-    // the glove's sleeve runs along the forearm with its opening on the cable's end; the fist sits where that puts it
-    const th=_dv[7].set(-s*.6,.6,-.4);r3mcAim(A.glove.quaternion,A.axis,_mZ,d,th);
-    P(E,.08);W.copy(E).addScaledVector(d,l2);Fi.copy(A.cuff).applyQuaternion(A.glove.quaternion).negate().add(W);
-    for(let it=0;it<2;it++){const w0=_dv[5].copy(W),f0=_dv[6].copy(Fi);P(w0,.08);P(f0,.19);w0.sub(W);f0.sub(Fi);const dl=w0.lengthSq()>f0.lengthSq()?w0:f0;if(dl.lengthSq()<1e-8)break;W.add(dl);Fi.add(dl)}
-    A.glove.position.copy(Fi);
-    A.elbow.position.copy(E);
-    const m1=P(_dv[5].copy(S).lerp(E,.5),.06),m2=P(_dv[6].copy(E).lerp(W,.5),.06),Wi=W.clone().addScaledVector(d,.16);
-    const g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3([S.clone(),m1.clone(),E.clone(),m2.clone(),W.clone(),Wi],false,'centripetal'),28,.058,10,false);
-    if(!A.tube){A.tube=r3mesh(g,u.tubeM,{olw:.0032});A.tubeOL=new THREE.Mesh(g,r3outMat(.0032));A.tubeOL.userData.isOL=true;A.tube.add(A.tubeOL);root.add(A.tube)}
-    else{A.tube.geometry.dispose();A.tube.geometry=g;A.tubeOL.geometry=g}}}
+/* the arms are skinned now: nothing to rebuild per frame (kept for callers) */
+function r3duncanTubes(root){root.updateMatrixWorld(true)}
+/* classic posing and portraits: reach a fist target (root space) by two-bone IK, elbow down and out, the glove continuing the forearm */
+const _dv=[0,1,2].map(()=>new THREE.Vector3());
+function r3duncanReach(root,s,T){const u=root.userData,A=u.arms[s];root.updateMatrixWorld(true);
+  const tw=_dv[0].copy(T).applyMatrix4(root.matrixWorld),sw=A.sh.getWorldPosition(_dv[1]);
+  const pole=_dv[2].set(s*.6,-1.2,-.3).applyQuaternion(root.getWorldQuaternion(_mq[5])).add(sw);
+  const arm={sh:A.sh,elbow:A.elbow,L1:A.L1,L2:A.L2};r3ik(arm,tw,pole);A.hand.quaternion.identity();root.updateMatrixWorld(true)}
 /* fight pose: same inputs as the boxer (raw 2D pose P, opponent state) */
 function r3duncanPose(R,P,glow){const f=R.f,o=f.o,root=R.opp,u=root.userData,t=f.time;
   const raw=P._raw||P,lean=raw.lean||0,cr=raw.crouch||0,tw=raw.twist||0,ht=raw.headTilt||0,rot=raw.rot||0,st=o.state,k=o.dur?clamp(o.t/o.dur,0,1):0;
@@ -119,14 +118,14 @@ function r3duncanPose(R,P,glow){const f=R.f,o=f.o,root=R.opp,u=root.userData,t=f
   u.headG.quaternion.identity();
   let fwd=0;if(st==='wind')fwd=-5*k;else if(st==='act')fwd=14;else if(st==='rec')fwd=14*(1-k);if(st==='stagger')fwd=-14;if(st==='clinch')fwd=12;
   const wob=o.hurt>0&&st!=='down'?Math.sin(t*9)*.08:0;
-  r3duncanBend(u,_dq.setFromEuler(_de.set(fwd*Math.PI/180*.8,tw*.9,-lean*.5+wob)),cr*.3+Math.sin(t*3.1)*.02);for(const s of [1,-1])u.arms[s].fk=false;
+  r3duncanBend(u,_dq.setFromEuler(_de.set(fwd*Math.PI/180*.8,tw*.9,-lean*.5+wob)),cr*.3+Math.sin(t*3.1)*.02);
   u.headG.rotation.set((o.hurt>0?.12:0)+Math.sin(t*2.3)*.03,0,-ht+wob*1.5);
   if(st==='down'){root.rotation.x=-rot*.75;root.position.y=.1+rot*.05}else root.rotation.set(0,0,0);
   root.updateMatrixWorld(true);
   for(const h of ['L','R']){const s=h==='L'?1:-1,A=u.arms[s],g2=h==='L'?raw.lg:raw.rg;if(!g2)continue;
     const T=new THREE.Vector3(g2[0]*.0056,-g2[1]*.0066+(u.hy0-2.22),.22+(g2[2]||0)*.78);
     if(st==='down')T.set(s*.6,.5,.4);
-    A.glove.position.copy(T);const up=clamp((T.y-A.rest.y)/.6,0,1);A.glove.rotation.set(-1.25*up-(g2[2]||0)*.5,s*.15,s*-.1);
+    r3duncanReach(root,s,T);
     const gw=glow&&glow[h]||0;A.gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');A.gm.emissiveIntensity=gw*.9}
   // wear: the valve head scuffs and darkens with damage
   const d=P.dmg||{},wear=clamp(((d.swellL||0)+(d.swellR||0)+(d.cheek||0))*.22+(P.cut||0)/220,0,.55);
@@ -134,7 +133,7 @@ function r3duncanPose(R,P,glow){const f=R.f,o=f.o,root=R.opp,u=root.userData,t=f
   r3duncanTubes(root)}
 /* portrait pose (guard kinds as for boxers: high, mid, low, down, punch, wave) */
 function r3duncanGuard(bx,kind='high'){const u=bx.userData;const hy=u.hy0;
-  for(const s of [1,-1])u.arms[s].fk=false;
-  const tgt=s=>kind==='down'?null:kind==='punch'&&s===1?new THREE.Vector3(.5,hy-.1,.9):kind==='wave'&&s===1?new THREE.Vector3(.6,hy+.35,.15):kind==='low'?new THREE.Vector3(s*.32,hy-.55,.35):kind==='mid'?new THREE.Vector3(s*.26,hy-.42,.4):new THREE.Vector3(s*.24,hy-.2,.35);
-  for(const s of [1,-1]){const A=u.arms[s],T=tgt(s);if(T){A.glove.position.copy(T);A.glove.rotation.set(-1.15,s*.15,s*-.1)}else{A.glove.position.copy(A.rest);A.glove.rotation.set(0,0,0)}}
-  r3duncanBend(u,_dq.setFromEuler(_de.set(.04,kind==='punch'?-.15:.08,0)),0);r3duncanTubes(bx)}
+  r3duncanBend(u,_dq.setFromEuler(_de.set(.04,kind==='punch'?-.15:.08,0)),0);
+  const tgt=s=>kind==='down'?null:kind==='punch'&&s===1?new THREE.Vector3(.55,hy-.15,1.1):kind==='wave'&&s===1?new THREE.Vector3(.7,hy+.4,.25):kind==='low'?new THREE.Vector3(s*.42,hy-.65,.6):kind==='mid'?new THREE.Vector3(s*.34,hy-.45,.65):new THREE.Vector3(s*.32,hy-.2,.6);
+  for(const s of [1,-1]){const A=u.arms[s],T=tgt(s);if(T)r3duncanReach(bx,s,T);else{A.sh.quaternion.setFromEuler(_de.set(0,0,s*.12));A.elbow.quaternion.setFromEuler(_de.set(-.25,0,0));A.hand.quaternion.identity()}}
+  bx.updateMatrixWorld(true)}

@@ -148,7 +148,17 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const e=_mde.setFromQuaternion(Ds,'YXZ');const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
   r3duncanBend(u,_mq[0].setFromEuler(_mde.set(clamp(e.x*1.05,-.6,.6),clamp(e.y*.6,-.45,.45),clamp(e.z*.85,-.4,.4),'YXZ')),dip);
   const eh=_mde.setFromQuaternion(_mq[3].copy(Ds).invert().multiply(Dd),'YXZ');u.headG.quaternion.setFromEuler(_mde.set(clamp(eh.x*.7,-.3,.3),clamp(eh.y*.7,-.5,.5),clamp(eh.z*.7,-.3,.3),'YXZ'));
-  // his arms take the clip's upper-arm and forearm directions directly (the punching arm keeps its aim at you)
-  const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9;
-  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s];A.U.set(P[15+b*3],P[16+b*3],P[17+b*3]);A.F.set(P[18+b*3],P[19+b*3],P[20+b*3]);
-    if(b!==keep){A.U.applyAxisAngle(Y,o.yaw||0);A.F.applyAxisAngle(Y,o.yaw||0)}A.fk=true}}
+  // arms: the clip's upper arm, forearm and hand directions in his chest's frame (the punching arm keeps its aim at you), nudged so the
+  // elbow and fist stay clear of his body, then aimed with the same bend-plane rule as the boxers' arms
+  root.updateMatrixWorld(true);const qc=u.core.getWorldQuaternion(_mq[3]).premultiply(root.getWorldQuaternion(_mq[4]).invert()),iqc=_mq[4].copy(qc).invert();
+  const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9,[l1,l2]=MC_DUN_SEG;
+  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s],U=_mv[0],F=_mv[1],H=_mv[2];
+    for(const [v,k] of [[U,0],[F,1],[H,2]]){v.set(P[15+(b+k)*3],P[16+(b+k)*3],P[17+(b+k)*3]);if(b!==keep)v.applyAxisAngle(Y,o.yaw||0);v.applyQuaternion(iqc)}
+    const E=_mv[3].copy(A.S).addScaledVector(U,l1);r3duncanPush(E,.09);U.copy(E).sub(A.S).normalize();E.copy(A.S).addScaledVector(U,l1);
+    const G=_mv[4].copy(E).addScaledVector(F,l2+A.Lf*.85);r3duncanPush(G,.2);F.copy(G).sub(E).normalize();
+    const bend=r3mcPerp(_mv[5],F,U,_mZ);r3mcAim(A.sh.quaternion,_mDOWN,_mZ,U,bend);
+    const ish=_mq[0].copy(A.sh.quaternion).invert(),zE=r3mcPerp(_mv[6],_mv[3].copy(U).negate(),F,_mv[4].copy(_mZ).applyQuaternion(A.sh.quaternion));
+    r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,F.clone().applyQuaternion(ish),zE.applyQuaternion(ish));
+    const iel=_mq[0].copy(A.sh.quaternion).multiply(A.elbow.quaternion).invert();
+    r3mcAim(A.hand.quaternion,_mDOWN,_mZ,H.applyQuaternion(iel),_mZ).slerp(_mq[1].identity(),.6)}
+  root.updateMatrixWorld(true)}
