@@ -134,3 +134,9 @@ The War (Hagler vs. Hearns: a top-10 slugger when you are top 8; a stoppage insi
 (Leonard vs. Hagler: after a comeback, a title shot against a stronger champion, double purse) and The Money Fight
 (Mayweather vs. Pacquiao: you and a division rival both in the pound-for-pound top 10, triple purse). Chapters now carry a priority,
 so the once-only Super Fight and the Money Fight are offered ahead of the others when several are eligible.
+
+## Game plans
+On fight night pick a plan: Work the body (a third of landed punches to the body), Out-box them (jabs at least 45% of punches and
+landing more than them), Pressure (throwing 25% more) or Counter-punch (three counters a round). Your corner judges every round from
+your own numbers and shows it between rounds; on plan, the plan's punches do 6% more damage next round. Sticking to it in 60% of
+rounds pays +120 XP. Plan progress survives a resumed fight.

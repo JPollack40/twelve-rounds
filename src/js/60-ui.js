@@ -363,7 +363,7 @@ SCR.fightnight=()=>{
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
     </div>
-    ${pressHTML(n,f,o)}${weighinHTML(n,f,o)}
+    ${pressHTML(n,f,o)}${weighinHTML(n,f,o)}${planHTML(n,f,o)}
     <button class="btn primary wide" data-act="walk" style="min-height:60px;font-size:20px">Walk to the ring</button>
     ${o.amateur||o.title||o.chapter?'':`<button class="btn ghost" data-act="simfight">Simulate fight (60% XP)</button>`}
   </div></div>`;
@@ -395,6 +395,9 @@ const FACEOFF={
   loose:{name:'Stay loose',fx:'Smile, shake hands, save energy: +4% stamina on fight night. The bad blood cools a little.'},
   shove:{name:'Shove them',fx:'Hype +5 and one special bar charged, but they come out much angrier, the bad blood boils, and the commission may fine you.'},
 };
+function planHTML(n,f,o){
+  const cur=n.plan;return `<div class="card col"><span class="lbl">Game plan</span><p class="muted" style="margin:2px 0 4px;font-size:13.5px">Your corner checks it every round. On plan: +6% damage on the plan's punches the next round, and +120 XP if you stick to it most of the fight.</p>
+    <div class="col" style="gap:6px">${Object.entries(PLANS).map(([k,P])=>`<button class="arch${cur===k?' on':''}" data-act="plan" data-k="${k}"><b>${esc(P.name)}${cur===k?' ✔':''}</b><small>${esc(P.desc)}</small></button>`).join('')}</div></div>`}
 function weighinHTML(n,f,o){
   if(o.amateur||!G||G.phase!=='pro')return '';const wi=weightInfo(),cut=wi&&wi.miss>0;
   const done=n.faceoff&&(!cut||n.cut);
@@ -451,7 +454,7 @@ function startFight(sim,resume){
   const rob=o.terms==='home'?0:(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
-    edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
+    edge:Object.keys(n.edge||{}).length,press:n.press||null,plan:n.plan||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
     seed:resume?resume.seed:undefined,resume:resume||null,announce:!o.amateur&&!resume&&!sim?walkout(o,f):null,
     onCheckpoint:cp=>{G.fightSave=Object.assign(cp,{offerId:o.id});Save.write()},
     onEnd:res=>afterFight(o,res)});
@@ -789,6 +792,7 @@ const ACT={
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },
   camploc(el){const n=G.next;if(!n||n.loc||n.sessions.length)return;const k=el.dataset.k,c=campLocCost(k,n.offer);if(c>B().money)return;B().money-=c;n.loc=k;if(c)news(`You set up camp: ${CAMPLOC[k].name} (${money(c)}).`);Save.write();Sfx.click();UI.render()},
+  plan(el){const n=G.next;if(!n)return;n.plan=n.plan===el.dataset.k?null:el.dataset.k;Save.write();Sfx.click();UI.render()},
   weighin(el){const n=G.next;if(!n)return;const k=el.dataset.k,v=el.dataset.v,f=G.world.f[n.offer.oppId];
     if(k==='cut'&&!n.cut)n.cut=v;
     if(k==='faceoff'&&!n.faceoff){n.faceoff=v;

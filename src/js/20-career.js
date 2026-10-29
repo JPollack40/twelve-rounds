@@ -684,6 +684,7 @@ function applyResult(o,res){
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
   if(pro)b.peakOvr=Math.max(b.peakOvr||0,playerOvr());
+  if(res.plan&&res.plan.of>=2){const r=res.plan.on/res.plan.of,PL=PLANS[res.plan.k];if(r>=.6){addXP(120);out.lines.push(`Stuck to the game plan (${PL.name}, ${res.plan.on} of ${res.plan.of} rounds): +120 XP`)}else out.lines.push(`Game plan (${PL.name}) followed in ${res.plan.on} of ${res.plan.of} rounds.`)}
   if(pro&&o.tour!=null)tourAfter(o,win,out);
   if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
   if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}

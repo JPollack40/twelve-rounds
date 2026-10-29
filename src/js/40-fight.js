@@ -24,6 +24,17 @@ const CALLS={
   dq:{p:3,l:['That\'s it! {O} is disqualified!']},
   clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.']},
 };
+/* game plans: chosen on fight night, judged each round from your own numbers. On plan = +6% damage on the plan's punches next round */
+const PLANS={
+  body:{name:'Work the body',desc:'Break them down downstairs. On plan when a third of what you land goes to the body.',
+    judge:(r)=>r.landed>=4&&r.body/r.landed>=.3,why:r=>`${r.body} of ${r.landed} landed to the body`,match:pu=>!!pu.body},
+  outbox:{name:'Out-box them',desc:'Jab, move, win on the outside. On plan when jabs are almost half your punches and you land more than they do.',
+    judge:(r,o)=>r.thrown>=6&&r.jabT/r.thrown>=.45&&r.landed>=o.landed,why:(r,o)=>`${Math.round(r.thrown?r.jabT/r.thrown*100:0)}% jabs, landed ${r.landed} to their ${o.landed}`,match:pu=>pu.type==='jab'},
+  pressure:{name:'Pressure',desc:'Walk them down and outwork them. On plan when you throw a quarter more than they do.',
+    judge:(r,o)=>r.thrown>=8&&r.thrown>=o.thrown*1.25,why:(r,o)=>`threw ${r.thrown} to their ${o.thrown}`,match:()=>true},
+  counter:{name:'Counter-punch',desc:'Make them miss, make them pay. On plan with three counters landed in the round.',
+    judge:r=>r.cnt>=3,why:r=>`${r.cnt} counters landed`,match:(pu,fl)=>!!(fl&&fl.counter)},
+};
 const TELL_COL={jab:'#ffe58f',cross:'#ffb347',hook:'#ff7a2a',upper:'#ff3434'};
 const STEP=1/120;
 
@@ -62,6 +73,7 @@ class Fight{
     this.p=mkC(cfg.p,'p');this.o=mkC(cfg.o,'o');this.p.foe=this.o;this.o.foe=this.p;this.o.sway=rand(0,6);
     this.round=1;this.clock=cfg.roundLen;this.phase='intro';this.phaseT=0;this.time=0;this.acc=0;this.stop=0;this.flashSil=0;
     this.fx=[];this.parts=[];this.texts=[];this.shake=0;this.flash=0;this.slow=0;this.paused=false;
+    this.pr={jabT:0,body:0,cnt:0};this.planOn=false;this.planRounds=0;this.planNote='';
     this.cards=[[0,0],[0,0],[0,0]];this.roundCards=[];this.hitBy={};this.roundStats=[];this.rLand={};this.adjustNotes=[];
     const rob=Math.max(0,(cfg.robbery||0)-(cfg.press==='respect'?.15:0));
     this.judges=[0,1,2].map(()=>({agg:rand(-.35,.35),noise:.07+rob*.12,lean:rob?rand(0,rob*.18):0}));
@@ -233,7 +245,7 @@ class Fight{
     const cost=P.sta*(1-(c.m.cost||0))*(c.side==='o'?.9:1)*(1+(c.rep||0)*.3);
     c.sta=Math.max(0,c.sta-cost);
     c.pu={type,body,opts};c.state='wind';c.t=0;c.dur=w;c.flashed=false;
-    c.stats.thrown++;c.rs.thrown++;if(type==='jab')c.stats.jabT++;else c.stats.powT++;
+    c.stats.thrown++;c.rs.thrown++;if(type==='jab')c.stats.jabT++;else c.stats.powT++;if(c.side==='p'&&type==='jab')this.pr.jabT++;
     if(c.side==='p')this.aiReact(c.pu,w);
     else{
       this.tell={type,body,dur:w,start:this.time,inputs:[],quick:!!(opts.quick||opts.follow||opts.fast),res:null};
@@ -322,6 +334,7 @@ class Fight{
     if(a.side==='p'&&a.rep)dm*=Math.max(.55,1-a.rep*.12);
     if(pu.type==='hook')dm*=this.bmul(a,'hookDmg');
     if(pu.body)dm*=(1+(a.m.bodyDmg||0))*this.bmul(a,'bodyDmg');
+    if(a.side==='p'&&this.planOn&&PLANS[this.cfg.plan]?.match(pu,flags))dm*=1.06;
     dm*=a.sta<20?.6:a.sta<40?.82:1;
     if(o.mult)dm*=o.mult;
     if(flags.counter)dm*=1.45*(1+(a.m.counter||0));else if(flags.open)dm*=1.2;
@@ -347,7 +360,7 @@ class Fight{
     else{d.hp-=dm;d.maxHp=Math.max(28,d.maxHp-dm*.15);
       if(d.side==='o'){const k=dm*.045;if(P.kind==='upper')d.dmg.cheek+=k*1.2;else if(side==='L')d.dmg.swellL+=k;else d.dmg.swellR+=k;d.dmg.cheek+=k*.4}}
     d.dmgTaken+=dm;d.hits++;
-    if(a.side==='p'){const k=pu.body?'body':pu.type;this.rLand[k]=(this.rLand[k]||0)+1;this.call(flags.counter&&dm>2?'counter':pu.body&&dm>2.5?'body':pu.type!=='jab'&&dm>=3?'big':'',{t:pu.type})}
+    if(a.side==='p'){if(pu.body)this.pr.body++;if(flags.counter)this.pr.cnt++;const k=pu.body?'body':pu.type;this.rLand[k]=(this.rLand[k]||0)+1;this.call(flags.counter&&dm>2?'counter':pu.body&&dm>2.5?'body':pu.type!=='jab'&&dm>=3?'big':'',{t:pu.type})}
     else if(pu.type!=='jab'&&dm>=3.6)this.call('ohit',{t:pu.type});
     a.stats.landed++;a.rs.landed++;if(pu.type==='jab')a.stats.jabL++;else{a.stats.powL++;a.rs.pow++}if(pu.body)a.stats.bodyL++;
     a.stats.dmg+=dm;a.rs.score+=P.score+dm*.38;
@@ -590,6 +603,8 @@ class Fight{
     this.roundCards.push(rc);this.roundStats.push({p:{l:P.landed,t:P.thrown,pw:P.pow,kd:P.kd,blk:(P.blockT||0)/this.cfg.roundLen},o:{l:O.landed,t:O.thrown,pw:O.pow,kd:O.kd,blk:(O.blockT||0)/this.cfg.roundLen},rc});
     this.log({ev:'round',cards:rc,p:{l:P.landed,t:P.thrown},o:{l:O.landed,t:O.thrown},php:+this.p.hp.toFixed(1),ohp:+this.o.hp.toFixed(1)});
     this.adjustNotes=this.round<this.cfg.rounds?this.oppAdjust():[];this.rLand={};
+    {const PL=PLANS[this.cfg.plan];if(PL){const r={landed:P.landed,thrown:P.thrown,jabT:this.pr.jabT,body:this.pr.body,cnt:this.pr.cnt},oo={landed:O.landed,thrown:O.thrown};
+      this.planOn=PL.judge(r,oo);if(this.planOn)this.planRounds++;this.planNote=`${PL.name}: ${this.planOn?'on plan':'off plan'} (${PL.why(r,oo)}).`}this.pr={jabT:0,body:0,cnt:0}}
     this.p.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};this.o.rs={score:0,landed:0,thrown:0,pow:0,kd:0,kdd:0,ded:0};
     this.p.kd=0;this.o.kd=0;
   }
@@ -608,6 +623,7 @@ class Fight{
     this.releaseAll();
     const elapsed=this.cfg.roundLen-this.clock;
     const tScaled=Math.round(elapsed/this.cfg.roundLen*180);
+    if(PLANS[this.cfg.plan])this.res.plan={k:this.cfg.plan,on:this.planRounds,of:this.roundStats.length};
     const rsx=this.roundStats.map(r=>({p:{l:r.p.l,t:r.p.t},o:{l:r.o.l,t:r.o.t}}));if(rsx.length<this.round&&this.p.rs)rsx.push({p:{l:this.p.rs.landed||0,t:this.p.rs.thrown||0},o:{l:this.o.rs.landed||0,t:this.o.rs.thrown||0},partial:true});
     Object.assign(this.res,{winner,method,round:this.round,roundStats:rsx,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,hitBy:Object.assign({},this.hitBy),
       stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut,note});
@@ -688,6 +704,7 @@ class Fight{
       <div class="row sp"><div class="kicker">Between rounds · ${this.round} of ${this.cfg.rounds} done</div><span class="pill">${esc(this.cfg.trainerName||'Your corner')}</span></div>
       ${this.roundBox()}
       ${this.adjustNotes&&this.adjustNotes.length?`<div class="card flat" style="padding:8px 10px;border-color:var(--gold)"><span class="lbl">They're adjusting</span><div style="font-size:14px;margin-top:3px">${this.adjustNotes.map(esc).join('<br>')}</div></div>`:''}
+      ${this.planNote?`<div class="card flat" style="padding:8px 10px;border-color:${this.planOn?'var(--gold)':'var(--line)'}"><span class="lbl">Game plan</span><div style="font-size:14px;margin-top:3px">${this.planOn?'✔':'✘'} ${esc(this.planNote)} ${this.planOn?'Keep it up: +6% on those punches next round.':'"Get back to the plan!"'}</div></div>`:''}
       <div class="quote">${esc(cardLine)}<br>${esc(tips.slice(0,cq>=3?2:1).map(t=>'"'+t+'"').join(' '))}</div>
       <div class="grid2" style="gap:8px">${opts.map(o=>`<button class="copt${o[0]===this.cornerPick?' on':''}" data-c="${o[0]}"><b>${o[1]}</b><small>${o[2]}</small></button>`).join('')}</div>
       <div class="row"><button class="btn primary grow" id="nextRd">Round ${this.round+1}</button><button class="btn ghost sm" id="stool">${this.cfg.practice||this.cfg.sparring?'End session':'Retire on stool'}</button></div>
@@ -756,8 +773,8 @@ class Fight{
   }
   /* round-start checkpoint so an interrupted career fight can pick up where it left off */
   checkpoint(){const pk=c=>({hp:c.hp,maxHp:c.maxHp,sta:c.sta,maxSta:c.maxSta,cut:c.cut,meter:c.meter,kdTotal:c.kdTotal,kd:c.kd,dmg:deep(c.dmg),stats:deep(c.stats),hits:c.hits,clinches:c.clinches});
-    return {seed:this.seed,round:this.round,rng:this.rng.s,jrng:this.jrng.s,cards:deep(this.cards),roundCards:deep(this.roundCards),roundStats:deep(this.roundStats),hitBy:deep(this.hitBy),p:pk(this.p),o:pk(this.o),oai:deep(this.o.ai),time:this.time}}
-  restore(cp){this.round=cp.round;this.rng.s=cp.rng;this.jrng.s=cp.jrng;this.cards=deep(cp.cards);this.roundCards=deep(cp.roundCards);this.roundStats=deep(cp.roundStats||[]);this.hitBy=deep(cp.hitBy||{});
+    return {planRounds:this.planRounds,planOn:this.planOn,planNote:this.planNote,seed:this.seed,round:this.round,rng:this.rng.s,jrng:this.jrng.s,cards:deep(this.cards),roundCards:deep(this.roundCards),roundStats:deep(this.roundStats),hitBy:deep(this.hitBy),p:pk(this.p),o:pk(this.o),oai:deep(this.o.ai),time:this.time}}
+  restore(cp){this.planRounds=cp.planRounds||0;this.planOn=!!cp.planOn;this.planNote=cp.planNote||'';this.round=cp.round;this.rng.s=cp.rng;this.jrng.s=cp.jrng;this.cards=deep(cp.cards);this.roundCards=deep(cp.roundCards);this.roundStats=deep(cp.roundStats||[]);this.hitBy=deep(cp.hitBy||{});
     Object.assign(this.p,deep(cp.p));Object.assign(this.o,deep(cp.o));this.o.ai=deep(cp.oai);this.time=cp.time||0;this.introNote=cp.round>1?`Resumed at round ${cp.round}`:null;this.resumed=true}
   /* ring announcer: a short, skippable introduction before the opening bell */
   announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
