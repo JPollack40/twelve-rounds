@@ -95,3 +95,10 @@ weight, choose dry out hard (miss chance x0.3, -8% stamina, -3 chin), steady, or
 stare down (one special bar charged; they are a little more aggressive), stay loose (+4% stamina, bad blood cools), or shove (hype +5,
 a bar charged, much angrier opponent, bad blood boils, 30% chance of a 5% fine). Opponent stat spreads are now seeded per fighter, so
 the tale of the tape no longer changes between screens.
+
+## Alumni legends
+Retiring at Champion tier or better (legacy 150+) turns your boxer into a legend for future careers in the same circuit
+(`makeAlum`, stored in `tr_alumni`, up to 12). They keep your look and gear, style, stance, reach and first equipped ability, at their
+peak rating +2 (82–95), with a signature combination from their style and a weakness from their lowest stat. Each career snapshots
+the alumni it was created with (`G.alumni`), so older saves are unaffected; they also appear in the Legends gallery with an
+exhibition button. The daily challenge only draws from the built-in legends, so it stays the same for everyone.

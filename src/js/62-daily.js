@@ -10,7 +10,7 @@ const DAILY_TWISTS=[
   {k:'hurt',name:'Short notice',desc:'You took the fight on two days\' notice: you start at 70% health.'},
   {k:'sprint',name:'Two-round sprint',desc:'Only two rounds. Bank them early.',rounds:2},
 ];
-function dailySpec(n=dailyNo()){const r=new Rng(hashStr('daily'+n));const L=LEGENDS[Math.floor(r.next()*LEGENDS.length)];
+function dailySpec(n=dailyNo()){const r=new Rng(hashStr('daily'+n));const L=BASE_LEGENDS[Math.floor(r.next()*BASE_LEGENDS.length)];
   const tw=DAILY_TWISTS[Math.floor(r.next()*DAILY_TWISTS.length)];return {n,L,tw,seed:hashStr('dseed'+n)>>>0,rounds:tw.rounds||4}}
 function dailyState(){return Object.assign({best:{},streak:0,lastWin:0,wins:0,played:0},Store.get('tr_daily')||{})}
 /* the legend as a fight opponent, built outside any career (a throwaway world in the legend's circuit) */
@@ -63,8 +63,8 @@ SCR.legends=()=>{
   const circ=UI.lgC||(G&&G.circuit)||'m';const list=LEGENDS.filter(l=>(l.w?'w':'m')===circ);const beaten=G&&G.boxer?B().legendsBeaten:[];
   const cards=list.map(l=>{const ab=AB[l.ab];return `<div class="card col" style="gap:6px"><div class="slot"><img data-lg="${l.id}" alt="" style="width:72px;height:72px"><div class="grow">
       <b class="ui" style="font-size:17px;text-transform:uppercase;letter-spacing:.03em">${esc(l.first)} ${esc(l.last)}</b><div class="goldt" style="font-size:13.5px">“${esc(l.nick)}”</div>
-      <div class="muted" style="font-size:12.5px">${DIVS[l.div].name} · ${ARCH[l.arch].name}${l.southpaw?' · Southpaw':''} · ${esc(l.home)}</div></div>${beaten.includes(l.id)?'<span class="pill gold">Beaten</span>':''}</div>
-    <div class="dim" style="font-size:12.5px">Inspired by ${esc(l.homage)}</div>
+      <div class="muted" style="font-size:12.5px">${DIVS[l.div].name} · ${ARCH[l.arch].name}${l.southpaw?' · Southpaw':''} · ${esc(l.home)}</div></div>${beaten.includes(l.id)?'<span class="pill gold">Beaten</span>':''}${l.alum?'<span class="pill">Your alumni</span>':''}</div>
+    <div class="dim" style="font-size:12.5px">${l.alum?esc(l.homage):'Inspired by '+esc(l.homage)}</div>
     <div style="font-size:13.5px">${esc(l.ai.scout)}</div>
     <div style="font-size:13px"><b class="goldt">${esc(ab.name)}:</b> ${esc(ab.desc)}</div>
     <button class="btn sm" data-act="exhib" data-id="${l.id}" style="align-self:flex-start">Exhibition fight</button></div>`}).join('');

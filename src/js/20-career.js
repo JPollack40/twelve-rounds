@@ -62,7 +62,7 @@ function genWorld(){
   for(let d=0;d<8;d++){
     const ids=[];
     const add=f=>{W.f[f.id]=f;ids.push(f.id)};
-    LEGENDS.filter(l=>l.div===d&&inCircuit(l)).forEach(l=>add(legendFighter(l)));
+    LEGENDS.filter(l=>l.div===d&&inCircuit(l)&&(!l.alum||(G.alumni||[]).some(a=>a.id===l.id))).forEach(l=>add(legendFighter(l)));
     SIGNATURES.filter(x=>x.div===d&&inCircuit(x)).forEach(x=>{const f=makeFighter(d,x.rating,x.age,{first:x.first,last:x.last,nick:x.nick,home:x.home,arch:x.arch,look:deep(x.look),pot:x.rating+4});f.sig=x.id;f.quirk=null;add(f)});
     const tiers=[[2,85,91],[6,75,85],[10,63,75],[18,40,63]];
     for(const [n,a,b] of tiers)for(let i=0;i<n;i++)add(makeFighter(d,rand(a,b),randi(20,35)));
@@ -174,6 +174,7 @@ function newCareer(o){
     reach:o.height+ARMS[o.arms].d,arch:o.arch,born:-(o.age*52)-randi(0,40),natural,div:natural,stats,level:1,xp:0,statPts:0,skillPts:1,
     skills:[],abilities:[ARCH[o.arch].ability],equipped:[ARCH[o.arch].ability],damage:0,injuries:[],hype:5,money:1500,pts:0,
     record:{w:0,l:0,d:0,ko:0},am:{w:0,l:0},form:[],streak:0,legendsBeaten:[],regional:null,formerChamp:false,titleWins:0,defenses:0,undisputed:0,titleDivs:[],retired:false};
+  G.alumni=(Store.get('tr_alumni')||[]).filter(a=>!!a.w===(G.circuit==='w'));registerAlumni(G.alumni);
   genWorld();
   const rv=makeFighter(natural,Math.max(40,playerOvr()+1),o.age,{arch:counterArch(o.arch)});
   rv.rival=true;rv.pts=60;rv.w=rv.l=rv.d=rv.ko=0;rv.pro=false;rv.edge=rand(0,4);
@@ -233,6 +234,18 @@ function p4pList(n=10){
   if(G.phase==='pro'){const b=B(),bl=beltsOf('P',b.div).length;L.push({id:'P',f:null,s:playerOvr()+bl*4+(bl===4?6:0)+Math.min(10,Math.max(-6,(b.record.w-2*b.record.l)*.15))+b.titleWins*1.5+b.defenses*.4})}
   return L.sort((a,c)=>c.s-a.s).slice(0,n)}
 function p4pRank(){const i=p4pList(10).findIndex(e=>e.id==='P');return i<0?null:i+1}
+/* ---------- alumni: your retired champions return as legends in later careers of the same circuit ---------- */
+const BASE_LEGENDS=LEGENDS.slice();
+const ALUM_SIG={swarmer:['hook','bhook','hook'],slugger:['cross','hook'],outboxer:['jab','jab','cross'],counter:['jab','cross'],boxerpuncher:['jab','cross','hook']};
+const ALUM_WEAK={chin:['glass','A suspect chin: land clean and they go.'],sta:['fader','The gas tank empties late. Drag them into deep water.'],def:['body','The guard is loose downstairs. Go to the body.'],foot:['jab','Flat-footed. Keep them on the end of your jab.'],iq:['counter','They take the bait. Feint, then counter.'],spd:['upper','A beat slow. Uppercuts come up the middle.'],pow:['flurry','Not a big puncher: open up after they finish their combinations.']};
+function makeAlum(){const b=B(),L=legacy(),st=effectiveStats();const low=STAT_KEYS.slice().sort((x,y)=>st[x]-st[y])[0];const W=ALUM_WEAK[low];
+  const look=Object.assign({},playerLook());delete look.band;
+  return {id:'al_'+hashStr(b.first+b.last+(G.created||0)),alum:1,w:isW()?1:undefined,first:b.first,last:b.last,nick:b.nick||'',div:b.titleDivs.length?b.titleDivs[b.titleDivs.length-1]:b.div,arch:b.arch,
+    rating:clamp(Math.round(b.peakOvr||playerOvr())+2,82,95),age:28,home:b.home||'Your hometown',skin:look.skin,hair:look.hair,hc:look.hc||0,beard:look.beard||'none',trunks:look.trunks,look,
+    homage:`Your former boxer: ${b.record.w}-${b.record.l}-${b.record.d}, ${b.record.ko} KO, ${L.tier}, retired ${dateStr().slice(-4)}`,ab:b.equipped[0]||ARCH[b.arch].ability,southpaw:b.stance==='southpaw',reach:Math.max(0,b.reach-b.height),
+    ai:{sig:ALUM_SIG[b.arch]||['jab','cross'],sigP:.45,weak:W[0],scout:`You know this style better than anyone: a ${ARCH[b.arch].name.toLowerCase()} in their prime. ${W[1]}`}}}
+function registerAlumni(list){for(const A of list||[]){if(!A||!A.id)continue;if(!LEGEND_BY[A.id]){LEGENDS.push(A);LEGEND_BY[A.id]=A}LEGEND_VIS[A.id]=Object.assign({},A.look,{legendVis:undefined})}}
+function saveAlum(){if(!G||G.sandbox)return null;const L=legacy();if(L.score<150)return null;const A=makeAlum();const list=(Store.get('tr_alumni')||[]).filter(x=>x.id!==A.id);list.push(A);Store.set('tr_alumni',list.slice(-12));registerAlumni([A]);return A}
 function rivalryWins(){return (G.rival?.w||0)+(G.rivalHist||[]).reduce((s,r)=>s+r.w,0)}
 /* ---------- callouts: a request, not a guarantee. The champion only answers contenders who have earned it ---------- */
 function calloutChance(t){
@@ -657,6 +670,7 @@ function applyResult(o,res){
   // rival / legends
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
+  if(pro)b.peakOvr=Math.max(b.peakOvr||0,playerOvr());
   if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
   if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}

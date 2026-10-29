@@ -687,6 +687,7 @@ function retireNow(reason){
   const L=legacy();
   if(L.score>=300){G.hof=G.hof||[];G.hof.push({year:START_YEAR+Math.floor(G.week/52)+1,name:fullName(b),rec:`${b.record.w}-${b.record.l}-${b.record.d}`,ko:b.record.ko,div:b.div,player:true});news(`You will be inducted into the Hall of Fame next year.`,'gold')}
   news(`${fullName(b)} retires at ${ageOf(b.born)} with a record of ${b.record.w}-${b.record.l}-${b.record.d} (${b.record.ko} KOs). ${L.tier}.`,'gold');
+  const alum=saveAlum();if(alum)news(`${fullName(b)} joins the legends. Future ${isW()?"women's":"men's"} careers will have to get past you.`,'gold');
   Save.write();trophyCheck('retire',L);
   modal(`<div class="kicker">${esc(reason||'The final bell')}</div><div class="bigtxt" style="font-size:40px;text-align:center">${esc(L.tier.toUpperCase())}</div>
     <p style="text-align:center" class="rec num">${b.record.w}-${b.record.l}-${b.record.d} · ${b.record.ko} KO</p>
