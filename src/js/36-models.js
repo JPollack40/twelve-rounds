@@ -2,8 +2,10 @@
    Read with a small GLB reader (one mesh: position, uv, indices, one image); the texture decodes asynchronously at boot and
    the model is used once it is ready. Until then the procedural boxer stands in. */
 const R3M={m:{},v:0,
-  init(){if(typeof THREE==='undefined'||typeof R3M_DATA==='undefined')return;for(const k in R3M_DATA){try{this.load(k,R3M_DATA[k])}catch(e){console.warn('model',k,e)}}},
-  load(name,b64){const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)).buffer;const dv=new DataView(bin);const jl=dv.getUint32(12,true);
+  // models decode one per task after the first paint, so the title screen never waits on them
+  init(){if(typeof THREE==='undefined'||typeof R3M_DATA==='undefined')return;const ks=Object.keys(R3M_DATA);
+    const next=()=>{const k=ks.shift();if(!k)return;try{this.load(k,R3M_DATA[k])}catch(e){console.warn('model',k,e)}setTimeout(next,0)};setTimeout(next,0)},
+  load(name,b64){const raw=atob(b64),u8=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)u8[i]=raw.charCodeAt(i);const bin=u8.buffer;const dv=new DataView(bin);const jl=dv.getUint32(12,true);
     const J=JSON.parse(new TextDecoder().decode(new Uint8Array(bin,20,jl)));const bo=20+jl+8;
     const view=i=>{const v=J.bufferViews[i];return bin.slice(bo+(v.byteOffset||0),bo+(v.byteOffset||0)+v.byteLength)};
     const acc=(i,T,n)=>{const a=J.accessors[i];return new T(view(a.bufferView),0,a.count*n)};

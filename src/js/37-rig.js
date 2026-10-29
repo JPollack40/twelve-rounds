@@ -134,12 +134,14 @@ function r3rigHead(mk){const M=R3M.m[mk];if(M.hf)return M.hf;const X=M.extras,g=
   const box=new THREE.Box3(),v=new THREE.Vector3();const tris=[];
   for(let t=0;t<ix.length;t+=3){const a=ix[t],b=ix[t+1],c=ix[t+2];if(head(a)||head(b)||head(c)){tris.push(a,b,c);for(const q of [a,b,c]){v.fromArray(p,q*3);if(v.y>lm.chinB[1])box.expandByPoint(v)}}}
   const C=box.getCenter(new THREE.Vector3());C.z-=.01;
-  const hgeo=new THREE.BufferGeometry();hgeo.setAttribute('position',g.attributes.position);hgeo.setIndex(tris);
-  const hm=new THREE.Mesh(hgeo,new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));hm.updateMatrixWorld(true);
-  const NT=96,NL=48,rad=new Float32Array(NT*NL).fill(NaN),rc=new THREE.Raycaster(),o=new THREE.Vector3(),d=new THREE.Vector3();
-  const dirOf=(th,lat)=>{const c=Math.sqrt(Math.max(0,1-lat*lat));return d.set(Math.sin(th)*c,lat,Math.cos(th)*c)};
-  for(let j=0;j<NL;j++)for(let i=0;i<NT;i++){const th=-Math.PI+(i+.5)/NT*Math.PI*2,lat=-1+(j+.5)/NL*2;dirOf(th,lat);o.copy(C).addScaledVector(d,.8);rc.set(o,d.clone().negate());rc.far=.8;
-    const h=rc.intersectObject(hm,false)[0];if(h)rad[j*NT+i]=.8-h.distance}
+  // outer radius of the head in each direction cell, from points sampled densely over its triangles (the farthest point in a cell is the
+  // surface a ray from outside would hit first); far cheaper than casting a ray per cell
+  const NT=96,NL=48,rad=new Float32Array(NT*NL).fill(NaN),d=new THREE.Vector3(),a=new THREE.Vector3(),b=new THREE.Vector3(),c3=new THREE.Vector3();
+  const put=q=>{d.subVectors(q,C);const r=d.length();if(r<1e-6)return;const th=Math.atan2(d.x,d.z),lat=d.y/r;
+    const i=Math.min(NT-1,Math.floor((th+Math.PI)/(Math.PI*2)*NT)),j=Math.min(NL-1,Math.floor((lat+1)/2*NL)),k=j*NT+i;if(!(rad[k]>=r))rad[k]=r};
+  for(let t=0;t<tris.length;t+=3){a.fromArray(p,tris[t]*3);b.fromArray(p,tris[t+1]*3);c3.fromArray(p,tris[t+2]*3);
+    const n=Math.max(1,Math.min(10,Math.ceil(Math.max(a.distanceTo(b),b.distanceTo(c3),c3.distanceTo(a))/.012)));
+    for(let u=0;u<=n;u++)for(let w=0;w<=n-u;w++){const x=u/n,y=w/n,z=1-x-y;v.set(a.x*x+b.x*y+c3.x*z,a.y*x+b.y*y+c3.y*z,a.z*x+b.z*y+c3.z*z);put(v)}}
   for(let it=0;it<60;it++){let left=0;for(let j=0;j<NL;j++)for(let i=0;i<NT;i++){const k=j*NT+i;if(!isNaN(rad[k]))continue;left++;let s=0,n=0;
     for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const jj=j+dj;if(jj<0||jj>=NL)continue;const kk=jj*NT+(i+di+NT)%NT;if(!isNaN(rad[kk])){s+=rad[kk];n++}}if(n)rad[k]=s/n}if(!left)break}
   // the scalp envelope: each cell takes the highest of its neighbours, so fitted hair clears modelled braids and bumps

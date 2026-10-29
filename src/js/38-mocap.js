@@ -6,7 +6,7 @@
    wind-up / throw / recovery timings, so tells and reaction windows are unchanged. */
 const R3MC={ready:false,clips:{},
   init(){if(this.ready||typeof R3MOCAP==='undefined'||typeof THREE==='undefined')return;
-    for(const [k,c] of Object.entries(R3MOCAP.clips)){const b=Uint8Array.from(atob(c.b64),ch=>ch.charCodeAt(0));const a=new Int16Array(b.buffer);
+    for(const [k,c] of Object.entries(R3MOCAP.clips)){const raw=atob(c.b64),b=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)b[i]=raw.charCodeAt(i);const a=new Int16Array(b.buffer);
       const C={k,fps:c.fps,n:c.n,dur:(c.n-1)/c.fps,a};C.x0=a[0]/10;C.z0=a[2]/10;this.clips[k]=C;r3mcMarks(C)}
     this.restY=R3MOCAP.rest.hipsY;this.ready=true}};
 const MC_F=57,MC_YAW=.6;   // hips 3, quats 3x4, limb directions 10x3, then head, neck, left and right hand positions 4x3 // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
