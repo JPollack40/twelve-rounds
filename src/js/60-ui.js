@@ -232,7 +232,7 @@ SCR.home=()=>{
   const b=B();let hero='';
   if(G.fightSave&&G.next&&G.fightSave.offerId===G.next.offer.id){const f=G.world.f[G.next.offer.oppId];
     return shell('home','Home',`<div class="hero"><div class="in"><div class="kicker">Fight interrupted</div><h1 class="disp" style="font-size:28px">Round ${G.fightSave.round} vs ${esc(f?f.last:'your opponent')}</h1><p class="muted">The fight was cut off. It picks up at the start of round ${G.fightSave.round} with the scorecards, damage and stamina as they were.</p><button class="btn primary wide" data-act="resumefight" style="min-height:56px;font-size:19px">Resume the fight</button></div></div>`)}
-  if(G.phase==='retired')hero=`<div class="hero"><div class="in"><div class="kicker">Retired</div><h1 class="disp" style="font-size:30px">Career over</h1><button class="btn gold" data-go="legacy">See your legacy</button></div></div>`;
+  if(G.phase==='retired')hero=`<div class="hero"><div class="in"><div class="kicker">Retired</div><h1 class="disp" style="font-size:30px">Career over</h1><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn gold" data-go="legacy">See your legacy</button><button class="btn" data-go="timeline">Career timeline</button>${comebackOK()?'<button class="btn" data-act="comeback">Come out of retirement</button>':''}</div></div></div>`;
   else if(G.phase==='amateur'&&G.am.done){
     hero=`<div class="hero"><div class="in"><div class="kicker">Amateur career</div><h1 class="disp" style="font-size:28px">${G.flags['am_gold_'+G.am.stage]?'Gold medal!':'Tournament over'}</h1>
       <p class="muted">${G.am.stage===0?'Enter the National Championships for a better pro contract, or turn pro now.':'Time to get paid.'}</p>
@@ -656,7 +656,7 @@ function recordsCard(){const R=G.records||{};const rows=[
 SCR.record=()=>{
   const b=B(),h=[...G.history].reverse();
   const chI=CHAPTER_INFO.filter(c=>!c.circ||c.circ===(G.circuit||'m'));const ch=chI.map(c=>{const done=G.chapters.includes(c.id);return `<div class="card flat" style="padding:10px;${done?'border-color:var(--gold)':''}"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em">${done?esc(c.title):'??? Locked chapter'}</b><div class="dim" style="font-size:12.5px">${done?esc(c.homage):'Keep fighting to discover it.'}</div></div>`}).join('');
-  return shell('record','Record',`${progressCharts()}${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
+  return shell('record','Record',`<button class="btn" data-go="timeline" style="align-self:flex-start">Career timeline</button>${progressCharts()}${recordsCard()}<div class="grid3"><div class="card"><span class="lbl">Pro record</span><p class="rec num">${b.record.w}-${b.record.l}-${b.record.d}</p><p class="muted">${b.record.ko} KOs · ${b.record.w?Math.round(b.record.ko/b.record.w*100):0}% KO rate</p></div>
     <div class="card"><span class="lbl">Amateur</span><p class="rec num">${b.am.w}-${b.am.l}</p><p class="muted">${G.flags.am_gold_0?'Golden Gloves gold ':''}${G.flags.am_gold_1?'· National gold':''}</p></div>
     <div class="card"><span class="lbl">Titles</span><p class="rec num">${b.titleWins} won · ${b.defenses} defenses</p><p class="muted">${b.titleDivs.map(d=>DIVS[d].short).join(', ')||'None yet'}</p></div></div>
     <div class="card"><h3>Fight history</h3><div class="tblw"><table class="t"><tr><th>Date</th><th>Res</th><th>Opponent</th><th>Method</th><th>Fight</th></tr>
@@ -699,7 +699,7 @@ SCR.settings=()=>shell('settings','Settings',`<h2 class="sec">Settings</h2>${set
 
 /* ---------- retire ---------- */
 function retireNow(reason){
-  const b=B();b.retired=true;G.phase='retired';G.next=null;G.offers=[];
+  const b=B();b.retired=true;G.phase='retired';G.next=null;G.offers=[];storyLog('🏁',`Retires at ${ageOf(b.born)}: ${b.record.w}-${b.record.l}-${b.record.d}, ${b.record.ko} KO.`);
   const bl=playerBelts();bl.forEach(x=>G.world.champs[x.d][x.k]=null);for(let d=0;d<8;d++)assignChamps(d,false);
   if(b.record.l===0&&b.record.w>=25&&!G.chapters.includes('fortynine'))G.chapters.push('fortynine');
   const L=legacy();
@@ -717,8 +717,8 @@ function retireNow(reason){
 function checkEvent(force,id){
   if(!G||G.phase==='retired')return false;
   const b=B();
-  if(G.flags.forceRetire){const r=G.flags.forceRetire;G.flags.forceRetire=null;retireNow(r);return true}
-  if(b.damage>=100){retireNow('The commission refuses to renew your license.');return true}
+  if(G.flags.forceRetire){const r=G.flags.forceRetire;G.flags.forceRetire=null;G.flags.forcedOut=1;retireNow(r);return true}
+  if(b.damage>=100){G.flags.forcedOut=1;retireNow('The commission refuses to renew your license.');return true}
   if(ageOf(b.born)>=45){retireNow('At 45, it\'s time.');return true}
   const e=maybeEvent(force,id);if(!e)return false;
   const m=modal(`<div class="kicker">${e.id==='hurricane'||e.id==='exile'?'Story chapter':'Life outside the ring'}</div><h2 class="sec">${esc(e.title)}</h2><p>${esc(e.text())}</p><div class="col" style="gap:8px">${e.choices.map((c,i)=>`<button class="btn ${i?'':'gold'}" data-ch="${i}">${esc(c.t)}</button>`).join('')}</div>`);

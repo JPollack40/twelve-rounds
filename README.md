@@ -115,3 +115,10 @@ session), elite sparring (+30% sparring XP, faster scouting) or sports science (
 6–10% of the purse with a floor, so money finally has a recurring use. The result screen shows punches landed by round, you vs them,
 as grouped bars (palette #bd8a2e/#5b8def, validated on the dark card), with tap-for-numbers, totals and a table; the round a fight
 was stopped in is included and marked.
+
+## Career timeline and the comeback
+Record and the retired Home screen link to a career timeline built from the fight history and career state: start, pro debut, first
+KO and first loss, title wins and losses, Continental titles, legend wins, chapters, robberies, rivalries, the Super Series,
+retirement and comebacks (`src/js/66-story.js`). A retired boxer who was not forced out (damage under 85, age 42 or younger) can come
+back once: a year passes, Speed, Footwork and Stamina drop by 3, ranking points fall to 35%, hype rises by 15, and any pending Hall of
+Fame induction is withdrawn.
