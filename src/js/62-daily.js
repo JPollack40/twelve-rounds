@@ -68,7 +68,7 @@ SCR.legends=()=>{
     <div style="font-size:13.5px">${esc(l.ai.scout)}</div>
     <div style="font-size:13px"><b class="goldt">${esc(ab.name)}:</b> ${esc(ab.desc)}</div>
     <button class="btn sm" data-act="exhib" data-id="${l.id}" style="align-self:flex-start">Exhibition fight</button></div>`}).join('');
-  const body=`<div class="row sp" style="flex-wrap:wrap;gap:8px"><p class="muted" style="font-size:13.5px;margin:0;max-width:52ch">Fictional fighters with original names, each a tribute to a great of the sport. Beat one in your career to learn their signature move.</p>
+  const body=`${G&&G.boxer&&isWide()?'<h2 class="sec">Legends</h2>':''}<div class="row sp" style="flex-wrap:wrap;gap:8px"><p class="muted" style="font-size:13.5px;margin:0;max-width:52ch">Fictional fighters with original names, each a tribute to a great of the sport. Beat one in your career to learn their signature move.</p>
     <div class="chips">${[['m',"Men's"],['w',"Women's"]].map(([k,n])=>`<button class="chip${circ===k?' on':''}" data-act="lgcirc" data-v="${k}">${n}</button>`).join('')}</div></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:10px">${cards}</div>`;
   if(G&&G.boxer)return shell('legends','Legends',body);

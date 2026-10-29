@@ -37,7 +37,7 @@ function trophyCheck(kind,ctx){
   return got}
 SCR.trophies=()=>{
   const st=trophyState(),n=TROPHIES.filter(T=>st[T.id]).length;
-  const body=`<p class="muted" style="font-size:13.5px;margin-top:0">${n} of ${TROPHIES.length} won. Trophies carry across every career on this device.</p>
+  const body=`${G&&G.boxer&&isWide()?'<h2 class="sec">Trophies</h2>':''}<p class="muted" style="font-size:13.5px;margin-top:0">${n} of ${TROPHIES.length} won. Trophies carry across every career on this device.</p>
     <div class="bar" style="margin:6px 0 14px"><i style="width:${n/TROPHIES.length*100}%"></i></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">${TROPHIES.map(T=>{const g=st[T.id];return `<div class="card row" style="gap:12px;align-items:center;${g?'border-color:var(--gold)':'opacity:.55'}">
       <div style="font-size:30px;filter:${g?'none':'grayscale(1)'}">${g?'🏆':'🔒'}</div><div class="grow"><b class="ui ${g?'goldt':''}" style="font-size:16px;text-transform:uppercase;letter-spacing:.04em">${esc(T.name)}</b>

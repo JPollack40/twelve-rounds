@@ -21,7 +21,7 @@ function careerMilestones(){
   for(const e of G.flags.storyLog||[])add(e.w,e.icon,e.t,e.tone);
   return out.sort((a,c)=>a.w-c.w)}
 SCR.timeline=()=>{const M=careerMilestones();
-  return shell('record','Career timeline',`<div class="card col" style="gap:0">${M.map((m,i)=>`<div class="row" style="gap:12px;align-items:flex-start;padding:8px 0;${i?'border-top:1px solid #262c4a':''}">
+  return shell('record','Career timeline',`${isWide()?'<h2 class="sec">Career timeline</h2>':''}<div class="card col" style="gap:0">${M.map((m,i)=>`<div class="row" style="gap:12px;align-items:flex-start;padding:8px 0;${i?'border-top:1px solid #262c4a':''}">
     <div style="font-size:20px;width:26px;text-align:center">${m.icon}</div><div class="grow"><div class="dim num" style="font-size:12px">${dateStr(m.w)} · age ${Math.floor((m.w-B().born)/52)}</div><div style="font-size:14.5px" class="${m.tone==='gold'?'goldt':m.tone==='red'?'':''}">${esc(m.t)}</div></div></div>`).join('')}</div>`)};
 function storyLog(icon,t,tone){(G.flags.storyLog=G.flags.storyLog||[]).push({w:G.week,icon,t,tone})}
 /* ---------- the comeback: one return from retirement, a year older and rusty ---------- */

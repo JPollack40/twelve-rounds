@@ -5180,7 +5180,7 @@ SCR.legends=()=>{
     <div style="font-size:13.5px">${esc(l.ai.scout)}</div>
     <div style="font-size:13px"><b class="goldt">${esc(ab.name)}:</b> ${esc(ab.desc)}</div>
     <button class="btn sm" data-act="exhib" data-id="${l.id}" style="align-self:flex-start">Exhibition fight</button></div>`}).join('');
-  const body=`<div class="row sp" style="flex-wrap:wrap;gap:8px"><p class="muted" style="font-size:13.5px;margin:0;max-width:52ch">Fictional fighters with original names, each a tribute to a great of the sport. Beat one in your career to learn their signature move.</p>
+  const body=`${G&&G.boxer&&isWide()?'<h2 class="sec">Legends</h2>':''}<div class="row sp" style="flex-wrap:wrap;gap:8px"><p class="muted" style="font-size:13.5px;margin:0;max-width:52ch">Fictional fighters with original names, each a tribute to a great of the sport. Beat one in your career to learn their signature move.</p>
     <div class="chips">${[['m',"Men's"],['w',"Women's"]].map(([k,n])=>`<button class="chip${circ===k?' on':''}" data-act="lgcirc" data-v="${k}">${n}</button>`).join('')}</div></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:10px">${cards}</div>`;
   if(G&&G.boxer)return shell('legends','Legends',body);
@@ -5231,7 +5231,7 @@ SCR.rivalries=()=>{
       <div class="bar" title="Bad blood ${Math.round(r.h)}"><i style="width:${Math.min(100,r.h/60*100)}%;background:${col}"></i></div>
       <div class="muted" style="font-size:12.5px">${x.n?`Head to head ${x.w}-${x.l}${x.d?'-'+x.d:''} · last met ${dateStr(x.last.w)} (${x.last.res} by ${x.last.method}${x.last.robbery?', robbery':''})`:'Never fought'}</div></div>`};
   const past=(G.rivalHist||[]).slice().reverse();
-  const body=`<p class="muted" style="font-size:13.5px;margin-top:0">Bad blood builds when you fight someone (most after losses, close or stolen decisions and title fights), call them out, demand rematches, or sit next to them in the rankings. It cools after every fight, faster when they fall behind you or leave your division. Whoever burns hottest in your division becomes your rival${rv?`; a rivalry lasts at least 18 months unless it goes cold`:''}.</p>
+  const body=`${isWide()?'<h2 class="sec">Rivalries</h2>':''}<p class="muted" style="font-size:13.5px;margin-top:0">Bad blood builds when you fight someone (most after losses, close or stolen decisions and title fights), call them out, demand rematches, or sit next to them in the rankings. It cools after every fight, faster when they fall behind you or leave your division. Whoever burns hottest in your division becomes your rival${rv?`; a rivalry lasts at least 18 months unless it goes cold`:''}.</p>
     <div class="row" style="gap:10px;flex-wrap:wrap;font-size:12.5px">${[['Boiling',RIVAL_MIN],['Heated',18],['Simmering',10],['Cooling',1]].map(([l,v])=>{const c=heatLabel(v)[1];return `<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c};margin-right:4px"></span>${l}</span>`}).join('')}</div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:10px">${rows.length?rows.map(row).join(''):'<div class="card muted">No bad blood yet. Fight, call people out, and it will come.</div>'}</div>
     ${past.length?`<h2 class="sec" style="margin-top:16px">Past rivals</h2><div class="card"><div class="tblw"><table class="t"><tr><th>Rival</th><th class="r">Head to head</th><th class="r">Years</th></tr>${past.map(p=>`<tr><td>${esc(p.name)}</td><td class="r num">${p.w}-${p.l}</td><td class="r">${dateStr(p.from).slice(-4)}–${dateStr(p.to).slice(-4)}</td></tr>`).join('')}</table></div></div>`:''}`;
@@ -5276,7 +5276,7 @@ function trophyCheck(kind,ctx){
   return got}
 SCR.trophies=()=>{
   const st=trophyState(),n=TROPHIES.filter(T=>st[T.id]).length;
-  const body=`<p class="muted" style="font-size:13.5px;margin-top:0">${n} of ${TROPHIES.length} won. Trophies carry across every career on this device.</p>
+  const body=`${G&&G.boxer&&isWide()?'<h2 class="sec">Trophies</h2>':''}<p class="muted" style="font-size:13.5px;margin-top:0">${n} of ${TROPHIES.length} won. Trophies carry across every career on this device.</p>
     <div class="bar" style="margin:6px 0 14px"><i style="width:${n/TROPHIES.length*100}%"></i></div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">${TROPHIES.map(T=>{const g=st[T.id];return `<div class="card row" style="gap:12px;align-items:center;${g?'border-color:var(--gold)':'opacity:.55'}">
       <div style="font-size:30px;filter:${g?'none':'grayscale(1)'}">${g?'🏆':'🔒'}</div><div class="grow"><b class="ui ${g?'goldt':''}" style="font-size:16px;text-transform:uppercase;letter-spacing:.04em">${esc(T.name)}</b>
@@ -5584,7 +5584,7 @@ function careerMilestones(){
   for(const e of G.flags.storyLog||[])add(e.w,e.icon,e.t,e.tone);
   return out.sort((a,c)=>a.w-c.w)}
 SCR.timeline=()=>{const M=careerMilestones();
-  return shell('record','Career timeline',`<div class="card col" style="gap:0">${M.map((m,i)=>`<div class="row" style="gap:12px;align-items:flex-start;padding:8px 0;${i?'border-top:1px solid #262c4a':''}">
+  return shell('record','Career timeline',`${isWide()?'<h2 class="sec">Career timeline</h2>':''}<div class="card col" style="gap:0">${M.map((m,i)=>`<div class="row" style="gap:12px;align-items:flex-start;padding:8px 0;${i?'border-top:1px solid #262c4a':''}">
     <div style="font-size:20px;width:26px;text-align:center">${m.icon}</div><div class="grow"><div class="dim num" style="font-size:12px">${dateStr(m.w)} · age ${Math.floor((m.w-B().born)/52)}</div><div style="font-size:14.5px" class="${m.tone==='gold'?'goldt':m.tone==='red'?'':''}">${esc(m.t)}</div></div></div>`).join('')}</div>`)};
 function storyLog(icon,t,tone){(G.flags.storyLog=G.flags.storyLog||[]).push({w:G.week,icon,t,tone})}
 /* ---------- the comeback: one return from retirement, a year older and rusty ---------- */
