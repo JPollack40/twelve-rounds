@@ -40,7 +40,7 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,replay:true,commentary:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,sculpt:true,vol:1,volFx:1,volCrowd:1,volTell:1,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,replay:true,commentary:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,sculpt:true,mocap:true,vol:1,volFx:1,volCrowd:1,volTell:1,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
 function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 

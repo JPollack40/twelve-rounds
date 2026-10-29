@@ -719,6 +719,9 @@ class Render3D{
     const sx=o.south?-1:1;
     const closeness=(raw.scale||1)-1;
     this.opp.position.set((raw.hip?raw.hip[0]:0)*.004,.1,.2+closeness*1.7);
+    if(r3mcOn(u)){r3mcDrive(this,P);this.opp.updateWorldMatrix(true,true);
+      for(const h of ['L','R']){const gw=glow&&glow[h]||0,g=u.arms[h==='L'?1:-1].gm;g.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');g.emissiveIntensity=gw*.9}
+      return this.oppFace(P,u,st,t)}
     u.pelvis.position.y=u.legY-.11-cr*.32;
     let fwd=0;
     if(st==='wind')fwd=-5*k;else if(st==='act')fwd=14;else if(st==='rec')fwd=14*(1-k);
@@ -746,6 +749,9 @@ class Render3D{
       gl.rotation.set(active&&type!=='upper'?-.5:-.15,0,active&&type==='hook'?s*.9:0);
       const gw=glow&&glow[h]||0;u.arms[s].gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');u.arms[s].gm.emissiveIntensity=gw*.9;
     }
+    return this.oppFace(P,u,st,t)
+  }
+  oppFace(P,u,st,t){const o=this.f.o;
     const face=P.face||'normal';
     const E=Object.assign({lidOpen:.9,squint:0,angry:0,hurt:0,open:0,grit:0,smile:0,look:0,lookY:0},this.base);
     if(P.blink)E.lidOpen=.05;

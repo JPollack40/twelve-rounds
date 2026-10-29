@@ -636,7 +636,9 @@ class Fight{
     if(this.cfg.headless)return;
     const K=this.kdClip,clip=['KO','TKO'].includes(method)&&K&&K.round===this.round&&this.r3d&&Settings.replay!==false&&K.frames.length>20?K:null;
     const out=()=>{this.destroy();this.cfg.onEnd(this.res)};
-    setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},clip?1700:2600);
+    // a sculpted opponent who beats you gets a moment to celebrate
+    const cel=winner==='o'&&this.r3d&&this.r3d.mc?1600:0;
+    setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},(clip?1700:2600)+cel);
   }
   /* broadcast captions: rate-limited, a bigger moment overrides a smaller one; cosmetic only (Math.random, never the fight RNG) */
   call(kind,x={}){
@@ -651,7 +653,7 @@ class Fight{
   recFrame(op,rdt){
     const o=this.o,p=this.p,nf=this.fxId!==this._fxSeen?this.fxLast:null;this._fxSeen=this.fxId;
     const F={rdt:rdt||1/60,P:JSON.parse(JSON.stringify(op)),glow:this.oGlow?Object.assign({},this.oGlow):null,
-      o:{state:o.state,t:o.t,dur:o.dur,south:o.south,hurt:o.hurt,pu:o.pu?{type:o.pu.type}:null},p:{state:p.state,t:p.t,south:p.south,pu:p.pu?{type:p.pu.type}:null},
+      o:{state:o.state,t:o.t,dur:o.dur,south:o.south,hurt:o.hurt,pu:o.pu?{type:o.pu.type,body:o.pu.body}:null,hits:o.hits,hitAnim:o.hitAnim?Object.assign({},o.hitAnim):null},p:{state:p.state,t:p.t,south:p.south,pu:p.pu?{type:p.pu.type}:null},
       pG:JSON.parse(JSON.stringify(this.pG)),cam:Object.assign({},this.cam),time:this.time,shake:this.shake,flashSil:this.flashSil,fx:nf};
     const b=this.rbuf=this.rbuf||[];b.push(F);if(b.length>200)b.shift();
     const K=this.kdClip;if(K&&K.post<1.1){K.frames.push(F);K.post+=F.rdt}

@@ -12,7 +12,8 @@ mkdir -p dist docs
 MODELS=(duncan boxer boxer_f)
 MJS="const R3M_DATA={"
 for m in "${MODELS[@]}"; do MJS+="$m:\"$(base64 -w0 "assets/models/$m.glb")\","; done
-MJS+="};"
+MJS+="};
+const R3MOCAP=$(cat assets/mocap.json);"
 JS="$MJS
 $(cat src/js/*.js)"
 THREE_CDN='<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>'
