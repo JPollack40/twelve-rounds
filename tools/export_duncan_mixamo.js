@@ -1,6 +1,6 @@
 // Export Duncan for Mixamo's auto-rigger from his in-game model (canister, spring, head, cable arms with shoulder and elbow joints,
-// proper boxing gloves), posed with the arms out so Mixamo sees space between arms and body, plus two plain temporary legs beside the
-// spring for its knee markers (the game keeps his spring). New parts are coloured from swatches added under his texture.
+// proper boxing gloves), posed with the arms out so Mixamo sees space between arms and body, with his spring and base swapped for two plain temporary legs
+// (Mixamo needs a gap between the legs; the game keeps his spring and bends it itself). New parts are coloured from swatches added under his texture.
 // Writes tools/mixamo/duncan_apose.zip (OBJ + MTL + PNG, ~180 cm tall). Usage: ./build.sh && NODE_PATH=<playwright> node tools/export_duncan_mixamo.js
 const {chromium}=require('playwright'),fs=require('fs'),os=require('os'),path=require('path'),{execFileSync}=require('child_process');
 const ROOT=path.join(__dirname,'..'),ANG=+(process.argv[2]||60)*Math.PI/180;
@@ -15,15 +15,17 @@ const ROOT=path.join(__dirname,'..'),ANG=+(process.argv[2]||60)*Math.PI/180;
     const SW={leather:'#c8262a',cuff:'#efe9dc',tape:'#e8e2d4',cable:'#8f8f8f',joint:'#7a7a7a',leg:'#3a3a3a'},keys=Object.keys(SW),sw={};
     keys.forEach((k,i)=>{x.fillStyle=SW[k];x.fillRect(i*W/keys.length,H,W/keys.length,c.height-H);sw[k]=[(i+.5)/keys.length,(H+(c.height-H)/2)/c.height]});
     const V=[],T=[],F=[],v=new THREE.Vector3();
-    const add=(mesh,uvf)=>{const g=mesh.geometry,pos=g.attributes.position,uv=g.attributes.uv,idx=g.index?g.index.array:[...Array(pos.count).keys()],map=new Map();
+    const add=(mesh,uvf,minY)=>{const g=mesh.geometry,pos=g.attributes.position,uv=g.attributes.uv,idx=g.index?g.index.array:[...Array(pos.count).keys()],map=new Map();
       const id=i=>{if(map.has(i))return map.get(i);if(mesh.isSkinnedMesh)mesh.getVertexPosition(i,v);else v.fromBufferAttribute(pos,i);mesh.localToWorld(v);V.push(v.x,v.y,v.z);
         const t=uvf?uvf:[uv.getX(i),uv.getY(i)*H/c.height];T.push(t[0],1-t[1]);const n=V.length/3-1;map.set(i,n);return n};
-      for(let k=0;k<idx.length;k+=3)F.push([id(idx[k]),id(idx[k+1]),id(idx[k+2])])};
+      for(let k=0;k<idx.length;k+=3){if(minY!=null&&Math.min(pos.getY(idx[k]),pos.getY(idx[k+1]),pos.getY(idx[k+2]))<minY)continue;F.push([id(idx[k]),id(idx[k+1]),id(idx[k+2])])}};
     bx.traverse(o=>{if(!o.isMesh||o.userData.isOL||!o.visible)return;const m=o.material;
-      if(m&&m.map===M.tex)return add(o,null);
+      if(m&&m.map===M.tex)return add(o,null,o.isSkinnedMesh?MC_DUN_SPRING[1]+.02:null);   // body without the spring and base (the game bends the spring itself)
       const col=m&&m.color?'#'+m.color.getHexString():'';const isGlove=m&&m.clearcoat!==undefined;
       add(o,sw[isGlove?'leather':o.geometry.type==='SphereGeometry'?'joint':o.isSkinnedMesh?'cable':/^#(e|f)/.test(col)?'cuff':'tape'])});
-    for(const s of [1,-1]){const g=new THREE.CylinderGeometry(.09,.08,.78,12,6,false);g.translate(s*.38,.39,0);add(new THREE.Mesh(g),sw.leg)}
+    // temporary legs in place of the spring: a hip block under the canister and two legs with a clear gap between them
+    {const g=new THREE.BoxGeometry(.5,.14,.3,4,2,2);g.translate(0,MC_DUN_SPRING[1]-.05,0);add(new THREE.Mesh(g),sw.leg)}
+    for(const s of [1,-1]){const g=new THREE.CylinderGeometry(.1,.085,MC_DUN_SPRING[1]-.06,12,8,false);g.translate(s*.16,(MC_DUN_SPRING[1]-.06)/2,0);add(new THREE.Mesh(g),sw.leg)}
     return {V,T,F,png:c.toDataURL('image/png').split(',')[1]}},ANG);
   let y0=1/0,y1=-1/0;for(let i=1;i<r.V.length;i+=3){y0=Math.min(y0,r.V[i]);y1=Math.max(y1,r.V[i])}const k=180/(y1-y0),N='duncan_apose';
   const L=[`mtllib ${N}.mtl`,'usemtl duncan'];for(let i=0;i<r.V.length;i+=3)L.push(`v ${(r.V[i]*k).toFixed(3)} ${((r.V[i+1]-y0)*k).toFixed(3)} ${(r.V[i+2]*k).toFixed(3)}`);
