@@ -102,6 +102,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if((o.hits||0)>M.hits){const ha=o.hitAnim||{};const big=st==='stagger'&&o.dur>=.3;
     M.react={k:ha.body?MC_HIT.body:ha.up?(big?MC_HIT.upper:MC_HIT.face):big?MC_HIT.big:o.dur>=.18?MC_HIT.medium:MC_HIT.light,t0:t,mir:(ha.dir||1)>0}}
   M.hits=o.hits||0;
+  // fouls and everything after the final bell run on real time: the fight clock is frozen for the referee and after the bell
   let want=null;const now=performance.now()/1000;
   if(o.foulAnim&&o.foulAnim.id!==M.foulId){M.foulId=o.foulAnim.id;M.foul={k:o.foulAnim.kind==='head'?'illegalHeadbutt':'illegalElbowPunch',t0:now}}
   if(M.foul&&(now-M.foul.t0>R3MC.clips[M.foul.k].dur*.5||!mcOk(M.foul.k)))M.foul=null;
@@ -120,12 +121,14 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   else if(st==='dodge'&&mcOk('dodging')){const C=R3MC.clips.dodging,lean=raw.lean||0,duck=o.dodge==='duck'||(raw.crouch||0)>Math.abs(lean)*.02;
     const pk=duck?C.dg.duck:((lean>0)!==south?C.dg.pos:C.dg.neg),k2=Math.sin(Math.PI*clamp(k,0,1)),t0=Math.max(0,pk-.35);
     want={k:'dodging',t:t0+(pk-t0)*k2,key:'dg'+(duck?'d':lean>0?'l':'r'),dodge:1}}
-  else if(f.phase==='end'&&f.res&&f.res.winner==='p'&&mcOk('defeated')){want={k:'defeated',t:Math.min(t-(M.defT??(M.defT=t)),R3MC.clips.defeated.dur-.05),key:'def',free:1}}
-  else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:t-(M.celebT??(M.celebT=t)),loop:1,key:'cel',free:1,root:.25}}
+  else if(f.phase==='end'&&f.res&&f.res.winner==='p'&&mcOk('defeated')){want={k:'defeated',t:Math.min(now-(M.defT??(M.defT=now)),R3MC.clips.defeated.dur-.05),key:'def',free:1}}
+  else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:now-(M.celebT??(M.celebT=now)),loop:1,key:'cel',free:1,root:.25}}
   else if(f.phase==='down'&&f.count&&f.count.d===f.p){const pool=(R.oL&&R.oL.expr==='cocky'?['standingTauntChestThump','taunt1','taunt']:['taunt1','taunt','standingTauntChestThump']).filter(mcOk),c=pool[0]||'fightingIdle';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
   if(M.react&&!mcOk(M.react.k))M.react=null;
   if(!want&&M.react){const C=R3MC.clips[M.react.k],el=(t-M.react.t0)*1.6;if(el<C.dur*.85)want={k:M.react.k,t:el,mir:M.react.mir,key:'r'+M.react.t0};else M.react=null}
   if(!want)want={k:'fightingIdle',t:t*(o.hurt>0?.8:1),loop:1,key:'idle'};
+  // Duncan does not do sad: when he loses he facepalms (his own animation, not a clip)
+  if(u.duncan&&f.phase==='end'&&f.res&&f.res.winner==='p'){r3duncanFacepalm(R.opp,now-(M.dfpT??(M.dfpT=now)));return true}
   // southpaws mirror everything (their lead hand is the right)
   if(south)want.mir=!want.mir;
   if(!mcOk(want.k)||u.duncan&&(want.key==='kd'||want.key==='up')){M.cur=null;return false}       // switched off in the animation studio: the classic posing takes this moment
@@ -186,3 +189,9 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
     const ish=_mq[0].copy(A.sh.quaternion).invert(),zE=r3mcPerp(_mv[5],_mv[7].copy(Uc).negate(),Fc,_mv[4].copy(_mZ).applyQuaternion(A.sh.quaternion));
     r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,Fc.applyQuaternion(ish),zE.applyQuaternion(ish));A.hand.quaternion.identity()}
   root.updateMatrixWorld(true)}
+/* Duncan's facepalm: a glove comes up over his eyes, his head dips and shakes while his spring sags, the other glove drops; held */
+function r3duncanFacepalm(root,t){const u=root.userData,hy=u.hy0,ease=x=>x<0?0:x>1?1:x*x*(3-2*x),up=ease(t/.7);
+  const shake=t>.7?Math.sin((t-.7)*14)*.16*Math.max(0,1-(t-.7)/1.6):0;
+  r3duncanBend(u,_mq[0].setFromEuler(_mde.set(.14*up,shake*.4,0)),.15*up);u.headG.quaternion.setFromEuler(_mde.set(.16*up,shake,0));root.updateMatrixWorld(true);
+  const face=root.worldToLocal(u.headG.localToWorld(_mv[0].set(-.03,hy+.16-u.headG.position.y,.52)));
+  r3duncanReach(root,-1,_mv[1].set(-.32,hy-.2,.6).lerp(face,up));r3duncanReach(root,1,_mv[2].set(.32,hy-.2,.6).lerp(_mv[3].set(.55,.55,.2),up*.85));root.updateMatrixWorld(true)}

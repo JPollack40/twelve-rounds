@@ -3366,6 +3366,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if((o.hits||0)>M.hits){const ha=o.hitAnim||{};const big=st==='stagger'&&o.dur>=.3;
     M.react={k:ha.body?MC_HIT.body:ha.up?(big?MC_HIT.upper:MC_HIT.face):big?MC_HIT.big:o.dur>=.18?MC_HIT.medium:MC_HIT.light,t0:t,mir:(ha.dir||1)>0}}
   M.hits=o.hits||0;
+  // fouls and everything after the final bell run on real time: the fight clock is frozen for the referee and after the bell
   let want=null;const now=performance.now()/1000;
   if(o.foulAnim&&o.foulAnim.id!==M.foulId){M.foulId=o.foulAnim.id;M.foul={k:o.foulAnim.kind==='head'?'illegalHeadbutt':'illegalElbowPunch',t0:now}}
   if(M.foul&&(now-M.foul.t0>R3MC.clips[M.foul.k].dur*.5||!mcOk(M.foul.k)))M.foul=null;
@@ -3384,12 +3385,14 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   else if(st==='dodge'&&mcOk('dodging')){const C=R3MC.clips.dodging,lean=raw.lean||0,duck=o.dodge==='duck'||(raw.crouch||0)>Math.abs(lean)*.02;
     const pk=duck?C.dg.duck:((lean>0)!==south?C.dg.pos:C.dg.neg),k2=Math.sin(Math.PI*clamp(k,0,1)),t0=Math.max(0,pk-.35);
     want={k:'dodging',t:t0+(pk-t0)*k2,key:'dg'+(duck?'d':lean>0?'l':'r'),dodge:1}}
-  else if(f.phase==='end'&&f.res&&f.res.winner==='p'&&mcOk('defeated')){want={k:'defeated',t:Math.min(t-(M.defT??(M.defT=t)),R3MC.clips.defeated.dur-.05),key:'def',free:1}}
-  else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:t-(M.celebT??(M.celebT=t)),loop:1,key:'cel',free:1,root:.25}}
+  else if(f.phase==='end'&&f.res&&f.res.winner==='p'&&mcOk('defeated')){want={k:'defeated',t:Math.min(now-(M.defT??(M.defT=now)),R3MC.clips.defeated.dur-.05),key:'def',free:1}}
+  else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:now-(M.celebT??(M.celebT=now)),loop:1,key:'cel',free:1,root:.25}}
   else if(f.phase==='down'&&f.count&&f.count.d===f.p){const pool=(R.oL&&R.oL.expr==='cocky'?['standingTauntChestThump','taunt1','taunt']:['taunt1','taunt','standingTauntChestThump']).filter(mcOk),c=pool[0]||'fightingIdle';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
   if(M.react&&!mcOk(M.react.k))M.react=null;
   if(!want&&M.react){const C=R3MC.clips[M.react.k],el=(t-M.react.t0)*1.6;if(el<C.dur*.85)want={k:M.react.k,t:el,mir:M.react.mir,key:'r'+M.react.t0};else M.react=null}
   if(!want)want={k:'fightingIdle',t:t*(o.hurt>0?.8:1),loop:1,key:'idle'};
+  // Duncan does not do sad: when he loses he facepalms (his own animation, not a clip)
+  if(u.duncan&&f.phase==='end'&&f.res&&f.res.winner==='p'){r3duncanFacepalm(R.opp,now-(M.dfpT??(M.dfpT=now)));return true}
   // southpaws mirror everything (their lead hand is the right)
   if(south)want.mir=!want.mir;
   if(!mcOk(want.k)||u.duncan&&(want.key==='kd'||want.key==='up')){M.cur=null;return false}       // switched off in the animation studio: the classic posing takes this moment
@@ -3450,6 +3453,12 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
     const ish=_mq[0].copy(A.sh.quaternion).invert(),zE=r3mcPerp(_mv[5],_mv[7].copy(Uc).negate(),Fc,_mv[4].copy(_mZ).applyQuaternion(A.sh.quaternion));
     r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,Fc.applyQuaternion(ish),zE.applyQuaternion(ish));A.hand.quaternion.identity()}
   root.updateMatrixWorld(true)}
+/* Duncan's facepalm: a glove comes up over his eyes, his head dips and shakes while his spring sags, the other glove drops; held */
+function r3duncanFacepalm(root,t){const u=root.userData,hy=u.hy0,ease=x=>x<0?0:x>1?1:x*x*(3-2*x),up=ease(t/.7);
+  const shake=t>.7?Math.sin((t-.7)*14)*.16*Math.max(0,1-(t-.7)/1.6):0;
+  r3duncanBend(u,_mq[0].setFromEuler(_mde.set(.14*up,shake*.4,0)),.15*up);u.headG.quaternion.setFromEuler(_mde.set(.16*up,shake,0));root.updateMatrixWorld(true);
+  const face=root.worldToLocal(u.headG.localToWorld(_mv[0].set(-.03,hy+.16-u.headG.position.y,.52)));
+  r3duncanReach(root,-1,_mv[1].set(-.32,hy-.2,.6).lerp(face,up));r3duncanReach(root,1,_mv[2].set(.32,hy-.2,.6).lerp(_mv[3].set(.55,.55,.2),up*.85));root.updateMatrixWorld(true)}
 /* ================= real-time fight engine =================
    Simulation runs on a fixed 1/120 s step with its own seeded RNG; rendering interpolates poses. */
 const PUNCH={
@@ -5216,7 +5225,8 @@ function weighinHTML(n,f,o){
   if(done)return `<div class="card flat"><span class="lbl">Weigh-in</span><p style="margin:6px 0 2px">${cut?`<b>${esc(CUTS[n.cut].name)}.</b> ${esc(CUTS[n.cut].fx)} `:''}<b>${esc(FACEOFF[n.faceoff].name)}.</b> ${esc(FACEOFF[n.faceoff].fx)}</p></div>`;
   return `<div class="card col"><span class="lbl">Weigh-in</span>${cut&&!n.cut?`<p class="muted" style="margin:4px 0">You are cutting down to ${DIVS[B().div].name} (${divLb(B().div)} lb). Base chance of missing weight: ${Math.round(wi.miss*100)}%.</p>
     <div class="col" style="gap:6px">${Object.entries(CUTS).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="cut" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)} Chance to miss: ${Math.round(Math.min(.95,wi.miss*c.miss)*100)}%.</small></button>`).join('')}</div>`
-    :`<p class="muted" style="margin:4px 0">${cut?esc(CUTS[n.cut].name)+'. ':'You make weight easily. '}Now the face-off with ${esc(f.last)}.</p><div class="col" style="gap:6px">${Object.entries(FACEOFF).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="faceoff" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}</div>`}
+    :`<p class="muted" style="margin:4px 0">${cut?esc(CUTS[n.cut].name)+'. ':'You make weight easily. '}Now the face-off with ${esc(f.last)}.</p>
+    <div class="row" style="gap:6px;justify-content:center"><div id="wiP" style="flex:1;max-width:200px;aspect-ratio:3/4;border-radius:10px;background:#e9e4d8"></div><div id="wiO" style="flex:1;max-width:200px;aspect-ratio:3/4;border-radius:10px;background:#e9e4d8"></div></div><div class="col" style="gap:6px">${Object.entries(FACEOFF).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="faceoff" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}</div>`}
 const PRESS={
   trash:{name:'Talk trash',fx:'Hype sells tickets: +8% purse. They come out angry: more aggressive and harder-hitting, but they take more risks.'},
   respect:{name:'Show respect',fx:'The judges and the crowd warm to you: fairer scoring, and stare-downs don\'t rattle you.'},
@@ -5698,6 +5708,12 @@ AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=
   el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el)r3stage(el,playerLook(),{clip:['fightingIdle','taunt'],height:b.height,arch:b.arch})}})();
+
+/* the weigh-in face-off: you and your opponent square up, live where the sculpted fighters allow, otherwise as portraits */
+AFTER.fightnight=()=>{const P=$('#wiP'),O=$('#wiO');if(!P||!O||!G||!G.next)return;const b=B(),f=G.world.f[G.next.offer.oppId];if(!f)return;
+  const ol=fillLook(f),still=(el,look,o)=>{try{const u=R3P.ok()?R3P.shot(look,Object.assign({mode:'full',size:240,guard:'high'},o)):portrait(look);el.innerHTML=`<img src="${u}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`}catch(e){}};
+  if(!r3stage(P,playerLook(),{clip:['fightingIdle','taunt'],rot:.9,height:b.height,arch:b.arch,zoom:1.15}))still(P,playerLook(),{height:b.height,arch:b.arch,rot:.5});
+  if(!r3stage(O,ol,{clip:['fightingIdle','standingTauntChestThump'],rot:-.9,height:f.height,arch:f.arch,legend:f.legend,zoom:1.15}))still(O,ol,{height:f.height,arch:f.arch,legend:f.legend,rot:-.5})};
 /* ================= daily challenge + legends gallery ================= */
 /* One seeded fight a day: a legend from either circuit plus a twist. Same fight for everyone on that date.
    Best score per day and a win streak live in localStorage; the result card copies a spoiler-free share line. */

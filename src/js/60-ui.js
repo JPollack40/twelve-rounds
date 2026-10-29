@@ -425,7 +425,8 @@ function weighinHTML(n,f,o){
   if(done)return `<div class="card flat"><span class="lbl">Weigh-in</span><p style="margin:6px 0 2px">${cut?`<b>${esc(CUTS[n.cut].name)}.</b> ${esc(CUTS[n.cut].fx)} `:''}<b>${esc(FACEOFF[n.faceoff].name)}.</b> ${esc(FACEOFF[n.faceoff].fx)}</p></div>`;
   return `<div class="card col"><span class="lbl">Weigh-in</span>${cut&&!n.cut?`<p class="muted" style="margin:4px 0">You are cutting down to ${DIVS[B().div].name} (${divLb(B().div)} lb). Base chance of missing weight: ${Math.round(wi.miss*100)}%.</p>
     <div class="col" style="gap:6px">${Object.entries(CUTS).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="cut" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)} Chance to miss: ${Math.round(Math.min(.95,wi.miss*c.miss)*100)}%.</small></button>`).join('')}</div>`
-    :`<p class="muted" style="margin:4px 0">${cut?esc(CUTS[n.cut].name)+'. ':'You make weight easily. '}Now the face-off with ${esc(f.last)}.</p><div class="col" style="gap:6px">${Object.entries(FACEOFF).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="faceoff" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}</div>`}
+    :`<p class="muted" style="margin:4px 0">${cut?esc(CUTS[n.cut].name)+'. ':'You make weight easily. '}Now the face-off with ${esc(f.last)}.</p>
+    <div class="row" style="gap:6px;justify-content:center"><div id="wiP" style="flex:1;max-width:200px;aspect-ratio:3/4;border-radius:10px;background:#e9e4d8"></div><div id="wiO" style="flex:1;max-width:200px;aspect-ratio:3/4;border-radius:10px;background:#e9e4d8"></div></div><div class="col" style="gap:6px">${Object.entries(FACEOFF).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="faceoff" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}</div>`}
 const PRESS={
   trash:{name:'Talk trash',fx:'Hype sells tickets: +8% purse. They come out angry: more aggressive and harder-hitting, but they take more risks.'},
   respect:{name:'Show respect',fx:'The judges and the crowd warm to you: fairer scoring, and stare-downs don\'t rattle you.'},
@@ -907,3 +908,9 @@ AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=
   el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el)r3stage(el,playerLook(),{clip:['fightingIdle','taunt'],height:b.height,arch:b.arch})}})();
+
+/* the weigh-in face-off: you and your opponent square up, live where the sculpted fighters allow, otherwise as portraits */
+AFTER.fightnight=()=>{const P=$('#wiP'),O=$('#wiO');if(!P||!O||!G||!G.next)return;const b=B(),f=G.world.f[G.next.offer.oppId];if(!f)return;
+  const ol=fillLook(f),still=(el,look,o)=>{try{const u=R3P.ok()?R3P.shot(look,Object.assign({mode:'full',size:240,guard:'high'},o)):portrait(look);el.innerHTML=`<img src="${u}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`}catch(e){}};
+  if(!r3stage(P,playerLook(),{clip:['fightingIdle','taunt'],rot:.9,height:b.height,arch:b.arch,zoom:1.15}))still(P,playerLook(),{height:b.height,arch:b.arch,rot:.5});
+  if(!r3stage(O,ol,{clip:['fightingIdle','standingTauntChestThump'],rot:-.9,height:f.height,arch:f.arch,legend:f.legend,zoom:1.15}))still(O,ol,{height:f.height,arch:f.arch,legend:f.legend,rot:-.5})};
