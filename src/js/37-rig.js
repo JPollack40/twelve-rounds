@@ -4,33 +4,34 @@
    unchanged. The texture is recoloured per fighter through a material mask; fights add eye swelling (morph targets) and
    bruises and cuts painted onto the face. */
 const R3_RIG={};
-function r3rigOn(L){return !!(Settings.sculpt&&!L.fem&&!L.model&&R3M.ok('boxer'))}
+const r3rigKey=L=>L.fem?'boxer_f':'boxer';
+function r3rigOn(L){return !!(Settings.sculpt&&!L.model&&R3M.ok(r3rigKey(L)))}
 /* recolour the base texture for a look: skin, hair (or bald scalp), trunks, waistband, gloves and boots follow the fighter */
 function r3rigPixels(L,size){
-  const M=R3M.m.boxer,X=M.extras,ref=X.ref,c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.drawImage(M.img,0,0,size,size);
+  const M=R3M.m[r3rigKey(L)],X=M.extras,ref=X.ref,c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.drawImage(M.img,0,0,size,size);
   const id=x.getImageData(0,0,size,size),d=id.data,mk=M.mask,ms=mk.w/size;
   const rgb=h=>{const n=new THREE.Color(h).getHex();return [n>>16&255,n>>8&255,n&255]},lum=a=>.299*a[0]+.587*a[1]+.114*a[2];
   const skin=rgb(L.skin),hair=rgb(L.hairColor),tr=rgb(L.trunks),trim=rgb(L.trim),gl=rgb(L.gloves),boot=rgb(L.shoes||'#'+new THREE.Color(L.trim).lerp(new THREE.Color(0x2a2426),.35).getHexString());
   const ls=lum(ref.skin);
-  const lh=lum(ref.hair),lb=lum(ref.band),lg=lum(ref.glove),bald=L.hair==='bald'||L.hair==='none';
+  const lh=lum(ref.hair),lb=lum(ref.band),lg=lum(ref.glove),lt=lum(ref.trunks),lto=ref.top?lum(ref.top):0,lbt=lum(ref.boot),bald=L.hair==='bald'||L.hair==='none';
   // shaved sides (mohawk) and buzz cuts tint the painted hair toward the scalp; cornrows show scalp between rows
-  const sh=L.hair==='mohawk'?.72:L.hair==='buzz'?.38:L.hair==='braids'?.3:0;if(sh)for(let k=0;k<3;k++)hair[k]=hair[k]*(1-sh)+skin[k]*sh*.92;
+  const nat=r3rigNative(L),sh=nat?0:L.hair==='mohawk'?.72:L.hair==='buzz'?.38:L.hair==='braids'?.3:0;if(sh)for(let k=0;k<3;k++)hair[k]=hair[k]*(1-sh)+skin[k]*sh*.92;
   for(let y=0;y<size;y++){const row=((y*ms)|0)*mk.w;
     for(let xx=0;xx<size;xx++){const i=(y*size+xx)*4,m=mk.m[row+((xx*ms)|0)];if(m===0||m===7)continue;
       const r=d[i],g=d[i+1],b=d[i+2],l=.299*r+.587*g+.114*b;let o;
       if(m===1||m===8){const k=m===8?clamp(1+.9*(l/ls-1),.3,1.35):clamp(1+.5*(l/ls-1),.55,1.35);o=[skin[0]*k,skin[1]*k,skin[2]*k]}
       else if(m===2)o=bald?[skin[0]*(.84+.12*l/lh),skin[1]*(.84+.12*l/lh),skin[2]*(.84+.12*l/lh)]:[hair[0]*.35+hair[0]*.75*l/lh,hair[1]*.35+hair[1]*.75*l/lh,hair[2]*.35+hair[2]*.75*l/lh];
-      else if(m===3){const k=clamp(.82+(l-8)/70,.5,1.3);o=[tr[0]*k,tr[1]*k,tr[2]*k]}
+      else if(m===3||m===9){const k=clamp(.82+(l-(m===9?lto:lt))/70,.7,1.25);o=[tr[0]*k,tr[1]*k,tr[2]*k]}
       else if(m===4){const k=clamp(l/lb,.55,1.2);o=[trim[0]*k,trim[1]*k,trim[2]*k]}
       else if(m===5){const rd=r-(g+b)/2,k=rd<30?(l<40?.82:.92):clamp(.6+.4*l/lg,.6,1.3);o=[gl[0]*k,gl[1]*k,gl[2]*k]}
-      else if(m===6){const k=clamp(.8+(l-34)/90,.5,1.4);o=[boot[0]*k,boot[1]*k,boot[2]*k]}
+      else if(m===6){const k=clamp(.8+(l-lbt)/90,.5,1.4);o=[boot[0]*k,boot[1]*k,boot[2]*k]}
       else continue;
       d[i]=o[0]>255?255:o[0];d[i+1]=o[1]>255?255:o[1];d[i+2]=o[2]>255?255:o[2]}}
   x.putImageData(id,0,0);
   const fp=r3rigFacePaint(L,size);if(fp){x.drawImage(fp,0,0,size,size);return {c,id:x.getImageData(0,0,size,size)}}
   return {c,id}}
 function r3rigTex(L,size=1024){
-  const key=[size,L.skin,L.hairColor,L.hair,L.beard,L.scar,L.trunks,L.trim,L.gloves,L.shoes].join('|');R3_RIG.tex=R3_RIG.tex||new Map();
+  const key=[size,r3rigKey(L),L.skin,L.hairColor,L.hair,L.beard,L.scar,L.trunks,L.trim,L.gloves,L.shoes].join('|');R3_RIG.tex=R3_RIG.tex||new Map();
   const hit=R3_RIG.tex.get(key);if(hit){R3_RIG.tex.delete(key);R3_RIG.tex.set(key,hit);return hit}
   const {c,id}=r3rigPixels(L,size);const t=new THREE.CanvasTexture(c);t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.userData.keep=1;
   const e={t,id};R3_RIG.tex.set(key,e);
@@ -42,7 +43,7 @@ function r3rigGlow(bone){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map
   const gm={emissive:new THREE.Color(0),_i:0,get emissiveIntensity(){return this._i},set emissiveIntensity(v){this._i=v;sp.material.opacity=Math.min(1,v*1.1);sp.material.color.copy(this.emissive);sp.visible=v>0}};
   sp.visible=false;return gm}
 function r3rigged(L,opt={}){
-  const M=R3M.m.boxer,X=M.extras,J=X.joints,V=a=>new THREE.Vector3(a[0],a[1],a[2]),DOWN=new THREE.Vector3(0,-1,0);
+  const mk=r3rigKey(L),M=R3M.m[mk],X=M.extras,J=X.joints,V=a=>new THREE.Vector3(a[0],a[1],a[2]),DOWN=new THREE.Vector3(0,-1,0);
   const root=new THREE.Group();root.scale.setScalar(1+((L.height||70)-70)*.011);
   const B={};for(const b of X.bones){B[b]=new THREE.Bone();B[b].name=b}
   for(const b of X.bones){const p=X.parent[b];B[b].position.copy(V(J[b])).sub(p?V(J[p]):new THREE.Vector3());if(p)B[p].add(B[b])}
@@ -63,7 +64,7 @@ function r3rigged(L,opt={}){
   const big=opt.texSize||1024,T=r3rigTex(L,big);
   const mat=r3cel(0xffffff,T.t,false,1);
   const mesh=new THREE.SkinnedMesh(M.geo,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.frustumCulled=false;mesh.userData.olw=.0042;root.add(mesh);
-  const MI=r3rigMorph(),inf=mesh.morphTargetInfluences;inf[MI.bulk]=BT.bulk+(mass-1)*3;inf[MI.belly]=BT.belly;
+  const MI=r3rigMorph(mk),inf=mesh.morphTargetInfluences;inf[MI.bulk]=(BT.bulk+(mass-1)*3)*(L.fem?.7:1);inf[MI.belly]=BT.belly;
   root.updateMatrixWorld(true);mesh.bind(new THREE.Skeleton(X.bones.map(b=>B[b])));
   // head centre marker (portrait framing and hit flashes aim here)
   const eyeY=(X.eyes.L[1]+X.eyes.R[1])/2,hc=new THREE.Object3D();hc.position.set(0,eyeY-J.headG[1],0);B.headG.add(hc);
@@ -73,25 +74,26 @@ function r3rigged(L,opt={}){
     const rh=new THREE.Group();rh.position.set(0,eyeY-J.headG[1]-.02,0);rh.scale.setScalar(1.04);B.headG.add(rh);
     r3robe(L,P0,1,{spine:rs,headG:rh,arms,al:arms[1].L1/.44})}
   // hair geometry (the procedural styles, fitted to this scalp), eyelids and a mouth cavity for expressions
-  const HF=r3rigHead(),hg=new THREE.Group();hg.position.set(HF.C.x-J.headG[0],HF.C.y-J.headG[1],HF.C.z-J.headG[2]);hg.scale.setScalar(HF.k);B.headG.add(hg);
-  if(L.hair&&!['bald','none','short'].includes(L.hair))r3hair(hg,L,HF.cap,.22,HF.S);
+  const HF=r3rigHead(mk),hg=new THREE.Group();hg.position.set(HF.C.x-J.headG[0],HF.C.y-J.headG[1],HF.C.z-J.headG[2]);hg.scale.setScalar(HF.k);B.headG.add(hg);
+  const nat=r3rigNative(L);if(!nat&&L.hair&&!['bald','none'].includes(L.hair))r3hair(hg,L,HF.cap,.22,HF.S);
+  if(MI.tail!=null)inf[MI.tail]=nat?0:1;
   const face=r3rigFaceRig(L,hg,HF,T);
   r3outline(root);
-  root.userData={rig:true,pelvis:B.pelvis,spine:B.spine,chest:B.chest,headG:B.headG,hc,head:null,face,arms,legs,mesh,mat,tex:T,P:R3_BT.athletic,legY:J.pelvis[1]+.11,hy0:eyeY};
+  root.userData={rig:true,mk,pelvis:B.pelvis,spine:B.spine,chest:B.chest,headG:B.headG,hc,head:null,face,arms,legs,mesh,mat,tex:T,P:R3_BT.athletic,legY:J.pelvis[1]+.11,hy0:eyeY};
   return root}
 /* fight face: eye swelling grows the morph targets; bruising, cuts and sweat are painted onto this fight's own copy of the texture */
 function r3rigFace(R,P){const u=R.opp.userData,d=P.dmg||{};
-  const inf=u.mesh.morphTargetInfluences,MI=r3rigMorph();inf[MI.swellL]=Math.min(1,(d.swellL||0)*1.1);inf[MI.swellR]=Math.min(1,(d.swellR||0)*1.1);
+  const inf=u.mesh.morphTargetInfluences,MI=r3rigMorph(u.mk);inf[MI.swellL]=Math.min(1,(d.swellL||0)*1.1);inf[MI.swellR]=Math.min(1,(d.swellR||0)*1.1);
   const key=[Math.round((d.swellL||0)*5),Math.round((d.swellR||0)*5),Math.round((d.cheek||0)*4),Math.round((P.cut||0)/12),Math.min(5,P.sweat||0)].join(',');
   if(key===R.texKey)return;R.texKey=key;
   if(!R.rigC){const src=u.tex,c=document.createElement('canvas');c.width=c.height=Math.sqrt(src.id.data.length/4);R.rigC=c;
     const t=new THREE.CanvasTexture(c);t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;u.mat.map=t;u.mat.needsUpdate=true;R.rigT=t}
   const c=R.rigC,x=c.getContext('2d'),N=c.width;x.putImageData(u.tex.id,0,0);
-  const ov=r3rigDamage(d,P.cut||0);if(ov){x.imageSmoothingEnabled=true;x.drawImage(ov,0,0,N,N)}
+  const ov=r3rigDamage(u.mk,d,P.cut||0);if(ov){x.imageSmoothingEnabled=true;x.drawImage(ov,0,0,N,N)}
   R.rigT.needsUpdate=true}
 /* where each head texel sits on the model (bind pose, game units), rasterised once from the head and neck triangles */
 const R3_HM=512;
-function r3rigHeadMap(){const M=R3M.m.boxer;if(M.hm)return M.hm;const g=M.geo,p=g.attributes.position.array,uv=g.attributes.uv.array,si=g.attributes.skinIndex.array,sw=g.attributes.skinWeight.array,ix=g.index.array;
+function r3rigHeadMap(mk){const M=R3M.m[mk];if(M.hm)return M.hm;const g=M.geo,p=g.attributes.position.array,uv=g.attributes.uv.array,si=g.attributes.skinIndex.array,sw=g.attributes.skinWeight.array,ix=g.index.array;
   const hb=M.extras.bones.indexOf('headG'),R=R3_HM,pos=new Float32Array(R*R*3),has=new Uint8Array(R*R),hw=new Float32Array(R*R);
   const head=i=>{for(let k=0;k<4;k++)if(si[i*4+k]===hb&&sw[i*4+k]>.25)return true;return false},wt=i=>{for(let k=0;k<4;k++)if(si[i*4+k]===hb)return sw[i*4+k];return 0};
   for(let t=0;t<ix.length;t+=3){const a=ix[t],b=ix[t+1],c=ix[t+2];if(!head(a)&&!head(b)&&!head(c))continue;
@@ -102,8 +104,8 @@ function r3rigHeadMap(){const M=R3M.m.boxer;if(M.hm)return M.hm;const g=M.geo,p=
       for(let k=0;k<3;k++)pos[i*3+k]=w0*p[a*3+k]+w1*p[b*3+k]+w2*p[c*3+k];hw[i]=w0*wt(a)+w1*wt(b)+w2*wt(c)}}
   const list=[];for(let i=0;i<R*R;i++)if(has[i])list.push(i);return M.hm={pos,hw,list:Uint32Array.from(list)}}
 /* bruising around each eye and cheek, a red nose, and a cut over the left brow with a trickle of blood, painted by distance on the surface */
-function r3rigDamage(d,cut){const eL=d.swellL||0,eR=d.swellR||0,ch=d.cheek||0;if(eL+eR+ch<.04&&cut<=0)return null;
-  const hm=r3rigHeadMap(),S=R3M.m.boxer.extras.spots,R=R3_HM;R3_RIG.ov=R3_RIG.ov||document.createElement('canvas');const c=R3_RIG.ov;c.width=c.height=R;const x=c.getContext('2d'),id=x.createImageData(R,R),o=id.data;
+function r3rigDamage(mk,d,cut){const eL=d.swellL||0,eR=d.swellR||0,ch=d.cheek||0;if(eL+eR+ch<.04&&cut<=0)return null;
+  const hm=r3rigHeadMap(mk),S=R3M.m[mk].extras.spots,R=R3_HM;R3_RIG.ov=R3_RIG.ov||document.createElement('canvas');const c=R3_RIG.ov;c.width=c.height=R;const x=c.getContext('2d'),id=x.createImageData(R,R),o=id.data;
   const g=(i,s,sg)=>{const dx=hm.pos[i*3]-s[0],dy=hm.pos[i*3+1]-s[1],dz=hm.pos[i*3+2]-s[2];return Math.exp(-(dx*dx+dy*dy+dz*dz)/(2*sg*sg))};
   const b0=S.browL0,b1=S.browL1,bd=[b1[0]-b0[0],b1[1]-b0[1],b1[2]-b0[2]],bl=bd[0]*bd[0]+bd[1]*bd[1]+bd[2]*bd[2],ca=Math.min(1,cut/40),mid=[(b0[0]+b1[0])/2,(b0[1]+b1[1])/2,(b0[2]+b1[2])/2];
   for(const i of hm.list){const pi=i*3;
@@ -121,12 +123,12 @@ function r3rigDamage(d,cut){const eL=d.swellL||0,eR=d.swellR||0,ch=d.cheek||0;if
   x.putImageData(id,0,0);return c}
 
 const R3_RIG_BT={lanky:{w:.93,sh:.96,bulk:-.45,belly:0},athletic:{w:1,sh:1,bulk:0,belly:0},brawler:{w:1.05,sh:1.04,bulk:1,belly:0},anvil:{w:1.1,sh:1.06,bulk:1.5,belly:1}};
-function r3rigMorph(){const M=R3M.m.boxer;if(!M.mi){M.mi={};(M.extras.morphs||['swellL','swellR']).forEach((k,i)=>M.mi[k]=i)}return M.mi}
+function r3rigMorph(mk){const M=R3M.m[mk];if(!M.mi){M.mi={};(M.extras.morphs||['swellL','swellR']).forEach((k,i)=>M.mi[k]=i)}return M.mi}
 /* ---------- fitting the procedural head layout to the sculpted head ----------
    A radial map of the scalp around a head centre (rays cast inward from outside) gives the surface in any direction; the
    procedural head's (angle, latitude) layout is warped so its eyes, mouth and chin land on this face. Hair styles, beards,
    scars and eyelids are then built with the procedural code against this surface, at the procedural head's scale. */
-function r3rigHead(){const M=R3M.m.boxer;if(M.hf)return M.hf;const X=M.extras,g=M.geo,p=g.attributes.position.array,si=g.attributes.skinIndex.array,sw=g.attributes.skinWeight.array,ix=g.index.array;
+function r3rigHead(mk){const M=R3M.m[mk];if(M.hf)return M.hf;const X=M.extras,g=M.geo,p=g.attributes.position.array,si=g.attributes.skinIndex.array,sw=g.attributes.skinWeight.array,ix=g.index.array;
   const hb=X.bones.indexOf('headG'),lm=X.lm,head=i=>{for(let k=0;k<4;k++)if(si[i*4+k]===hb&&sw[i*4+k]>.5)return true;return false};
   const box=new THREE.Box3(),v=new THREE.Vector3();const tris=[];
   for(let t=0;t<ix.length;t+=3){const a=ix[t],b=ix[t+1],c=ix[t+2];if(head(a)||head(b)||head(c)){tris.push(a,b,c);for(const q of [a,b,c]){v.fromArray(p,q*3);if(v.y>lm.chinB[1])box.expandByPoint(v)}}}
@@ -167,7 +169,7 @@ function r3rigFacePaint(L,size){const beard=L.beard&&L.beard!=='none',scar=L.sca
   if(L.beard==='mustache'||L.beard==='beard'||L.beard==='goatee'){x.fillStyle=hc;x.beginPath();x.moveTo(fx-50,fy+92);x.quadraticCurveTo(fx,fy+66,fx+50,fy+92);x.quadraticCurveTo(fx,fy+84,fx-50,fy+92);x.fill()}
   const sc=(pts)=>{line(pts,7,.25);x.strokeStyle='rgba(255,225,215,.55)';x.lineWidth=3.5;x.beginPath();pts.forEach(([th,lat],i)=>{const [px,py]=r3tx(th,lat);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()};
   if(L.scar==='brow'||L.scar==='both')sc([[.3,.32],[.4,.24],[.5,.18],[.56,.1]]);if(L.scar==='cheek'||L.scar==='both')sc([[-.42,-.12],[-.52,-.24],[-.6,-.36]]);if(L.scar==='nose')sc([[-.12,.02],[0,-.02],[.12,-.06]]);
-  const src=x.getImageData(0,0,1024,512).data,hm=r3rigHeadMap(),HF=r3rigHead(),R=R3_HM;
+  const mk=r3rigKey(L),src=x.getImageData(0,0,1024,512).data,hm=r3rigHeadMap(mk),HF=r3rigHead(mk),R=R3_HM;
   const oc=document.createElement('canvas');oc.width=oc.height=R;const ox=oc.getContext('2d'),od=ox.createImageData(R,R),o=od.data;
   for(const i of hm.list){if(hm.hw[i]<.6)continue;const [th,lat]=HF.toP(hm.pos[i*3],hm.pos[i*3+1],hm.pos[i*3+2]);const [px,py]=r3tx(th,lat);const si=((clamp(py|0,0,511))*1024+clamp(px|0,0,1023))*4;
     if(src[si+3]){o[i*4]=src[si];o[i*4+1]=src[si+1];o[i*4+2]=src[si+2];o[i*4+3]=src[si+3]}}
@@ -175,7 +177,7 @@ function r3rigFacePaint(L,size){const beard=L.beard&&L.beard!=='none',scar=L.sca
 /* eyelids (skin patches that close over each eye from the brow) and a dark mouth cavity revealed when the jaw drops */
 function r3rigFaceRig(L,hg,HF,T){const lids=[],inkM=r3flat(INK);
   // lid colour: the fighter's own recoloured skin just above the eyes, a shade darker
-  const hm=r3rigHeadMap(),E=R3M.m.boxer.extras.eyes,N=Math.sqrt(T.id.data.length/4),sc=N/R3_HM;let cr=0,cg=0,cb=0,n=0;
+  const mk=r3rigKey(L),hm=r3rigHeadMap(mk),E=R3M.m[mk].extras.eyes,N=Math.sqrt(T.id.data.length/4),sc=N/R3_HM;let cr=0,cg=0,cb=0,n=0;
   for(const i of hm.list){const x=hm.pos[i*3],y=hm.pos[i*3+1],z=hm.pos[i*3+2];for(const e of [E.L,E.R]){const dy=y-e[1]-.035,dx=x-e[0],dz=z-e[2];if(dx*dx+dy*dy+dz*dz<.012*.012){const px=((i%R3_HM)*sc)|0,py=(((i/R3_HM)|0)*sc)|0,j=(py*N+px)*4;cr+=T.id.data[j];cg+=T.id.data[j+1];cb+=T.id.data[j+2];n++}}}
   const lidC=n?new THREE.Color(`rgb(${(cr/n*.9)|0},${(cg/n*.9)|0},${(cb/n*.9)|0})`):new THREE.Color(L.skin);
   const skinM=r3cel(lidC.getHex(),null,false,.5);
@@ -191,7 +193,9 @@ function r3rigFaceRig(L,hg,HF,T){const lids=[],inkM=r3flat(INK);
   const m=HF.S(0,-.58,-.075),cav=r3mesh(new THREE.SphereGeometry(.05,14,10),r3flat(0x2a0d0d),{ol:false});cav.position.copy(m);cav.scale.set(1.1,.45,.6);cav.castShadow=false;hg.add(cav);
   return {lids}}
 /* expression for the sculpted face (same inputs as r3expr): lids close for blinks and squints, brows and jaw are morph targets */
-function r3rigExpr(bx,E){const u=bx.userData,inf=u.mesh.morphTargetInfluences,MI=r3rigMorph();
+function r3rigExpr(bx,E){const u=bx.userData,inf=u.mesh.morphTargetInfluences,MI=r3rigMorph(u.mk);
   const close=clamp(1-(E.lidOpen??1)+(E.squint||0)*.35-.12,0,1);for(const g of u.face.lids){g.visible=close>.05;g.scale.y=Math.max(.05,close)}
   inf[MI.browDown]=clamp(E.angry||0,0,1);inf[MI.browUp]=clamp(E.hurt||0,0,1);
   inf[MI.jaw]=clamp((E.open||0)*1.1+(E.grit||0)*.15,0,1)}
+/* the hair the base model was sculpted with needs no extra geometry: short for the men's model, braids into a ponytail for the women's */
+function r3rigNative(L){const h=L.hair||'short';return L.fem?h==='braids'||h==='ponytail':h==='short'}
