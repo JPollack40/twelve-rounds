@@ -42,6 +42,24 @@ const CHAPTERS=[
       const c=champsIn(b.div)[0];if(!c)return null;const bl=beltsOf(c.id,b.div);
       const o=mkOffer(c,'chapter','Big George Comes Back',`At ${ageOf(b.born)}, a shot at the ${bl.join(' & ')} title. Wearing your old trunks.`,{title:{belts:bl}});o.mods={};return o},
     done(win){if(win){G.chapters.push('comeback');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: the oldest champion'}}},
+  {id:'war',title:'The War',homage:'Hagler vs. Hearns, Las Vegas, 1985',
+    intro:'No feeling out, no jab, no tomorrow. Two of the hardest punchers alive meet in the middle of the ring at the opening bell. It will not go long.',
+    offer(){const b=B();if(G.phase!=='pro'||(playerRank()||99)>8)return null;
+      const c=divFighters(b.div).filter(f=>f.arch==='slugger'&&!f.rival&&f.rating>=playerOvr()-3&&rankOf(f.id,b.div)<=10).sort((a,c)=>c.rating-a.rating)[0];if(!c)return null;
+      const bl=beltsOf(c.id,b.div);const o=mkOffer(c,'chapter','The War',`Two big punchers, three minutes at a time. End it inside three rounds and the fight becomes legend.${bl.length?' '+bl.join(' & ')+' title on the line.':''}`,bl.length?{title:{belts:bl}}:{});o.purse=Math.round(o.purse*1.5);o.venue="Caesars Palace";o.mods={};return o},
+    done(win,res){if(win){G.chapters.push('war');if(['KO','TKO'].includes(res.method)&&res.round<=3){gainStat('pow',3);return 'Chapter complete: ended inside three rounds. +3 Power'}return 'Chapter complete: you survived The War'}}},
+  {id:'superfight',pri:2,title:'The Super Fight',homage:'Leonard vs. Hagler, Las Vegas, 1987',
+    intro:'You came back from retirement with one fight in mind. The champion is bigger, meaner and favored. Box, move, steal the rounds with flurries, and make the judges remember you.',
+    offer(){const b=B();if(G.phase!=='pro'||!(G.comebacks>0)||beltsOf('P',b.div).length||(playerRank()||99)>12)return null;
+      const c=champsIn(b.div).filter(f=>f.rating>=playerOvr()+2)[0];if(!c)return null;const bl=beltsOf(c.id,b.div);
+      const o=mkOffer(c,'chapter','The Super Fight',`The comeback fight everyone wanted: the ${bl.join(' & ')} title against ${shortName(c)}. Double purse.`,{title:{belts:bl}});o.purse*=2;o.venue="Caesars Palace";o.mods={};return o},
+    done(win){if(win){G.chapters.push('superfight');B().hype=clamp(B().hype+30,0,100);return 'Chapter complete: the greatest comeback win'}}},
+  {id:'money',pri:1,title:'The Money Fight',homage:'Mayweather vs. Pacquiao, Las Vegas, 2015',
+    intro:'Years of negotiations, and finally it is signed: two of the best fighters in the world, pound for pound. The biggest gate in boxing history. Everyone is watching.',
+    offer(){const b=B();if(G.phase!=='pro')return null;const P=p4pList(10),me=P.findIndex(e=>e.id==='P');if(me<0)return null;
+      const c=P.find(e=>e.id!=='P'&&e.f&&e.f.div===b.div)?.f;if(!c)return null;const bl=beltsOf(c.id,b.div).concat(beltsOf('P',b.div));
+      const o=mkOffer(c,'chapter','The Money Fight',`Pound-for-pound #${me+1} against ${shortName(c)}. Triple purse.${bl.length?' Belts on the line.':''}`,bl.length?{title:{belts:bl,defense:beltsOf('P',b.div).length>0}}:{});o.purse*=3;o.venue='MGM Grand Garden Arena';o.mods={};return o},
+    done(win){if(win){G.chapters.push('money');B().hype=clamp(B().hype+25,0,100);return 'Chapter complete: the biggest fight of the era'}}},
   // women's circuit chapters
   {id:'undercard',circ:'w',title:'The Undercard',homage:'Christy Martin vs. Deirdre Gogarty, Las Vegas, 1996',
     intro:'You\'re on the undercard of a heavyweight title fight, in front of a pay-per-view audience that has never watched a women\'s fight. Nobody expects much. Give them six rounds they will never forget.',

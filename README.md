@@ -128,3 +128,9 @@ A new opponent quirk, Dirty fighter, throws low blows and headbutts, more often 
 stops the action and gives you a breather (+14 stamina, hurt cleared, a little damage; a headbutt can open a cut). The first foul is a
 warning, each one after costs them a point on the cards, and a fifth is a disqualification. A DQ win counts as a stoppage for
 rankings and rematch odds but not as a knockout on your record.
+
+## More chapters
+The War (Hagler vs. Hearns: a top-10 slugger when you are top 8; a stoppage inside three rounds earns +3 Power), The Super Fight
+(Leonard vs. Hagler: after a comeback, a title shot against a stronger champion, double purse) and The Money Fight
+(Mayweather vs. Pacquiao: you and a division rival both in the pound-for-pound top 10, triple purse). Chapters now carry a priority,
+so the once-only Super Fight and the Money Fight are offered ahead of the others when several are eligible.

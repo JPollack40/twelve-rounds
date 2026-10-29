@@ -345,7 +345,7 @@ function genOffers(){
     offers.push(cb.length?(myBelts.length?mkOffer(cf,'unify','Callout: Unification',desc,{title:{belts:[...myBelts,...cb],unify:true}}):mkOffer(cf,'world','Callout: World Title',desc+` For the ${cb.join(' & ')} title.`,{title:{belts:cb}}))
       :mkOffer(cf,'grudge',re?'Rematch':'Callout Fight',desc))}}
   // chapters first
-  for(const ch of CHAPTERS){if(ch.circ&&ch.circ!==(G.circuit||'m'))continue;if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
+  for(const ch of [...CHAPTERS].sort((a,c)=>(c.pri||0)-(a.pri||0))){if(ch.circ&&ch.circ!==(G.circuit||'m'))continue;if(ch.offer&&!G.chapters.includes(ch.id)&&!G.flags['ch_'+ch.id+'_off']){const o=ch.offer();if(o){o.chapter=ch.id;offers.push(o);used.add(o.oppId);break}}}
   if(myBelts.length){
     const cont=ranking(d).filter(e=>e.id!=='P'&&!beltsOf(e.id,d).length);
     const mand=cont[0]?.f;if(mand&&!used.has(mand.id)){used.add(mand.id);offers.push(mkOffer(mand,'world','Mandatory Title Defense',`The ${myBelts.join(', ')} ordered this one. Your #1 contender.`,{title:{belts:myBelts.slice(),defense:true}}))}
