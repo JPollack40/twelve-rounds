@@ -6,7 +6,8 @@ const MC_INFO=[
   ['Punches',[['leadJab','Lead Jab','Jabs'],['crossPunch','Cross Punch','Crosses'],['hook','Hook','Lead-hand hooks'],['rightHook','Right Hook','Rear-hand hooks'],
     ['uppercut','Uppercut','Uppercuts (mirrored for the other hand)'],['bodyJabCross','Body Jab Cross','Body jabs and body crosses']]],
   ['Defense',[['centerBlock','Center Block','Blocking straight shots, and clinches'],['leftBlock','Left Block','Covering a hook to their left side'],['rightBlock','Right Block','Covering a hook to their right side'],
-    ['dodging','Dodging','Not used in fights yet']]],
+    ['dodging','Dodging','Slips and ducks (the deepest moment of each weave)']]],
+  ['Fouls',[['illegalHeadbutt','Illegal Headbutt','Dirty fighters\' headbutts'],['illegalElbowPunch','Illegal Elbow Punch','Dirty fighters\' illegal elbows']]],
   ['Getting hit',[['lightHitToHead','Light Hit To Head','Taking a jab'],['mediumHitToHead','Medium Hit To Head','Taking a solid head shot'],['bigHitToHead','Big Hit To Head','Taking a big head shot'],
     ['hitToBody','Hit To Body','Taking a body shot'],['receivePunchToTheFace','Receive Punch To The Face','Taking an uppercut'],['receivingABigUppercut','Receiving A Big Uppercut','Taking a big uppercut counter']]],
   ['Knockdowns',[['knockedDown','Knocked Down','Going down'],['gettingUp','Getting Up','Beating the count']]],
@@ -14,8 +15,9 @@ const MC_INFO=[
   ['Celebrations',[['victory','Victory','Celebrating a win over you'],['victoryIdle','Victory Idle','Celebrating a win over you'],['victoryIdle1','Victory Idle (1)','Celebrating a win over you'],
     ['snakeHipHopDance','Snake Hip Hop Dance','Some fighters dance when they beat you'],['lockingHipHopDance','Locking Hip Hop Dance','Some fighters dance when they beat you'],
     ['thrillerPart2','Thriller Part 2','Every winner on Halloween week (Oct 25-31)']]],
+  ['Losing',[['defeated','Defeated','Losing to you on points, by stoppage or by DQ']]],
   ['Other',[['walking','Walking','Not used in fights yet']]]];
-const mcFree=k=>/^(victory|victoryIdle|victoryIdle1|snakeHipHopDance|lockingHipHopDance|thrillerPart2|taunt|taunt1|standingTauntChestThump|walking|dodging)$/.test(k);
+const mcFree=k=>/^(defeated|victory|victoryIdle|victoryIdle1|snakeHipHopDance|lockingHipHopDance|thrillerPart2|taunt|taunt1|standingTauntChestThump|walking|dodging)$/.test(k);
 SCR.anims=()=>{
   const A=UI.an=UI.an||{k:'fightingIdle',play:true,speed:1,mir:false,fight:true,fem:false,t:0};const off=Settings.mcOff||{};
   const back=typeof G!=='undefined'&&G&&G.boxer?'settings':'tsettings';

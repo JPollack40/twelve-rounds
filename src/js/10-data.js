@@ -305,6 +305,6 @@ const QUIRKS={
   glassChin:{name:'Glass chin',ai:{},weak:'glass',scout:'Hits hard but does not take it well.'},
   ironChin:{name:'Iron chin',ai:{chinBonus:12},scout:'Walks through punches.'},
   counterBaiter:{name:'Counter baiter',ai:{counter:.7,agg:.35},weak:'flurry',scout:'Waits for you to lead, then counters. Over-commits when he finally opens up.'},
-  dirty:{name:'Dirty fighter',ai:{dirty:1},scout:'Fights dirty when the fight gets rough: low blows and heads. The referee will take points, and eventually the fight.'},
+  dirty:{name:'Dirty fighter',ai:{dirty:1},scout:'Fights dirty when the fight gets rough: illegal elbows and heads. The referee will take points, and eventually the fight.'},
   swarmerBody:{name:'Pressure',ai:{agg:.8,body:.35},weak:'upper',scout:'Walks in low behind a high guard: uppercuts catch him coming in.'},
 };

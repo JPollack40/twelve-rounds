@@ -19,7 +19,7 @@ const CALLS={
   pkd:{p:3,l:['{P} is down!','{P} goes down hard!','{O} drops {P}!']},
   orise:{p:3,l:['{O} beats the count!','{O} is up, but are the legs there?']},
   prise:{p:3,l:['{P} is up! Can {P} survive the round?','{P} beats the count!']},
-  foul:{p:3,l:['That was low! The referee steps in and warns {O}.','{O} goes low, and the referee has seen it.']},
+  foul:{p:3,l:['That was illegal! The referee steps in and warns {O}.','{O} fights dirty, and the referee has seen it.']},
   ded:{p:3,l:['The referee takes a point from {O}!','{O} has been warned. That\'s a point gone.']},
   dq:{p:3,l:['That\'s it! {O} is disqualified!']},
   clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.']},
@@ -496,10 +496,11 @@ class Fight{
     p.hp=Math.max(1,p.hp-(head?4:2));p.sta=Math.min(p.maxSta,p.sta+14);p.hurt=0;p.pu=null;p.seq=[];p.state='idle';o.pu=null;o.seq=[];o.state='idle';
     this.stop=.8;this.shake=Math.max(this.shake,6);Sfx.hit(.5,true);buzz(40);
     if(head&&!p.cut&&chance(.4)){p.cut=15;this.text('CUT FROM A HEADBUTT','#ff3b3b',200,260,1.2,16)}
-    this.log({ev:'foul',who:'o',kind:head?'head':'low',n});
+    o.foulAnim={kind:head?'head':'elbow',id:(o.foulAnim?o.foulAnim.id:0)+1};
+    this.log({ev:'foul',who:'o',kind:head?'head':'elbow',n});
     if(n>=5){this.text('DISQUALIFIED','#ff5a4a',200,140,3,26);this.call('dq');return this.finish('p','DQ','Disqualified for repeated fouls.')}
     if(n>1)o.rs.ded++;
-    this.text(`${head?'HEADBUTT':'LOW BLOW'}! ${n===1?'REF WARNS '+(o.last||'THEM').toUpperCase():'POINT DEDUCTED'}`,'#ffd34d',200,90,1.8,16);this.call(n===1?'foul':'ded');
+    this.text(`${head?'HEADBUTT':'ILLEGAL ELBOW'}! ${n===1?'REF WARNS '+(o.last||'THEM').toUpperCase():'POINT DEDUCTED'}`,'#ffd34d',200,90,1.8,16);this.call(n===1?'foul':'ded');
   }
   clinch(a){
     if(this.phase!=='fight')return;
@@ -653,7 +654,7 @@ class Fight{
   recFrame(op,rdt){
     const o=this.o,p=this.p,nf=this.fxId!==this._fxSeen?this.fxLast:null;this._fxSeen=this.fxId;
     const F={rdt:rdt||1/60,P:JSON.parse(JSON.stringify(op)),glow:this.oGlow?Object.assign({},this.oGlow):null,
-      o:{state:o.state,t:o.t,dur:o.dur,south:o.south,hurt:o.hurt,pu:o.pu?{type:o.pu.type,body:o.pu.body}:null,hits:o.hits,hitAnim:o.hitAnim?Object.assign({},o.hitAnim):null},p:{state:p.state,t:p.t,south:p.south,pu:p.pu?{type:p.pu.type}:null},
+      o:{state:o.state,t:o.t,dur:o.dur,south:o.south,hurt:o.hurt,dodge:o.dodge,foulAnim:o.foulAnim?Object.assign({},o.foulAnim):null,pu:o.pu?{type:o.pu.type,body:o.pu.body}:null,hits:o.hits,hitAnim:o.hitAnim?Object.assign({},o.hitAnim):null},p:{state:p.state,t:p.t,south:p.south,pu:p.pu?{type:p.pu.type}:null},
       pG:JSON.parse(JSON.stringify(this.pG)),cam:Object.assign({},this.cam),time:this.time,shake:this.shake,flashSil:this.flashSil,fx:nf};
     const b=this.rbuf=this.rbuf||[];b.push(F);if(b.length>200)b.shift();
     const K=this.kdClip;if(K&&K.post<1.1){K.frames.push(F);K.post+=F.rdt}

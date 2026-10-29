@@ -106,7 +106,7 @@ SCR.help=()=>`<div class="scr"><div class="wrap" style="max-width:720px"><div cl
   <p>Your frame sets a natural weight. Cutting down makes you bigger than your opponents but drains your stamina. Moving up makes you faster but smaller. You peak in your late 20s, and after 31 your speed starts to fade.</p></div>
   <div class="card col"><h3>Reading and fighting</h3>
   <p>Tells also carry a <b>symbol</b> over the winding glove (dot, down arrow, curl, up arrow, BODY), so you never need the color alone. Reaction assist in Settings gives you more time with no penalty.</p>
-  <p>Some opponents fight dirty: low blows and headbutts stop the action and give you a breather. The referee warns them first, then takes points, and a fifth foul is a disqualification.</p></div>
+  <p>Some opponents fight dirty: illegal elbows and headbutts stop the action and give you a breather. The referee warns them first, then takes points, and a fifth foul is a disqualification.</p></div>
   <div class="card col"><h3>Fight week</h3>
   <p><b>Contract talks</b> on big fights: a bigger purse, a rematch clause (a loss guarantees the rematch) or, with a belt or 60+ hype, a home fight with no robbery risk.</p>
   <p><b>Camp location</b>: home is free; altitude, elite sparring and sports-science camps cost a share of the purse and shape the camp.</p>

@@ -12,7 +12,11 @@ const R3MC={ready:false,clips:{},
 const MC_F=57,MC_YAW=.6;   // hips 3, quats 3x4, limb directions 10x3, then head, neck, left and right hand positions 4x3 // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
 /* punch markers: when the hand leaves the guard, reaches full extension, and is home again (by forward reach of that arm) */
 const MC_PUNCH={leadJab:{h:'L'},crossPunch:{h:'R'},hook:{h:'L'},rightHook:{h:'R'},uppercut:{h:'L',up:1},bodyJabCross:{h:'L',two:1}};
-function r3mcMarks(C){const m=MC_PUNCH[C.k];if(!m)return;const a=C.a,reach=(i,h)=>{const o=i*MC_F+15+(h==='L'?0:9);return (a[o+2]+a[o+5])/32767+(m.up?(a[o+4])/32767*.6:0)};
+function r3mcMarks(C){
+  // the dodging clip weaves both ways and ducks: find the deepest moment of each (head offset to either side, lowest hips)
+  if(C.k==='dodging'){const a=C.a;let L=[0,-1e9],R_=[0,1e9],D=[0,1e9];for(let i=0;i<C.n;i++){const o=i*MC_F,hx=a[o+45],hy=a[o+1];if(hx>L[1])L=[i,hx];if(hx<R_[1])R_=[i,hx];if(hy<D[1])D=[i,hy]}
+    C.dg={pos:L[0]/C.fps,neg:R_[0]/C.fps,duck:D[0]/C.fps};return}
+  const m=MC_PUNCH[C.k];if(!m)return;const a=C.a,reach=(i,h)=>{const o=i*MC_F+15+(h==='L'?0:9);return (a[o+2]+a[o+5])/32767+(m.up?(a[o+4])/32767*.6:0)};
   const seg=(h,i0,i1)=>{let pk=i0,mx=-9;for(let i=i0;i<=i1;i++){const r=reach(i,h);if(r>mx){mx=r;pk=i}}const base=Math.min(reach(i0,h),reach(i1,h)),th=base+(mx-base)*.22;
     let s=pk;while(s>i0&&reach(s,h)>th)s--;let e=pk;while(e<i1&&reach(e,h)>th)e++;return {s:s/C.fps,p:pk/C.fps,e:Math.min(i1,e+5)/C.fps}};
   // (the body cross in the jab-cross combo stays low, so its markers are set by hand)
@@ -98,8 +102,12 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if((o.hits||0)>M.hits){const ha=o.hitAnim||{};const big=st==='stagger'&&o.dur>=.3;
     M.react={k:ha.body?MC_HIT.body:ha.up?(big?MC_HIT.upper:MC_HIT.face):big?MC_HIT.big:o.dur>=.18?MC_HIT.medium:MC_HIT.light,t0:t,mir:(ha.dir||1)>0}}
   M.hits=o.hits||0;
-  let want=null;
-  if(st==='down'){const c=f.count;let up=0;if(c&&c.d===o&&c.rise<99)up=clamp((c.t-(c.rise-2.4))/2.4,0,1);
+  let want=null;const now=performance.now()/1000;
+  if(o.foulAnim&&o.foulAnim.id!==M.foulId){M.foulId=o.foulAnim.id;M.foul={k:o.foulAnim.kind==='head'?'illegalHeadbutt':'illegalElbowPunch',t0:now}}
+  if(M.foul&&(now-M.foul.t0>R3MC.clips[M.foul.k].dur*.5||!mcOk(M.foul.k)))M.foul=null;
+  // the strike lands about 40% into these clips: start just before it, so it lands as the foul is called
+  if(M.foul&&st!=='down'){const C=R3MC.clips[M.foul.k];want={k:M.foul.k,t:C.dur*.4-.3+(now-M.foul.t0),key:'foul'+M.foul.t0}}
+  else if(st==='down'){const c=f.count;let up=0;if(c&&c.d===o&&c.rise<99)up=clamp((c.t-(c.rise-2.4))/2.4,0,1);
     want=up>0?{k:'gettingUp',t:up*R3MC.clips.gettingUp.dur,root:.35,key:'up'}:{k:'knockedDown',t:Math.min(o.t*1.1,R3MC.clips.knockedDown.dur),root:.45,key:'kd'}}
   else if(o.pu&&(st==='wind'||st==='act'||st==='rec'||st==='feint')){const ty=o.pu.type,hand=f.hand(o,ty),body=!!o.pu.body;
     let ck=ty==='jab'?'leadJab':ty==='cross'?'crossPunch':ty==='hook'?(hand==='R'?'rightHook':'hook'):'uppercut';if(body&&(ty==='jab'||ty==='cross'))ck='bodyJabCross';
@@ -109,6 +117,10 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   else if(st==='block'||st==='clinch'){const pp=f.p.pu,side=pp&&PUNCH[pp.type]&&PUNCH[pp.type].kind==='hook'?f.hand(f.p,pp.type):null;
     // a hook from your left lands on their right side: they cover with the right arm (and vice versa)
     const bk=side==='L'?'rightBlock':side==='R'?'leftBlock':'centerBlock';want={k:bk,t:R3MC.clips[bk].dur*(bk==='centerBlock'?.45:.5),key:'blk'+bk}}
+  else if(st==='dodge'&&mcOk('dodging')){const C=R3MC.clips.dodging,lean=raw.lean||0,duck=o.dodge==='duck'||(raw.crouch||0)>Math.abs(lean)*.02;
+    const pk=duck?C.dg.duck:((lean>0)!==south?C.dg.pos:C.dg.neg),k2=Math.sin(Math.PI*clamp(k,0,1)),t0=Math.max(0,pk-.35);
+    want={k:'dodging',t:t0+(pk-t0)*k2,key:'dg'+(duck?'d':lean>0?'l':'r'),dodge:1}}
+  else if(f.phase==='end'&&f.res&&f.res.winner==='p'&&mcOk('defeated')){want={k:'defeated',t:Math.min(t-(M.defT??(M.defT=t)),R3MC.clips.defeated.dur-.05),key:'def',free:1}}
   else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:t-(M.celebT??(M.celebT=t)),loop:1,key:'cel',free:1,root:.25}}
   else if(f.phase==='down'&&f.count&&f.count.d===f.p){const pool=(R.oL&&R.oL.expr==='cocky'?['standingTauntChestThump','taunt1','taunt']:['taunt1','taunt','standingTauntChestThump']).filter(mcOk),c=pool[0]||'fightingIdle';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
   if(M.react&&!mcOk(M.react.k))M.react=null;
@@ -132,7 +144,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if(u.duncan){r3mcApplyDuncan(R.opp,M.pose,{yaw:(south?-1:1)*MC_DUN_YAW,keepArm:want.hand,free:want.free});return true}
   r3mcApply(R.opp,M.pose,{clip:R3MC.clips[want.k],root:want.root||0,yaw,keepArm:want.hand,lift:want.key==='kd'||want.key==='up'?0:.45});
   // dodges keep the game's own slip and duck (lean and crouch) on top
-  if(st==='dodge'){const lean=raw.lean||0,cr=raw.crouch||0;u.pelvis.position.y-=cr*.32;u.spine.rotateZ(-lean*.55);u.spine.rotateX(cr*.5)}
+  if(st==='dodge'&&!want.dodge){const lean=raw.lean||0,cr=raw.crouch||0;u.pelvis.position.y-=cr*.32;u.spine.rotateZ(-lean*.55);u.spine.rotateX(cr*.5)}
   R.opp.rotation.set(0,0,0);return true}
 /* how a winner celebrates: dancers dance (and everyone does Thriller on Halloween week), cocky fighters taunt, the rest raise a fist */
 function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},d=new Date(),hw=d.getMonth()===9&&d.getDate()>=25;const r=(L.hseed||0)%7;
