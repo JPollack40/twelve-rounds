@@ -3394,7 +3394,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   else if(f.phase==='down'&&f.count&&f.count.d===f.p){const pool=(R.oL&&R.oL.expr==='cocky'?['standingTauntChestThump','taunt1','taunt']:['taunt1','taunt','standingTauntChestThump']).filter(mcOk),c=pool[0]||'fightingIdle';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
   if(M.react&&!mcOk(M.react.k))M.react=null;
   if(!want&&M.react){const C=R3MC.clips[M.react.k],el=(t-M.react.t0)*1.6;if(el<C.dur*.85)want={k:M.react.k,t:el,mir:M.react.mir,key:'r'+M.react.t0};else M.react=null}
-  if(!want)want={k:'fightingIdle',t:t*(o.hurt>0?.8:1),loop:1,key:'idle'};
+  if(!want)want={k:'fightingIdle',t:0,loop:1,key:'idle'};
   // Duncan does not do sad: when he loses he facepalms (his own animation, not a clip)
   if(u.duncan&&f.phase==='end'&&f.res&&f.res.winner==='p'){r3duncanFacepalm(R.opp,now-(M.dfpT??(M.dfpT=now)));return true}
   // southpaws mirror everything (their lead hand is the right)
@@ -3404,7 +3404,11 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if(!M.cur||M.cur.key!==want.key){M.prevPose=M.prevPose||new Float32Array(MC_F);M.prevPose.set(M.pose);M.fade=M.cur?0:1;
     M.fadeLen=want.key==='kd'||M.cur&&M.cur.key==='kd'?.28:want.key[0]==='p'?.09:want.key[0]==='r'?.12:.22}
   M.cur=want;M.fade=Math.min(1,M.fade+dt/M.fadeLen);
-  r3mcPrep(want.k,want.t,!!want.loop,!!want.mir,!want.free,t,M.tmp,M.tmp3||(M.tmp3=new Float32Array(MC_F)));
+  // the stance's tempo is the fighter's: quick-footed styles bounce faster, sluggers plant, and everyone slows when hurt or tired
+  const arch=(o.src&&o.src.arch)||'boxerpuncher',fresh=clamp(o.sta/Math.max(1,o.maxSta),0,1);
+  if(want.key==='idle'){M.idlePh=(M.idlePh||0)+dt*(MC_TEMPO[arch]||1)*(o.hurt>0?.8:1)*(.7+.3*fresh);want.t=M.idlePh}
+  r3mcPrep(want.k,want.t,!!want.loop,!!want.mir,!want.free,M.idlePh||t,M.tmp,M.tmp3||(M.tmp3=new Float32Array(MC_F)));
+  if(want.key==='idle')r3mcStyle(M,arch,fresh,!!want.mir);
   const tgt=M.fade<1?r3mcBlend(M.prevPose,M.tmp,M.fade*M.fade*(3-2*M.fade),M.tmp2):M.tmp;
   // a light filter on top of the crossfades takes the last edge off sudden changes (tighter while punching, so timing holds)
   if(M.had){const a=1-Math.exp(-dt*(want.key[0]==='p'?32:want.key[0]==='r'?22:14));r3mcBlend(M.pose,tgt,a,M.pose)}else{M.pose.set(tgt);M.had=1}
@@ -3463,6 +3467,15 @@ function r3duncanFacepalm(root,t){const u=root.userData,hy=u.hy0,ease=x=>x<0?0:x
   r3duncanBend(u,_mq[0].setFromEuler(_mde.set(.14*up,shake*.4,0)),.15*up);u.headG.quaternion.setFromEuler(_mde.set(.16*up,shake,0));root.updateMatrixWorld(true);
   const face=root.worldToLocal(u.headG.localToWorld(_mv[0].set(-.03,hy+.16-u.headG.position.y,.52)));
   r3duncanReach(root,-1,_mv[1].set(-.32,hy-.2,.6).lerp(face,up));r3duncanReach(root,1,_mv[2].set(.32,hy-.2,.6).lerp(_mv[3].set(.55,.55,.2),up*.85));root.updateMatrixWorld(true)}
+/* stance personality, layered on the idle clip: slick styles move their heads between punches (moments from the Dodging clip), and a
+   tired fighter's gloves sag toward the Defeated clip's hanging arms and they sink a little: a readable tell that they are gassed */
+const MC_TEMPO={outboxer:1.15,swarmer:1.2,counter:.95,boxerpuncher:1,slugger:.8};
+function r3mcStyle(M,arch,fresh,mir){const P=M.tmp,S=M.tmpS||(M.tmpS=new Float32Array(MC_F)),ph=M.idlePh||0;
+  if((arch==='outboxer'||arch==='counter')&&mcOk('dodging')){const C=R3MC.clips.dodging,w=.4*Math.pow(Math.max(0,Math.sin(ph*1.1)),2);
+    if(w>.01){r3mcSample(C,Math.sin(ph*.55)>0?C.dg.pos:C.dg.neg,false,mir,S);for(let k=33;k<45;k++)S[k]=P[k];S[1]=P[1];r3mcBlend(P,S,w,P)}}
+  const tired=clamp((.55-fresh)/.4,0,1)*.6;
+  if(tired>.01&&mcOk('defeated')){const C=R3MC.clips.defeated;r3mcSample(C,Math.min(C.dur*.42,C.dur),false,mir,S);
+    for(let k=15;k<33;k++)P[k]+=(S[k]-P[k])*tired;P[1]-=tired*4;r3mcNorm(P)}}
 /* ================= real-time fight engine =================
    Simulation runs on a fixed 1/120 s step with its own seeded RNG; rendering interpolates poses. */
 const PUNCH={
@@ -4910,6 +4923,7 @@ SCR.help=()=>`<div class="scr"><div class="wrap" style="max-width:720px"><div cl
   <p>Your frame sets a natural weight. Cutting down makes you bigger than your opponents but drains your stamina. Moving up makes you faster but smaller. You peak in your late 20s, and after 31 your speed starts to fade.</p></div>
   <div class="card col"><h3>Reading and fighting</h3>
   <p>Tells also carry a <b>symbol</b> over the winding glove (dot, down arrow, curl, up arrow, BODY), so you never need the color alone. Reaction assist in Settings gives you more time with no penalty.</p>
+  <p>Watch their body language: a tired opponent's gloves sag and their bounce slows, so that is the moment to press. Slick boxers and counterpunchers keep their heads moving between punches.</p>
   <p>Some opponents fight dirty: illegal elbows and headbutts stop the action and give you a breather. The referee warns them first, then takes points, and a fifth foul is a disqualification.</p></div>
   <div class="card col"><h3>Fight week</h3>
   <p><b>Contract talks</b> on big fights: a bigger purse, a rematch clause (a loss guarantees the rematch) or, with a belt or 60+ hype, a home fight with no robbery risk.</p>
