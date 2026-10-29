@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 VER=$(date -u +%Y%m%d%H%M)
 mkdir -p dist docs
 # embedded models: assets/models/<name>.glb listed here are base64-inlined into every build as R3M_DATA
-MODELS=(duncan)
+MODELS=(duncan boxer)
 MJS="const R3M_DATA={"
 for m in "${MODELS[@]}"; do MJS+="$m:\"$(base64 -w0 "assets/models/$m.glb")\","; done
 MJS+="};"

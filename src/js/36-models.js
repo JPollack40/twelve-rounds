@@ -10,14 +10,23 @@ const R3M={m:{},v:0,
     const pr=J.meshes[0].primitives[0],geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.BufferAttribute(acc(pr.attributes.POSITION,Float32Array,3),3));geo.setAttribute('uv',new THREE.BufferAttribute(acc(pr.attributes.TEXCOORD_0,Float32Array,2),2));
     geo.setIndex(new THREE.BufferAttribute(acc(pr.indices,Uint32Array,1),1));
-    const M={geo,extras:J.meshes[0].extras||{},tex:null,parts:{}};this.m[name]=M;
+    if(pr.attributes.JOINTS_0!=null){geo.setAttribute('skinIndex',new THREE.BufferAttribute(acc(pr.attributes.JOINTS_0,Uint8Array,4),4));geo.setAttribute('skinWeight',new THREE.BufferAttribute(acc(pr.attributes.WEIGHTS_0,Float32Array,4),4))}
+    if(pr.targets){geo.morphAttributes.position=pr.targets.map(t=>new THREE.BufferAttribute(acc(t.POSITION,Float32Array,3),3));geo.morphTargetsRelative=true}
+    const M={geo,extras:J.meshes[0].extras||{},tex:null,img:null,mask:null,parts:{},wait:J.images.length};this.m[name]=M;
     // one geometry per part (shared attributes, its own index range), normals smoothed across UV seams
     for(const [p,[st,ct]] of Object.entries(M.extras.parts||{})){const g=new THREE.BufferGeometry();g.setAttribute('position',geo.attributes.position);g.setAttribute('uv',geo.attributes.uv);
-      g.setIndex(new THREE.BufferAttribute(geo.index.array.slice(st,st+ct),1));M.parts[p]=g}
+      g.setIndex(new THREE.BufferAttribute(geo.index.array.slice(st,st+ct),1));g.userData.keep=1;M.parts[p]=g}
     r3smoothNormals(geo);for(const g of Object.values(M.parts))g.setAttribute('normal',geo.attributes.normal);
-    const im=J.images[0],url=URL.createObjectURL(new Blob([view(im.bufferView)],{type:im.mimeType})),img=new Image();
-    img.onload=()=>{const t=new THREE.Texture(img);t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.needsUpdate=true;t.userData.keep=1;M.tex=t;this.v++;URL.revokeObjectURL(url)};img.src=url},
-  ok(name){return !!(this.m[name]&&this.m[name].tex)}};
+    geo.computeBoundingSphere();geo.userData.keep=1;
+    // image 0 is the colour texture; an image named "mask" holds per-texel material ids (read back once for recolouring)
+    J.images.forEach((im,i)=>{const url=URL.createObjectURL(new Blob([view(im.bufferView)],{type:im.mimeType})),img=new Image();
+      img.onload=()=>{URL.revokeObjectURL(url);
+        if(im.name==='mask'){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data;
+          const m=new Uint8Array(c.width*c.height);for(let k=0;k<m.length;k++)m[k]=d[k*4];M.mask={w:c.width,h:c.height,m}}
+        else{const t=new THREE.Texture(img);t.flipY=false;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;t.needsUpdate=true;t.userData.keep=1;M.tex=t;M.img=img}
+        if(--M.wait===0)this.v++};
+      img.src=url})},
+  ok(name){return !!(this.m[name]&&this.m[name].wait===0)}};
 /* normals averaged over vertices that share a position (UV seams split them), so cel bands stay smooth */
 /* bounding box over the vertices a part's index actually uses (parts share one position buffer) */
 function r3partBox(g){const p=g.attributes.position,ix=g.index.array,b=new THREE.Box3(),v=new THREE.Vector3();for(let i=0;i<ix.length;i++){v.fromBufferAttribute(p,ix[i]);b.expandByPoint(v)}return b}

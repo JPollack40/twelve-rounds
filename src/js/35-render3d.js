@@ -31,11 +31,13 @@ function r3ink(mat,hatch=1){const U=r3U();
     sh.fragmentShader=sh.fragmentShader.replace('void main() {','uniform float uHatchPx;uniform float uHatch;uniform vec2 uHatchT;\nvoid main() {').replace('#include <opaque_fragment>',R3_HATCH+'\n#include <opaque_fragment>')};
   mat.customProgramCacheKey=()=>'ink';return mat}
 /* outline: back faces pushed out along the view-space normal by a constant screen fraction */
-function r3outMat(w){const k='o'+w;if(R3D._c[k])return R3D._c[k];const m=new THREE.MeshBasicMaterial({color:INK,side:THREE.BackSide});
-  m.onBeforeCompile=sh=>{sh.uniforms.uOut={value:w};sh.vertexShader='uniform float uOut;\n'+sh.vertexShader.replace('#include <project_vertex>','vec4 mvPosition=modelViewMatrix*vec4(transformed,1.0);\nvec3 onrm=normalize(normalMatrix*normal);\nmvPosition.xyz+=onrm*uOut*max(.35,-mvPosition.z);\ngl_Position=projectionMatrix*mvPosition;')};
-  m.customProgramCacheKey=()=>'out'+w;m.userData.keep=1;return R3D._c[k]=m}
+function r3outMat(w,sk){const k='o'+w+(sk?'s':'');if(R3D._c[k])return R3D._c[k];const m=new THREE.MeshBasicMaterial({color:INK,side:THREE.BackSide});
+  // skinned meshes push out along the skinned normal (objectNormal is computed when skinning is on)
+  m.onBeforeCompile=sh=>{sh.uniforms.uOut={value:w};sh.vertexShader='uniform float uOut;\n'+sh.vertexShader.replace('#include <project_vertex>','vec4 mvPosition=modelViewMatrix*vec4(transformed,1.0);\nvec3 onrm=normalize(normalMatrix*'+(sk?'objectNormal':'normal')+');\nmvPosition.xyz+=onrm*uOut*max(.35,-mvPosition.z);\ngl_Position=projectionMatrix*mvPosition;')};
+  m.customProgramCacheKey=()=>'out'+w+(sk?'s':'');m.userData.keep=1;return R3D._c[k]=m}
 function r3outline(root,w=.0042){const list=[];root.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&!o.userData.isOL&&o.userData.ol!==false)list.push(o)});
-  for(const o of list){const m=new THREE.Mesh(o.geometry,r3outMat(o.userData.olw||w));m.userData.isOL=true;m.castShadow=m.receiveShadow=false;m.raycast=()=>{};o.add(m)}return root}
+  for(const o of list){const m=o.isSkinnedMesh?new THREE.SkinnedMesh(o.geometry,r3outMat(o.userData.olw||w,1)):new THREE.Mesh(o.geometry,r3outMat(o.userData.olw||w));
+    if(o.isSkinnedMesh){m.bind(o.skeleton,o.bindMatrix);m.frustumCulled=false;m.morphTargetInfluences=o.morphTargetInfluences}m.userData.isOL=true;m.castShadow=m.receiveShadow=false;m.raycast=()=>{};o.add(m)}return root}
 function r3cel(hex,map,cloth,hatch=1){r3Mats();return r3ink(new THREE.MeshToonMaterial({color:map?0xffffff:hex,map:map||null,gradientMap:cloth?R3D._rampC:R3D._ramp}),hatch)}
 function r3leather(hex){return r3ink(new THREE.MeshPhysicalMaterial({color:0xffffff,map:r3gloveTex(new THREE.Color(hex).getStyle()),roughness:.48,metalness:0,clearcoat:.35,clearcoatRoughness:.45,envMapIntensity:.6,emissive:0x000000}),1)}
 function r3matte(hex){return r3ink(new THREE.MeshStandardMaterial({color:hex,roughness:.85,metalness:0,envMapIntensity:.4}),.8)}
@@ -509,6 +511,7 @@ function r3robe(L,P,m,parts){
 /* ---------- boxer rig ---------- */
 function r3boxer(L,opt={}){
   if(L.model==='duncan'&&R3M.ok('duncan'))return r3duncan(L,opt);
+  if(r3rigOn(L))return r3rigged(L,opt);
   const P0=R3_BT[L.bt]||R3_BT.athletic,P=L.fem?r3femP(P0):P0,m=L.mass||1,TS=R3_TS;
   const skinM=r3cel(L.skin);
   const root=new THREE.Group();root.scale.setScalar(1+((L.height||70)-70)*.011);
@@ -594,7 +597,7 @@ function r3guard(bx,kind='high'){
   u.spine.rotation.set(kind==='hunch'?.2:.06,kind==='punch'?-.12:.12,0);u.headG.rotation.set(kind==='hunch'?.22:.06,kind==='punch'?.22:-.08,0);
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
-  const hy=u.headG.getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
+  const hy=(u.hc||u.headG).getWorldPosition(new THREE.Vector3()).y/bx.scale.y;
   const pose=(s)=>kind==='hunch'?new THREE.Vector3(s*.13,hy-.5,.66):kind==='punch'?(s===1?new THREE.Vector3(.8,hy-.08,1.0):new THREE.Vector3(-.2,hy-.3,.4)):kind==='wave'?(s===1?new THREE.Vector3(.5,hy+.12,.22):new THREE.Vector3(-.38,hy-1.05,.12)):null;
   for(const s of [-1,1]){const pz=pose(s);const t=pz?pz:kind==='down'?new THREE.Vector3(s*.36,hy-1.12,.12):kind==='low'?new THREE.Vector3(s*.3,hy-.66,.36):kind==='mid'?new THREE.Vector3(s*.24,hy-.48,.42):new THREE.Vector3(s*.25,hy-.36,.3);
     const pole=kind==='wave'&&s===1?new THREE.Vector3(1.6,.2,-.2):new THREE.Vector3(s*.35,-1.5,.7);r3ik(u.arms[s],t.applyMatrix4(bx.matrixWorld),pole.applyMatrix4(bx.matrixWorld));u.arms[s].glove.rotation.set(-.2,0,s*-.15)}
@@ -659,14 +662,14 @@ const R3P={cache:new Map(),
   },
   shot(look,o={}){
     const mode=o.mode||'bust',size=o.size||(mode==='full'?360:224);
-    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'',o.rot??'',look&&look.model?R3M.v:0]);
+    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'',o.rot??'',look&&look.model||Settings.sculpt?R3M.v+(Settings.sculpt?'s':''):0]);
     if(this.cache.has(key))return this.cache.get(key);
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
-    const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=o.rot??(mode==='full'?(o.robe?(L.robe==='vest'?.3:-.18):-.42):-.22);this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
+    const bx=r3boxer(L,{robe:!!o.robe,texSize:512});bx.rotation.y=o.rot??(mode==='full'?(o.robe?(L.robe==='vest'?.3:-.18):-.42):-.22);this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
     if(bx.userData.head)r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
-    bx.updateWorldMatrix(true,true);const dn=bx.userData.duncan,hp=dn?new THREE.Vector3(0,bx.userData.hy0-.12,0).applyMatrix4(bx.matrixWorld):bx.userData.headG.getWorldPosition(new THREE.Vector3());
+    bx.updateWorldMatrix(true,true);const dn=bx.userData.duncan,hp=dn?new THREE.Vector3(0,bx.userData.hy0-.12,0).applyMatrix4(bx.matrixWorld):(bx.userData.hc||bx.userData.headG).getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=dn?2.7:hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
     else if(mode==='face'){const k=dn?1.7:1;this.cam.fov=22;this.cam.position.set(hp.x+.35*k,hp.y+.08,hp.z+1.75*k);this.cam.lookAt(hp.x,hp.y+.03,hp.z)}
     else{const k=dn?1.9:1;this.cam.fov=24;this.cam.position.set(hp.x+.25*k,hp.y+.02,hp.z+1.55*k);this.cam.lookAt(hp.x,hp.y-.1*k,hp.z)}
@@ -743,6 +746,7 @@ class Render3D{
       gl.rotation.set(active&&type!=='upper'?-.5:-.15,0,active&&type==='hook'?s*.9:0);
       const gw=glow&&glow[h]||0;u.arms[s].gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');u.arms[s].gm.emissiveIntensity=gw*.9;
     }
+    if(u.rig)return r3rigFace(this,P);
     const face=P.face||'normal';
     const E=Object.assign({lidOpen:.9,squint:0,angry:0,hurt:0,open:0,grit:0,smile:0,look:0,lookY:0},this.base);
     if(P.blink)E.lidOpen=.05;
