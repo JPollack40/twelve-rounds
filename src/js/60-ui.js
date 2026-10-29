@@ -219,7 +219,10 @@ SCR.create=()=>{
 };
 AFTER.create=()=>{
   const c=UI.cr,cv=$('#crcv'),im=$('#crimg');
-  if(im){const u=R3P.shot(c.look,{mode:'full',height:c.height,arch:c.arch,guard:c.arch==='slugger'?'low':'mid'});if(u)im.src=u}
+  if(im){const u=R3P.shot(c.look,{mode:'full',height:c.height,arch:c.arch,guard:c.arch==='slugger'?'low':'mid'});if(u)im.src=u;
+    // with the sculpted fighters, the preview bounces in its stance instead (the still shows until it is ready)
+    const host=document.createElement('div');host.style.cssText='width:min(100%,340px);aspect-ratio:1;border-radius:10px;background:#e9e4d8';
+    if(r3stageOn(c.look)){im.replaceWith(host);r3stage(host,c.look,{clip:'fightingIdle',height:c.height,arch:c.arch})}}
   if(cv){const x=cv.getContext('2d');const g=x.createLinearGradient(0,0,0,300);g.addColorStop(0,'#232a4a');g.addColorStop(1,'#0e1122');x.fillStyle=g;x.fillRect(0,0,300,300);
     const s=(.62+(c.height-62)*.012)*.78;
     const sp=x.createRadialGradient(150,40,10,150,120,200);sp.addColorStop(0,'rgba(255,240,200,.22)');sp.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=sp;x.fillRect(0,0,300,300);
@@ -553,6 +556,7 @@ SCR.result=()=>{
   const lines=sum.lines.map(l=>`<div class="pill gold" style="white-space:normal">${esc(l)}</div>`).join('');
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="hero"><div class="in" style="align-items:center;text-align:center">
+      <div id="rstage" style="width:min(100%,260px);aspect-ratio:3/4;margin:-6px auto 0;display:none"></div>
       <div class="kicker">${esc(o.label)}</div><div class="bigtxt" style="font-size:clamp(44px,13vw,80px);color:${win?'var(--gold)':draw?'var(--canvas)':'var(--bad)'}">${big.toUpperCase()}</div>
       <p class="ui" style="font-size:20px;font-weight:700">${mlong}${['KO','TKO','RTD'].includes(res.method)?` · Round ${res.round}${res.method!=='RTD'?', '+res.time:''}`:''}</p>
       <p class="muted">vs ${esc(fullName(f))}</p>${res.note?`<p class="muted">${esc(res.note)}</p>`:''}<div class="col" style="gap:6px;align-items:center">${lines}</div></div></div>
@@ -704,7 +708,7 @@ SCR.locker=()=>{
   gearCheckUnlocks();const b=B(),st=gearState(),gm=gearMods(),hy=gearHype();
   const fxPills=fx=>Object.entries(fx||{}).map(([k,v])=>`<span class="pill ${v>0?'gold':'red'}" style="font-size:11px">${v>0?'+':''}${v} ${STAT_NAME[k]}</span>`).join(' ');
   const sumTxt=Object.keys(gm).length||hy?`${fxPills(gm)}${hy?` <span class="pill gold" style="font-size:11px">+${hy} hype per win</span>`:''}`:'<span class="muted">No stat effects. Pure style.</span>';
-  const prev=R3P.ok()?`<img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;display:block;margin:0 auto">`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
+  const prev=R3P.ok()?`<div id="lkstage" style="width:min(100%,300px);aspect-ratio:1;border-radius:10px;margin:0 auto;background:#e9e4d8"><img src="${R3P.shot(playerLook(),{mode:'full',height:b.height,arch:b.arch,guard:'mid'})}" alt="Your boxer in this kit" style="width:100%;aspect-ratio:1;border-radius:10px;display:block"></div>`:`<img src="${portrait(playerLook())}" alt="" style="width:120px;border-radius:10px;display:block;margin:0 auto">`;
   const sw=(k,arr)=>arr.map(c=>`<button class="sw${b.look[k]===c?' on':''}" style="background:${c}" data-act="recolor" data-k="${k}" data-v="${c}" aria-label="${k} ${c}"></button>`).join('');
   const item=g=>{const own=st.owned.includes(g.id),eq=st.eq[g.slot]===g.id,u=gearUnlock(g);
     const act=eq?'<span class="pill gold">Equipped</span>':own?`<button class="btn sm gold" data-act="gearequip" data-id="${g.id}">Equip</button>`:!u.ok?`<span class="pill">🔒 ${esc(u.why)}</span>`:`<button class="btn sm ${b.money>=gearPrice(g)?'primary':''}" data-act="gearbuy" data-id="${g.id}" ${b.money>=gearPrice(g)?'':'disabled'}>${g.price?money(gearPrice(g)):'Free'}</button>`;
@@ -895,3 +899,10 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g&&!g.closest('.fight')){const a=g.dataset.arg;UI.go(g.dataset.go,a!=null?+a:undefined);return}
   const a=e.target.closest('[data-act]');if(a&&!a.closest('.fight')&&!a.closest('.modal [data-act="sign"]')&&ACT[a.dataset.act]){if(a.hasAttribute('disabled'))return;ACT[a.dataset.act](a)}
 });
+
+/* the results screen: your fighter celebrates a win (a KO gets the big one) or hangs their head after a loss */
+AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=UI.lastResult.res,b=B(),win=res.winner==='p',ko=['KO','TKO','RTD'].includes(res.method);
+  const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
+  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
+/* the locker: your fighter shows off the kit in their stance */
+AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el)r3stage(el,playerLook(),{clip:['fightingIdle','taunt'],height:b.height,arch:b.arch})}})();
