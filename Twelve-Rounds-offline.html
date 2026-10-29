@@ -1338,7 +1338,7 @@ function yearTick(){
     }
   }
   for(let d=0;d<8;d++){W.divs[d]=W.divs[d].filter(id=>W.f[id]&&(W.f[id].active||id===G.rival?.id));assignChamps(d,false)}
-  const keep=new Set([G.rival?.id,G.flags.tookFrom,G.next?.offer.oppId,...G.am.opps,...W.divs.flat()]);
+  const keep=new Set([G.rival?.id,G.flags.tookFrom,G.next?.offer.oppId,...G.am.opps,...W.divs.flat(),...(G.tour?G.tour.rounds.flat().flatMap(m=>[m.a,m.b,m.w]):[])]);
   for(const id in W.f){const f=W.f[id];if(!keep.has(id)&&!f.legend)delete W.f[id]}
 }
 
@@ -1635,13 +1635,14 @@ function tourAfter(o,win,out){
   const T=G.tour;if(!T||o.tour==null)return;const R=T.rounds[T.round];const m=R.find(x=>x.a==='P'||x.b==='P');if(!m)return;
   m.w=win?'P':(m.a==='P'?m.b:m.a);
   if(!win){T.alive=false;out.lines.push(`Eliminated from the ${tourName()} in the ${TOUR_ROUNDS[T.round].toLowerCase()}.`);
-    while(!T.done)tourResolveRound(T);const cw=G.world.f[T.winner];news(`${shortName(cw)} wins the ${tourName()}.`,'gold');return}
+    while(!T.done)tourResolveRound(T);const cw=G.world.f[T.winner];if(cw)news(`${shortName(cw)} wins the ${tourName()}.`,'gold');return}
   if(T.round===2){T.done=true;T.alive=false;T.winner='P';const b=B();b.tourWins=(b.tourWins||0)+1;const bonus=Math.round(o.purse*.8);b.money+=bonus;b.hype=Math.min(100,b.hype+20);
     out.lines.push(`${tourName()} champion! Trophy, a ${money(bonus)} bonus and +20 hype.`);news(`You win the ${tourName()}. The trophy is yours.`,'gold');return}
-  tourResolveRound(T);const nm=T.rounds[T.round].find(x=>x.a==='P'||x.b==='P');const next=nm.a==='P'?nm.b:nm.a;
-  out.lines.push(`Through to the ${TOUR_ROUNDS[T.round].toLowerCase()} of the ${tourName()}. Next: ${shortName(G.world.f[next])}.`)}
+  tourResolveRound(T);const nm=T.rounds[T.round].find(x=>x.a==='P'||x.b==='P');const next=nm.a==='P'?nm.b:nm.a,nf=G.world.f[next];
+  out.lines.push(`Through to the ${TOUR_ROUNDS[T.round].toLowerCase()} of the ${tourName()}.${nf?` Next: ${shortName(nf)}.`:''}`)}
 function tourNextOffer(){const T=G.tour;if(!T||!T.alive||T.div!==B().div)return null;const m=T.rounds[T.round]?.find(x=>(x.a==='P'||x.b==='P')&&!x.w);if(!m)return null;
-  const opp=m.a==='P'?m.b:m.a;if(!G.world.f[opp]?.active){m.w='P';tourResolveRound(T);return tourNextOffer()}return tourBoutOffer(opp,T.round)}
+  // an opponent who retired or vanished gives you a walkover
+  const opp=m.a==='P'?m.b:m.a;if(!G.world.f[opp]?.active){m.w='P';if(T.round===2){T.done=true;T.alive=false;T.winner='P';B().tourWins=(B().tourWins||0)+1;news(`Your opponent withdrew. You win the ${tourName()} by walkover.`,'gold');return null}tourResolveRound(T);return tourNextOffer()}return tourBoutOffer(opp,T.round)}
 function tourHTML(){const T=G.tour;if(!T||(!T.alive&&G.week-T.week>60))return '';
   const nm=id=>id==='P'?'<b class="goldt">You</b>':esc(G.world.f[id]?shortName(G.world.f[id]):'—');
   const col=(R,i)=>`<div class="col" style="gap:6px;flex:1;min-width:0"><span class="lbl">${TOUR_ROUNDS[i]}</span>${R.map(m=>`<div class="card flat" style="padding:6px 8px;font-size:12.5px;line-height:1.35">${[m.a,m.b].map(id=>`<div style="${m.w&&m.w!==id?'opacity:.45;text-decoration:line-through':''}">${nm(id)}</div>`).join('')}</div>`).join('')}</div>`;

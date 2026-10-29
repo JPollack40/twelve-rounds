@@ -1,37 +1,49 @@
-# Regression report 2026-10-29T01:16:27.565Z
+# Regression report 2026-10-29T01:17:48.988Z
 
-5 fights per matchup, 25 simulated careers, 8s.
+5 fights per matchup, 500 simulated careers, 179s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
 |---|---|---|---|---|---|
+| human_eq_champ | 80% | 30–90 | 4/0 | 0.65/0.28 | ✅ |
+| human_eq_legend | 20% | 10–70 | 1/0 | 0.51/0.35 | ✅ |
+| human_eq_contender | 100% | 70–100 | 5/0 | 0.71/0.24 | ✅ |
+| human_plus15 | 60% | 10–65 | 3/0 | 0.58/0.48 | ✅ |
+| novice_eq_contender | 100% | 50–100 | 5/0 | 0.74/0.25 | ✅ |
+| expert_plus20 | 40% | 10–90 | 1/0 | 0.56/0.12 | ✅ |
+| masher_eq | 0% | 0–40 | 0/5 | 0.27/0.82 | ✅ |
+| turtle_eq | 0% | 0–75 | 0/0 | 0.26/0.31 | ✅ |
+| human_legend_tyrell | 60% | 5–60 | 3/0 | 0.57/0.36 | ✅ |
+| human_legend_hollis | 60% | 30–100 | 2/0 | 0.51/0.54 | ✅ |
+| daily_40_days | 88% | 20–90 | 0/0 | 0/0 | ✅ |
 
 ## Careers
 ```
 {
- "n": 25,
+ "n": 500,
  "retireAgeMed": 37,
- "winsMed": 47,
- "lossesMed": 23,
+ "winsMed": 46,
+ "lossesMed": 22,
  "titlesMed": 2,
- "titlesAvg": 1.88,
- "champShare": 1,
- "undisputedShare": 0.04,
+ "titlesAvg": 2.12,
+ "champShare": 0.99,
+ "undisputedShare": 0.09,
  "multiDivShare": 0,
- "legendsAvg": 1.44,
- "chaptersAvg": 1.12,
- "moneyMed": 42539911,
- "womenN": 8,
- "womenChampShare": 1,
- "womenLegendsAvg": 1,
+ "legendsAvg": 1.29,
+ "chaptersAvg": 1.02,
+ "moneyMed": 43323538,
+ "womenN": 166,
+ "womenChampShare": 0.99,
+ "womenLegendsAvg": 1.13,
  "crossCircuitLegends": 0,
- "hofMed": 393,
+ "hofMed": 387,
  "tiers": {
-  "Hall of Famer": 13,
-  "Champion": 5,
-  "All-Time Great": 4,
-  "The Greatest of All Time": 2,
-  "Contender": 1
+  "Hall of Famer": 254,
+  "Champion": 112,
+  "All-Time Great": 102,
+  "The Greatest of All Time": 14,
+  "Contender": 17,
+  "Journeyman": 1
  },
  "forcedRetireShare": 0,
  "dmgMed": 70
@@ -41,13 +53,13 @@
 | check | value | band | ok |
 |---|---|---|---|
 | retireAgeMed | 37 | 31–40 | ✅ |
-| champShare | 1 | 0.4–1 | ✅ |
+| champShare | 0.99 | 0.4–1 | ✅ |
 | forcedRetireShare | 0 | 0–0.4 | ✅ |
-| chaptersAvg | 1.12 | 0.3–5 | ✅ |
-| legendsAvg | 1.44 | 0.2–6 | ✅ |
-| undisputedShare | 0.04 | 0–0.2 | ✅ |
-| womenChampShare | 1 | 0.4–1 | ✅ |
-| womenLegendsAvg | 1 | 0.1–6 | ✅ |
+| chaptersAvg | 1.02 | 0.3–5 | ✅ |
+| legendsAvg | 1.29 | 0.2–6 | ✅ |
+| undisputedShare | 0.09 | 0–0.2 | ✅ |
+| womenChampShare | 0.99 | 0.4–1 | ✅ |
+| womenLegendsAvg | 1.13 | 0.1–6 | ✅ |
 | crossCircuitLegends | 0 | 0–0 | ✅ |
 
 No page errors.

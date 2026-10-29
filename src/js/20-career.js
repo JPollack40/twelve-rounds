@@ -584,7 +584,7 @@ function yearTick(){
     }
   }
   for(let d=0;d<8;d++){W.divs[d]=W.divs[d].filter(id=>W.f[id]&&(W.f[id].active||id===G.rival?.id));assignChamps(d,false)}
-  const keep=new Set([G.rival?.id,G.flags.tookFrom,G.next?.offer.oppId,...G.am.opps,...W.divs.flat()]);
+  const keep=new Set([G.rival?.id,G.flags.tookFrom,G.next?.offer.oppId,...G.am.opps,...W.divs.flat(),...(G.tour?G.tour.rounds.flat().flatMap(m=>[m.a,m.b,m.w]):[])]);
   for(const id in W.f){const f=W.f[id];if(!keep.has(id)&&!f.legend)delete W.f[id]}
 }
 

@@ -1,30 +1,219 @@
 {
- "when": "2026-10-29T01:16:27.565Z",
- "fights": [],
+ "when": "2026-10-29T01:17:48.988Z",
+ "fights": [
+  {
+   "id": "human_eq_champ",
+   "why": "an equal opponent on Champion should be competitive (calibrate with real play)",
+   "band": [
+    0.3,
+    0.9
+   ],
+   "winRate": 0.8,
+   "n": 5,
+   "kos": 4,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 121.4,
+   "avgAcc": 0.65,
+   "avgOppAcc": 0.28,
+   "results": "p:KOR6 p:KOR6 p:KOR1 o:DECR6 p:TKOR2"
+  },
+  {
+   "id": "human_eq_legend",
+   "why": "Legend difficulty should bite",
+   "band": [
+    0.1,
+    0.7
+   ],
+   "winRate": 0.2,
+   "n": 5,
+   "kos": 1,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 121.4,
+   "avgAcc": 0.51,
+   "avgOppAcc": 0.35,
+   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 p:KOR3"
+  },
+  {
+   "id": "human_eq_contender",
+   "why": "Contender is the learning setting",
+   "band": [
+    0.7,
+    1
+   ],
+   "winRate": 1,
+   "n": 5,
+   "kos": 5,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 104.4,
+   "avgAcc": 0.71,
+   "avgOppAcc": 0.24,
+   "results": "p:TKOR3 p:TKOR2 p:KOR2 p:TKOR4 p:KOR3"
+  },
+  {
+   "id": "human_plus15",
+   "why": "a +15 rated opponent should be a real underdog fight",
+   "band": [
+    0.1,
+    0.65
+   ],
+   "winRate": 0.6,
+   "n": 5,
+   "kos": 3,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 121.8,
+   "avgAcc": 0.58,
+   "avgOppAcc": 0.48,
+   "results": "o:DECR6 o:DECR6 p:KOR3 p:KOR3 p:KOR4"
+  },
+  {
+   "id": "novice_eq_contender",
+   "why": "a slow reader should still win on Contender",
+   "band": [
+    0.5,
+    1
+   ],
+   "winRate": 1,
+   "n": 5,
+   "kos": 5,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 83.4,
+   "avgAcc": 0.74,
+   "avgOppAcc": 0.25,
+   "results": "p:KOR3 p:TKOR3 p:TKOR2 p:KOR3 p:KOR1"
+  },
+  {
+   "id": "expert_plus20",
+   "why": "skill should beat ratings",
+   "band": [
+    0.1,
+    0.9
+   ],
+   "winRate": 0.4,
+   "n": 5,
+   "kos": 1,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 164.6,
+   "avgAcc": 0.56,
+   "avgOppAcc": 0.12,
+   "results": "o:DECR6 p:KOR5 o:DECR6 o:DECR6 p:DECR6"
+  },
+  {
+   "id": "masher_eq",
+   "why": "button mashing must not work",
+   "band": [
+    0,
+    0.4
+   ],
+   "winRate": 0,
+   "n": 5,
+   "kos": 0,
+   "koed": 5,
+   "ok": true,
+   "avgLanded": 75,
+   "avgAcc": 0.27,
+   "avgOppAcc": 0.82,
+   "results": "o:TKOR3 o:KOR5 o:KOR5 o:KOR5 o:KOR5"
+  },
+  {
+   "id": "turtle_eq",
+   "why": "frame-perfect blocking should not dominate (and never KO)",
+   "band": [
+    0,
+    0.75
+   ],
+   "winRate": 0,
+   "n": 5,
+   "kos": 0,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 85.6,
+   "avgAcc": 0.26,
+   "avgOppAcc": 0.31,
+   "results": "o:DECR6 o:DECR6 o:DECR6 o:DECR6 o:DECR6"
+  },
+  {
+   "id": "human_legend_tyrell",
+   "why": "legends are the hardest fights, even for an 85-rated player",
+   "band": [
+    0.05,
+    0.6
+   ],
+   "winRate": 0.6,
+   "n": 5,
+   "kos": 3,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 137.2,
+   "avgAcc": 0.57,
+   "avgOppAcc": 0.36,
+   "results": "o:DECR6 p:KOR5 p:TKOR3 o:DECR6 p:KOR3"
+  },
+  {
+   "id": "human_legend_hollis",
+   "why": "legends are the hardest fights, even for an 85-rated player",
+   "band": [
+    0.3,
+    1
+   ],
+   "winRate": 0.6,
+   "n": 5,
+   "kos": 2,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 175.2,
+   "avgAcc": 0.51,
+   "avgOppAcc": 0.54,
+   "results": "o:DECR6 p:KOR6 o:DECR6 p:KOR6 p:DECR6"
+  },
+  {
+   "id": "daily_40_days",
+   "why": "daily challenge is winnable but not trivial",
+   "band": [
+    0.2,
+    0.9
+   ],
+   "winRate": 0.875,
+   "n": 40,
+   "kos": 0,
+   "koed": 0,
+   "ok": true,
+   "avgLanded": 0,
+   "avgAcc": 0,
+   "avgOppAcc": 0,
+   "results": "2344 1567 641 2425 1280 2319 2316 1487 2476 1240 536 2142 2064 2426 2249 328 2323 2554 1431 2234 2054 2226 2284 1983 2236 1564 578 1572 1803 525 2268 2569 2232 1668 2076 1581 2115 2412 2397 2314"
+  }
+ ],
  "careers": {
-  "n": 25,
+  "n": 500,
   "retireAgeMed": 37,
-  "winsMed": 47,
-  "lossesMed": 23,
+  "winsMed": 46,
+  "lossesMed": 22,
   "titlesMed": 2,
-  "titlesAvg": 1.88,
-  "champShare": 1,
-  "undisputedShare": 0.04,
+  "titlesAvg": 2.12,
+  "champShare": 0.99,
+  "undisputedShare": 0.09,
   "multiDivShare": 0,
-  "legendsAvg": 1.44,
-  "chaptersAvg": 1.12,
-  "moneyMed": 42539911,
-  "womenN": 8,
-  "womenChampShare": 1,
-  "womenLegendsAvg": 1,
+  "legendsAvg": 1.29,
+  "chaptersAvg": 1.02,
+  "moneyMed": 43323538,
+  "womenN": 166,
+  "womenChampShare": 0.99,
+  "womenLegendsAvg": 1.13,
   "crossCircuitLegends": 0,
-  "hofMed": 393,
+  "hofMed": 387,
   "tiers": {
-   "Hall of Famer": 13,
-   "Champion": 5,
-   "All-Time Great": 4,
-   "The Greatest of All Time": 2,
-   "Contender": 1
+   "Hall of Famer": 254,
+   "Champion": 112,
+   "All-Time Great": 102,
+   "The Greatest of All Time": 14,
+   "Contender": 17,
+   "Journeyman": 1
   },
   "forcedRetireShare": 0,
   "dmgMed": 70
@@ -42,7 +231,7 @@
   },
   {
    "k": "champShare",
-   "v": 1,
+   "v": 0.99,
    "band": [
     0.4,
     1
@@ -60,7 +249,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1.12,
+   "v": 1.02,
    "band": [
     0.3,
     5
@@ -69,7 +258,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.44,
+   "v": 1.29,
    "band": [
     0.2,
     6
@@ -78,7 +267,7 @@
   },
   {
    "k": "undisputedShare",
-   "v": 0.04,
+   "v": 0.09,
    "band": [
     0,
     0.2
@@ -87,7 +276,7 @@
   },
   {
    "k": "womenChampShare",
-   "v": 1,
+   "v": 0.99,
    "band": [
     0.4,
     1
@@ -96,7 +285,7 @@
   },
   {
    "k": "womenLegendsAvg",
-   "v": 1,
+   "v": 1.13,
    "band": [
     0.1,
     6
@@ -113,5 +302,5 @@
    "ok": true
   }
  ],
- "seconds": 8
+ "seconds": 179
 }
