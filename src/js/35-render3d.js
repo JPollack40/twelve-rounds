@@ -183,7 +183,7 @@ function r3look(look,o={}){
   return {skin,hair:lk.hair||'short',hairColor,beard:lk.fem?'none':(lk.beard||'none'),trunks:lk.trunks||'#d8392f',trim:lk.trim||'#f4efe3',gloves:lk.gloves||'#d8392f',
     eyes:['#4a2a16','#2a160c','#3a5a7a','#4a5a3a','#5a3a20'][h%5],shape:Object.assign({},shape,lk.fem?{jaw:shape.jaw*.8,chin:shape.chin*.88,nose:shape.nose*.84,brow:Math.min(1.15,shape.brow)*.8,cheek:shape.cheek*1.04}:{},{noseType:lk.nose||'straight'}),fem:!!lk.fem,
     scar:lk.scar||'none',ear:lk.ear||'normal',expr:lk.expr||'stern',bt,band:lk.band||'',
-    robe:lk.robe||null,robeCol:lk.robeCol||null,robeTrim:lk.robeTrim||null,hoodLow:!!lk.hoodLow,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
+    model:lk.model||null,robe:lk.robe||null,robeCol:lk.robeCol||null,robeTrim:lk.robeTrim||null,hoodLow:!!lk.hoodLow,trunkPat:lk.trunkPat||['solid','solid','stripe','panel','stripe','flame','star'][(h>>>3)%7],gloveTape:lk.gloveTape||'#1d1517',shoes:lk.shoes||null,mg:lk.mg||['#f3efe6','#2f6fe2','#d8392f','#161616','#2e9e5b'][(h>>>6)%5],
     height:o.height||lk.height||70,mass:o.mass||1,hseed:h};
 }
 /* ---------- head: skull + eyes/lids + brows + mouth/teeth + ears + hair ---------- */
@@ -508,6 +508,7 @@ function r3robe(L,P,m,parts){
 }
 /* ---------- boxer rig ---------- */
 function r3boxer(L,opt={}){
+  if(L.model==='duncan'&&R3M.ok('duncan'))return r3duncan(L,opt);
   const P0=R3_BT[L.bt]||R3_BT.athletic,P=L.fem?r3femP(P0):P0,m=L.mass||1,TS=R3_TS;
   const skinM=r3cel(L.skin);
   const root=new THREE.Group();root.scale.setScalar(1+((L.height||70)-70)*.011);
@@ -589,7 +590,7 @@ function r3ik(arm,target,pole){
 }
 /* a static guard pose for portraits and the creator */
 function r3guard(bx,kind='high'){
-  const u=bx.userData;bx.updateWorldMatrix(true,true);
+  const u=bx.userData;if(u.duncan)return r3duncanGuard(bx,kind);bx.updateWorldMatrix(true,true);
   u.spine.rotation.set(kind==='hunch'?.2:.06,kind==='punch'?-.12:.12,0);u.headG.rotation.set(kind==='hunch'?.22:.06,kind==='punch'?.22:-.08,0);
   for(const s of [-1,1]){const lead=s===1;const L=u.legs[s];L.hip.rotation.set((lead?-14:8)*Math.PI/180,0,6*s*Math.PI/180);L.knee.rotation.set((lead?-10:-8)*Math.PI/180,0,0)}
   bx.updateWorldMatrix(true,true);
@@ -658,17 +659,17 @@ const R3P={cache:new Map(),
   },
   shot(look,o={}){
     const mode=o.mode||'bust',size=o.size||(mode==='full'?360:224);
-    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'',o.rot??'']);
+    const key=JSON.stringify([look,mode,size,o.height||0,o.expr||'',o.arch||'',o.legend||'',o.robe||0,o.guard||'',o.rot??'',look&&look.model?R3M.v:0]);
     if(this.cache.has(key))return this.cache.get(key);
     if(this.dead)return '';
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
     const bx=r3boxer(L,{robe:!!o.robe});bx.rotation.y=o.rot??(mode==='full'?(o.robe?(L.robe==='vest'?.3:-.18):-.42):-.22);this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
-    r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
-    bx.updateWorldMatrix(true,true);const hp=bx.userData.headG.getWorldPosition(new THREE.Vector3());
-    if(mode==='full'){const h=hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
-    else if(mode==='face'){this.cam.fov=22;this.cam.position.set(hp.x+.35,hp.y+.08,hp.z+1.75);this.cam.lookAt(hp.x,hp.y+.03,hp.z)}
-    else{this.cam.fov=24;this.cam.position.set(hp.x+.25,hp.y+.02,hp.z+1.55);this.cam.lookAt(hp.x,hp.y-.1,hp.z)}
+    if(bx.userData.head)r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
+    bx.updateWorldMatrix(true,true);const dn=bx.userData.duncan,hp=dn?new THREE.Vector3(0,bx.userData.hy0-.12,0).applyMatrix4(bx.matrixWorld):bx.userData.headG.getWorldPosition(new THREE.Vector3());
+    if(mode==='full'){const h=dn?2.7:hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
+    else if(mode==='face'){const k=dn?1.7:1;this.cam.fov=22;this.cam.position.set(hp.x+.35*k,hp.y+.08,hp.z+1.75*k);this.cam.lookAt(hp.x,hp.y+.03,hp.z)}
+    else{const k=dn?1.9:1;this.cam.fov=24;this.cam.position.set(hp.x+.25*k,hp.y+.02,hp.z+1.55*k);this.cam.lookAt(hp.x,hp.y-.1*k,hp.z)}
     this.cam.updateProjectionMatrix();r3U().px.value=4;
     let url='';try{this.r.render(this.scene,this.cam);url=this.r.domElement.toDataURL('image/png')}catch(e){url=''}
     this.scene.remove(bx);r3dispose(bx);
@@ -708,6 +709,7 @@ class Render3D{
   resize(){const r=this.stage.getBoundingClientRect();const w=Math.max(10,r.width),h=Math.max(10,r.height);this.r.setSize(w,h,false);this.aspect=w/h;this.cam.aspect=this.aspect;this.W=w;this.H=h;this.cam.updateProjectionMatrix()}
   destroy(){try{this.stage.classList.remove('ink');r3dispose(this.scene);this.r.dispose();this.r.domElement.remove()}catch(e){}}
   poseOpp(P,glow){
+    if(this.opp.userData.duncan)return r3duncanPose(this,P,glow);
     const f=this.f,o=f.o,u=this.opp.userData,t=f.time;
     const raw=P._raw||P;const lean=raw.lean||0,cr=raw.crouch||0,tw=raw.twist||0,ht=raw.headTilt||0,rot=raw.rot||0;
     const st=o.state,k=o.dur?clamp(o.t/o.dur,0,1):0;

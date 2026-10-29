@@ -106,6 +106,7 @@ const AB={
   trex:{name:'GWOAT',cost:3,kind:'buff',dur:10,mods:{spd:1.2,dmg:1.25,dmgTaken:.85},legend:'fields',desc:'10s: +20% speed, +25% damage, 15% less damage taken.'},
   shebee:{name:'She Bee Stingin\'',cost:2,kind:'strike',punch:'cross',mult:2.1,pierce:.6,legend:'alder',desc:'A long right hand at 2.1x that cuts through the guard.'},
   wolfbite:{name:'The Wolf\'s Right',cost:2,kind:'strike',punch:'cross',mult:2.5,pierce:.8,legend:'wolford',desc:'An overhand right at 2.5x. Anyone can go to sleep.'},
+  springloaded:{name:'Spring-Loaded',cost:2,kind:'strike',punch:'upper',mult:2.3,pierce:.7,legend:'duncan',desc:'A coiled uppercut at 2.3x that springs up through the guard.'},
   phantom:{name:'Phantom Punch',cost:3,kind:'strike',punch:'cross',mult:2,instant:true,kdBelow:.5,chapter:'phantom',desc:'A short right nobody sees. Drops anyone under half health.'},
 };
 
@@ -159,6 +160,8 @@ const LEGENDS=[
   {id:'tyrell',first:'Mikey',last:'Tyrell',nick:'Iron',div:7,arch:'swarmer',rating:95,age:21,home:'Catskill, NY',skin:5,hair:'buzz',hc:0,trunks:'#161616',homage:'"Iron" Mike Tyson',ab:'peekaboo',ai:{sig:['hook','upper','hook'],sigP:.6,weak:'fader',scout:'A first-round blitz of hooks and uppercuts. Survive the storm; he fades badly after round four.',agg:.9,combo:.7,w:{jab:1,cross:2,hook:4,upper:4},dodge:.6,fadeLate:1}},
   {id:'marchetti',first:'Rocco',last:'Marchetti',nick:'The Rock',div:7,arch:'slugger',rating:91,age:29,home:'Brockton, MA',skin:1,hair:'short',hc:0,trunks:'#d8392f',homage:'Rocky Marciano, 49-0',ab:'suzieq',ai:{sig:['cross','cross'],sigP:.5,weak:'jab',scout:'Short arms, iron chin, and the Suzie Q overhand right. Keep him on the end of your jab.',agg:.85,chinBonus:12}},
   {id:'hollis',first:'Cass',last:'Hollis',nick:'The Lip',div:7,arch:'outboxer',rating:97,age:24,home:'Louisville, KY',skin:4,hair:'short',hc:0,trunks:'#f4efe3',homage:'Muhammad Ali, born Cassius Clay',ab:'ropeadope',ai:{sig:['jab','jab','jab','cross'],sigP:.5,weak:'body',scout:'Dances, talks, and pumps the jab. His hands hang low and he rests on the ropes: go to the body.',agg:.5,dodge:.8,guard:['low','low','high'],trash:1}},
+  /* an easter egg: the office mascot. Ageless, never retires, and always somewhere between champion and #7 at heavyweight */
+  {id:'duncan',egg:1,ageless:1,first:'Duncan',last:'V.',nick:'The Mascot',div:7,arch:'boxerpuncher',rating:94,age:30,home:'Parts Unknown',skin:2,hair:'bald',hc:0,trunks:'#e8c51a',homage:"everyone's favorite office mascot",ab:'springloaded',ai:{sig:['jab','jab','upper'],sigP:.5,weak:'jab',scout:"Bolted to a hex nut, so he barely moves his feet, but that spring-loaded uppercut comes out of nowhere. Stay on the outside and keep him on the end of your jab.",agg:.6,chinBonus:10,w:{jab:4,cross:3,hook:2,upper:3}}},
   /* women's circuit (w:1): homages to the pioneers and champions of women's boxing */
   {id:'halm',w:1,first:'Regine',last:'Halm',nick:'Queen of the Ring',div:0,arch:'outboxer',rating:90,age:27,home:'Karlsruhe, GER',skin:1,hair:'ponytail',hc:4,trunks:'#d8392f',homage:'Regina Halmich, who carried women\'s boxing on German TV',ab:'ringqueen',ai:{sig:['jab','jab','cross'],sigP:.5,weak:'body',scout:'Quick feet and a stinging jab, always at range. Pressure her body and she slows down.',agg:.45,dodge:.7}},
   {id:'estrella',w:1,first:'Senna',last:'Estrella',nick:'Super Bad',div:0,arch:'counter',rating:91,age:26,home:'East Los Angeles, CA',skin:2,hair:'bun',hc:0,trunks:'#161616',homage:'Seniesa "Super Bad" Estrada',ab:'superbad',ai:{sig:['jab','cross','hook'],sigP:.45,weak:'flurry',scout:'Slick and fast, she makes you miss and makes you pay. Wide open when she finally lets her hands go.',counter:.8,dodge:.75,agg:.4}},
@@ -186,6 +189,7 @@ const LEGEND_VIS={
   rijkman:{bt:'brawler',nose:'flat',expr:'grit'},brekke:{bt:'athletic',expr:'calm',trim:'#d9a93a'},marlow:{bt:'brawler',nose:'broken',scar:'brow',expr:'grit'},
   holmgren:{bt:'lanky',expr:'calm'},fields:{bt:'athletic',expr:'cocky',trim:'#161616',robe:'gold',robeCol:'#f0be48',robeTrim:'#7a1f1f'},alder:{bt:'lanky',expr:'stern',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a'},
   wolford:{bt:'anvil',nose:'broken',expr:'stern',robe:'hood',hoodLow:true,robeCol:'#2a2a2c',robeTrim:'#2a2a2c'},
+  duncan:{model:'duncan',bt:'anvil',expr:'cocky',trim:'#e8c51a',gloves:'#c8262a'},
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */

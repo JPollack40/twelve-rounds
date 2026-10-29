@@ -175,7 +175,7 @@ function newCareer(o){
     skills:[],abilities:[ARCH[o.arch].ability],equipped:[ARCH[o.arch].ability],damage:0,injuries:[],hype:5,money:1500,pts:0,
     record:{w:0,l:0,d:0,ko:0},am:{w:0,l:0},form:[],streak:0,legendsBeaten:[],regional:null,formerChamp:false,titleWins:0,defenses:0,undisputed:0,titleDivs:[],retired:false};
   G.alumni=(Store.get('tr_alumni')||[]).filter(a=>!!a.w===(G.circuit==='w'));registerAlumni(G.alumni);
-  genWorld();
+  genWorld();ensureDuncan();
   const rv=makeFighter(natural,Math.max(40,playerOvr()+1),o.age,{arch:counterArch(o.arch)});
   rv.rival=true;rv.pts=60;rv.w=rv.l=rv.d=rv.ko=0;rv.pro=false;rv.edge=rand(0,4);
   G.world.f[rv.id]=rv;G.world.divs[natural].push(rv.id);rv.active=false;
@@ -235,7 +235,7 @@ function p4pList(n=10){
   return L.sort((a,c)=>c.s-a.s).slice(0,n)}
 function p4pRank(){const i=p4pList(10).findIndex(e=>e.id==='P');return i<0?null:i+1}
 /* ---------- alumni: your retired champions return as legends in later careers of the same circuit ---------- */
-const BASE_LEGENDS=LEGENDS.slice();
+const BASE_LEGENDS=LEGENDS.filter(l=>!l.egg);
 const ALUM_SIG={swarmer:['hook','bhook','hook'],slugger:['cross','hook'],outboxer:['jab','jab','cross'],counter:['jab','cross'],boxerpuncher:['jab','cross','hook']};
 const ALUM_WEAK={chin:['glass','A suspect chin: land clean and they go.'],sta:['fader','The gas tank empties late. Drag them into deep water.'],def:['body','The guard is loose downstairs. Go to the body.'],foot:['jab','Flat-footed. Keep them on the end of your jab.'],iq:['counter','They take the bait. Feint, then counter.'],spd:['upper','A beat slow. Uppercuts come up the middle.'],pow:['flurry','Not a big puncher: open up after they finish their combinations.']};
 function makeAlum(){const b=B(),L=legacy(),st=effectiveStats();const low=STAT_KEYS.slice().sort((x,y)=>st[x]-st[y])[0];const W=ALUM_WEAK[low];
@@ -246,6 +246,15 @@ function makeAlum(){const b=B(),L=legacy(),st=effectiveStats();const low=STAT_KE
     ai:{sig:ALUM_SIG[b.arch]||['jab','cross'],sigP:.45,weak:W[0],scout:`You know this style better than anyone: a ${ARCH[b.arch].name.toLowerCase()} in their prime. ${W[1]}`}}}
 function registerAlumni(list){for(const A of list||[]){if(!A||!A.id)continue;if(!LEGEND_BY[A.id]){LEGENDS.push(A);LEGEND_BY[A.id]=A}LEGEND_VIS[A.id]=Object.assign({},A.look,{legendVis:undefined})}}
 function saveAlum(){if(!G||G.sandbox)return null;const L=legacy();if(L.score<150)return null;const A=makeAlum();const list=(Store.get('tr_alumni')||[]).filter(x=>x.id!==A.id);list.push(A);Store.set('tr_alumni',list.slice(-12));registerAlumni([A]);return A}
+/* Duncan V. hovers between champion and #7 at heavyweight: if he slips below 7th he climbs back */
+function duncanHover(){const id=G.flags.duncanId;const f=id&&G.world.f[id];if(!f||!f.active)return;const L=ranking(f.div);const r=L.findIndex(e=>e.id===f.id)+1;
+  if(r>7&&L[6]){f.pts=Math.min(1000,f.pts+Math.max(6,(L[6].pts-f.pts)*.25))}}
+/* add Duncan to a men's world that predates him (older saves) */
+function ensureDuncan(){if(!G||!G.world||G.circuit==='w'||!LEGEND_BY.duncan)return;
+  const have=Object.values(G.world.f).find(f=>f.legend==='duncan');if(have){G.flags.duncanId=have.id;return}
+  const f=RNG.with(new Rng(hashStr('duncan'+(G.seed||0))),()=>legendFighter(LEGEND_BY.duncan));const d=f.div,L=ranking(d);
+  f.pts=L[3]?Math.round(L[3].pts+5):800;G.world.f[f.id]=f;G.world.divs[d].push(f.id);G.flags.duncanId=f.id;
+  if(G.phase!=='amateur'||G.newsList)news(`${fullName(f)} enters the heavyweight rankings. Nobody is quite sure where he came from, and nobody wants to fight him.`,'gold')}
 function rivalryWins(){return (G.rival?.w||0)+(G.rivalHist||[]).reduce((s,r)=>s+r.w,0)}
 /* ---------- callouts: a request, not a guarantee. The champion only answers contenders who have earned it ---------- */
 function calloutChance(t){
@@ -495,6 +504,7 @@ function worldWeekInner(W,rv){
     }
   }
   if(G.week%52===0)yearTick();
+  duncanHover();
   if(rv&&rv.active){rv.rating+=((playerOvr()+rv.edge)-rv.rating)*.03;rv.rating=clamp(rv.rating,30,97)}
 }
 /* ---------- career goals: three short-term targets at a time, with rewards ---------- */
@@ -568,7 +578,9 @@ function yearTick(){
   const W=G.world;
   yearAwards();
   for(const id in W.f){
-    const f=W.f[id];if(!f.active||f.amateur)continue;const a=ageOf(f.born);
+    const f=W.f[id];if(!f.active||f.amateur)continue;
+    if(f.legend&&LEGEND_BY[f.legend]?.ageless){f.born=G.week-30*52;f.rating=Math.max(f.rating,LEGEND_BY[f.legend].rating);continue}
+    const a=ageOf(f.born);
     if(a<26)f.rating=Math.min(f.pot,f.rating+randi(0,3));else if(a>31)f.rating-=randi(1,3)*(f.legend?.6:1);
     const retireAge=f.legend?39:36;
     if(!f.rival&&(a>=retireAge&&chance(.5)||f.rating<32||(a>33&&f.l>f.w&&chance(.4)))){

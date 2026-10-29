@@ -8,7 +8,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 VER=$(date -u +%Y%m%d%H%M)
 mkdir -p dist docs
-JS=$(cat src/js/*.js)
+# embedded models: assets/models/<name>.glb listed here are base64-inlined into every build as R3M_DATA
+MODELS=(duncan)
+MJS="const R3M_DATA={"
+for m in "${MODELS[@]}"; do MJS+="$m:\"$(base64 -w0 "assets/models/$m.glb")\","; done
+MJS+="};"
+JS="$MJS
+$(cat src/js/*.js)"
 THREE_CDN='<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>'
 {
   cat src/head.html

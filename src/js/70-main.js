@@ -65,7 +65,7 @@ async function initCloud(){
   }catch(e){}
 }
 /* load a career object into play */
-function loadCareer(g){G=g;registerAlumni(G.alumni);useCareerRng()}
+function loadCareer(g){G=g;registerAlumni(G.alumni);ensureDuncan();useCareerRng()}
 
 /* ---- dev badge & gate ---- */
 function devBadge(){
@@ -82,7 +82,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http')&&!location
 function start(data){
   if(!$('#app')){const a=document.createElement('div');a.id='app';document.body.appendChild(a)}
   if(location.hash==='#dev'){Settings.dev=true;saveSettings()}
-  devBadge();applyTextSize();registerAlumni(Store.get('tr_alumni')||[]);
+  devBadge();applyTextSize();registerAlumni(Store.get('tr_alumni')||[]);R3M.init();
   if(data&&data.G&&data.G.boxer){loadCareer(Save.migrate(data.G));UI.go(['fight','result','fightnight'].includes(data.screen)?'home':data.screen||'home')}
   else UI.go('title');
   initCloud();
