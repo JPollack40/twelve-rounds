@@ -1,5 +1,5 @@
 # Repaint the back of a front-view-generated boxer .glb: projects the front onto the back, picks flat materials by rule
-# (skin / trunks black / waistband white / glove red / hair), adds spine and shoulder-blade shading, pads UV gutters.
+# (skin / trunks black / waistband white / glove red), a wrap-around buzz-cut hair cap that skips the ears, spine and shoulder-blade shading, UV gutter padding.
 # Usage: python3 -I tools/repaint_back.py in.glb out.glb
 import json,struct,io,sys,numpy as np
 from PIL import Image,ImageFilter
@@ -52,7 +52,9 @@ top=has.copy();top[int(GH*.035):]=False;hair=np.median(tex(fuv[top]),0) if top.a
 print('skin',SKIN.round(),'white',WHITE.round(),'red',RED.round(),'hair',hair.round())
 # 3) repaint back-facing texels that came out too dark
 out=T.copy();mask=np.zeros((TH,TW),bool);headY=y1-H*.105
-for t in np.where(N[:,2]<0.2)[0]:
+hv=P[P[:,1]>y1-H*.12];HC=np.array([np.median(hv[:,0]),np.median(hv[:,2])])
+HRy=np.linspace(y1-H*.13,y1,14);HRr=np.array([np.median(np.hypot(*(hv[np.abs(hv[:,1]-yy)<H*.01][:,[0,2]]-HC).T)) if (np.abs(hv[:,1]-yy)<H*.01).sum()>3 else .05 for yy in HRy])
+for t in np.where((N[:,2]<0.2)|(P[I][:,:,1].mean(1)>y1-H*.13))[0]:
   tri=P[I[t]];tuv=UV[I[t]];p2=np.stack([tuv[:,0]*TW,tuv[:,1]*TH],1)
   def cb(px,w,tri=tri,t=t):
     xs,ys=px[:,0],px[:,1];ok=(xs>=0)&(xs<TW)&(ys>=0)&(ys<TH);xs,ys,w=xs[ok],ys[ok],w[ok]
@@ -60,7 +62,11 @@ for t in np.where(N[:,2]<0.2)[0]:
     p3=w@tri;cx=np.clip(gx(p3[:,0]).astype(int),0,GW-1);cy=np.clip(gy(p3[:,1]).astype(int),0,GH-1)
     fc=FCs[cy,cx];valid=depth[cy,cx]>-9
     mat=material(fc,(p3[:,1]-y0)/H)
-    hw=np.clip((p3[:,1]-(headY-H*.012))/(H*.024),0,1)*(N[t,2]<-.2)   # feathered hairline
+    # hair cap: a hairline that wraps the skull (temple high, above the ear at the side, low at the nape); ears are skipped
+    th=np.abs(np.arctan2(p3[:,0]-HC[0],p3[:,2]-HC[1]))
+    hl=np.interp(th,[0,.5,.55,.85,1.25,np.pi/2,2.2,np.pi],[9,9,y1-H*.032,y1-H*.058,y1-H*.078,y1-H*.07,y1-H*.082,y1-H*.100])  # forehead, temple, sideburn, above ear, nape
+    d=np.hypot(p3[:,0]-HC[0],p3[:,2]-HC[1]);ear=d>np.interp(p3[:,1],HRy,HRr)*1.10
+    hw=np.clip((p3[:,1]-(hl-H*.008))/(H*.016),0,1)*(th>.5)*~ear*(p3[:,1]>y1-H*.13)
     head=hw>0
     mat=mat*(1-hw[:,None])+hair*hw[:,None]
     cur=out[ys,xs,:3];yy=(p3[:,1]-y0)/H
@@ -70,10 +76,22 @@ for t in np.where(N[:,2]<0.2)[0]:
     blades=sum(np.exp(-(((p3[:,0]-sx)/.035)**2+((yy-.74)/.045)**2)) for sx in (-.05,.05))
     shade=(1-.10*spine*isskin-.07*blades*isskin)[:,None]*(.93+.07*yy[:,None])
     back=N[t,2]<-.1
-    rep=valid&(back|(lumf(cur)<lumf(mat)*.6)|head)&~((lumf(mat)<40)&(lumf(cur)<60))
-    col=mat*shade+np.random.default_rng(t).normal(0,2.5,mat.shape)
+    facefront=(p3[:,1]>y1-H*.13)&(N[t,2]>=.2)
+    rep=(valid&((back|(lumf(cur)<lumf(mat)*.6))&~facefront)|head)&~((lumf(mat)<40)&(lumf(cur)<60)&~head)
+    col=mat*shade+np.random.default_rng(t).normal(0,2.5,mat.shape)*(1-hw[:,None])
     out[ys[rep],xs[rep],:3]=np.clip(col[rep],0,255);mask[ys[rep],xs[rep]]=True
   raster(p2,cb)
+# sliver triangles (texture area under a few texels) in the hair cap: paint a small dot of hair where they sample
+for t in range(len(I)):
+  tri=P[I[t]];cy3=tri[:,1].mean()
+  if cy3<y1-H*.13:continue
+  cc=tri.mean(0);th=abs(np.arctan2(cc[0]-HC[0],cc[2]-HC[1]))
+  hl=np.interp(th,[0,.5,.55,.85,1.25,np.pi/2,2.2,np.pi],[9,9,y1-H*.032,y1-H*.058,y1-H*.078,y1-H*.07,y1-H*.082,y1-H*.100])
+  if cy3<hl or th<.5:continue
+  tuv=UV[I[t]]*[TW,TH];e1=tuv[1]-tuv[0];e2=tuv[2]-tuv[0];area=abs(e1[0]*e2[1]-e1[1]*e2[0])/2
+  if area<6:
+    for (u,v) in tuv:
+      x0_,y0_=int(u),int(v);out[max(0,y0_-3):y0_+4,max(0,x0_-3):x0_+4,:3]=hair;mask[max(0,y0_-3):y0_+4,max(0,x0_-3):x0_+4]=True
 cov=np.zeros((TH,TW),bool)
 for t in range(len(I)):
   tuv=UV[I[t]];p2=np.stack([tuv[:,0]*TW,tuv[:,1]*TH],1)
@@ -90,6 +108,8 @@ out[:,:,:3]=np.where(cov[:,:,None],out[:,:,:3],col)
 # soften the repainted areas a little and bleed them over UV seams
 img=Image.fromarray(out.astype(np.uint8),'RGBA');soft=img.filter(ImageFilter.GaussianBlur(1.2));m=Image.fromarray((mask*255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))
 img=Image.composite(soft,img,m)
+# despeckle painted areas: a median pass removes stray dark texels the rasterizer missed
+med=img.filter(ImageFilter.MedianFilter(5));img=Image.composite(med,img,m)
 buf=io.BytesIO();img.save(buf,'PNG',optimize=True);png=buf.getvalue()
 # 4) write the glb back: new image bytes, matte material
 nb=bytearray(B[:ib['byteOffset']])+png;
