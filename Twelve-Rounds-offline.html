@@ -355,7 +355,7 @@ const Store={
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},
   del(k){try{localStorage.removeItem(k)}catch(e){}}
 };
-const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,replay:true,commentary:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,sculpt:true,mocap:true,vol:1,volFx:1,volCrowd:1,volTell:1,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
+const Settings=Object.assign({sound:true,haptics:true,shake:true,slowmo:true,replay:true,commentary:true,hitstop:true,fps60:true,lowlat:true,roundLen:45,hints:true,lefty:false,btnSize:1,dev:false,audioTells:true,gfx3d:true,gfxHi:true,sculpt:true,mocap:true,mcOff:{},vol:1,volFx:1,volCrowd:1,volTell:1,flashes:true,tellIcons:true,assist:0,textSize:1,coach:true,openScoring:true,hapticStr:1,layouts:{}},Store.get('tr_settings')||{});
 function saveSettings(){Store.set('tr_settings',Settings);applyTextSize()}
 function applyTextSize(){try{const a=document.getElementById('app');if(a)a.style.zoom=Settings.textSize||1}catch(e){}}
 
@@ -2822,15 +2822,15 @@ class Render3D{
     const sx=o.south?-1:1;
     const closeness=(raw.scale||1)-1;
     this.opp.position.set((raw.hip?raw.hip[0]:0)*.004,.1,.2+closeness*1.7);
-    if(r3mcOn(u)){r3mcDrive(this,P);this.opp.updateWorldMatrix(true,true);
+    if(r3mcOn(u)&&r3mcDrive(this,P)){this.opp.updateWorldMatrix(true,true);
       for(const h of ['L','R']){const gw=glow&&glow[h]||0,g=u.arms[h==='L'?1:-1].gm;g.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');g.emissiveIntensity=gw*.9}
       return this.oppFace(P,u,st,t)}
-    u.pelvis.position.y=u.legY-.11-cr*.32;
+    u.pelvis.position.set(0,u.legY-.11-cr*.32,0);
     let fwd=0;
     if(st==='wind')fwd=-5*k;else if(st==='act')fwd=14;else if(st==='rec')fwd=14*(1-k);
     if(st==='stagger')fwd=-14;if(st==='clinch')fwd=12;if(o.hurt>0&&st!=='down')fwd+=Math.sin(t*5)*4;
     u.spine.rotation.set(fwd*Math.PI/180,tw*1.05,-lean*.55);
-    u.pelvis.rotation.y=tw*.35;
+    u.pelvis.rotation.set(0,tw*.35,0);
     const hdx=(raw.head?raw.head[0]:0)-(raw.chest?raw.chest[0]:0);
     u.headG.rotation.set((st==='down'?.35:0)+(o.hurt>0?.12:0),hdx*.004,-ht*1.0);
     if(st==='down'){const fall=rot;this.opp.rotation.x=-fall*.62;this.opp.rotation.y=sx*fall*.25;this.opp.position.y=.1+fall*.05;u.pelvis.position.y=u.legY-.11-cr*.32-fall*.1}
@@ -3219,7 +3219,7 @@ const R3MC={ready:false,clips:{},
     for(const [k,c] of Object.entries(R3MOCAP.clips)){const b=Uint8Array.from(atob(c.b64),ch=>ch.charCodeAt(0));const a=new Int16Array(b.buffer);
       const C={k,fps:c.fps,n:c.n,dur:(c.n-1)/c.fps,a};C.x0=a[0]/10;C.z0=a[2]/10;this.clips[k]=C;r3mcMarks(C)}
     this.restY=R3MOCAP.rest.hipsY;this.ready=true}};
-const MC_F=45,MC_YAW=.6;let _me=null; // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
+const MC_F=45,MC_YAW=.6; // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
 /* punch markers: when the hand leaves the guard, reaches full extension, and is home again (by forward reach of that arm) */
 const MC_PUNCH={leadJab:{h:'L'},crossPunch:{h:'R'},hook:{h:'L'},rightHook:{h:'R'},uppercut:{h:'L',up:1},bodyJabCross:{h:'L',two:1}};
 function r3mcMarks(C){const m=MC_PUNCH[C.k];if(!m)return;const a=C.a,reach=(i,h)=>{const o=i*MC_F+15+(h==='L'?0:9);return (a[o+2]+a[o+5])/32767+(m.up?(a[o+4])/32767*.6:0)};
@@ -3242,30 +3242,61 @@ function r3mcMirror(P){P[0]=-P[0];for(let q=0;q<3;q++){const o=3+q*4;P[o+1]=-P[o
 function r3mcBlend(A,B,w,out){const P=out||new Float32Array(MC_F);for(let k=0;k<3;k++)P[k]=A[k]+(B[k]-A[k])*w;
   for(let q=0;q<3;q++){const o=3+q*4;const s=(A[o]*B[o]+A[o+1]*B[o+1]+A[o+2]*B[o+2]+A[o+3]*B[o+3])<0?-1:1;for(let k=0;k<4;k++)P[o+k]=A[o+k]+(B[o+k]*s-A[o+k])*w}
   for(let k=15;k<MC_F;k++)P[k]=A[k]+(B[k]-A[k])*w;r3mcNorm(P);return P}
-const _mq=[0,1,2,3,4,5].map(()=>new THREE.Quaternion()),_mv=[0,1,2].map(()=>new THREE.Vector3()),_mDOWN=new THREE.Vector3(0,-1,0);
-/* pose a rigged boxer: root motion (cm) is scaled to this body and, unless asked for, kept in place */
+const _mq=[0,1,2,3,4,5].map(()=>new THREE.Quaternion()),_mv=[0,1,2,3,4,5,6,7].map(()=>new THREE.Vector3()),_mDOWN=new THREE.Vector3(0,-1,0),_mZ=new THREE.Vector3(0,0,1);
+const _mB=[new THREE.Matrix4(),new THREE.Matrix4()],_mbv=[0,1,2].map(()=>new THREE.Vector3());
+/* the rotation that carries a rest frame (bone axis a0, bend side b0) onto a target frame (a1, b1): unlike a shortest-arc turn it
+   also fixes the twist about the bone, so knees and elbows bend in the plane the clip bends them in */
+function r3mcAim(out,a0,b0,a1,b1){const f=(a,b,M)=>{const x=_mbv[0].copy(a).normalize(),z=_mbv[1].copy(b).addScaledVector(x,-b.dot(x));
+    if(z.lengthSq()<1e-8)z.copy(_mZ).addScaledVector(x,-x.z);z.normalize();const y=_mbv[2].crossVectors(z,x);return M.makeBasis(x,y,z)};
+  f(a0,b0,_mB[0]);f(a1,b1,_mB[1]);_mB[0].transpose();_mB[1].multiply(_mB[0]);return out.setFromRotationMatrix(_mB[1])}
+/* the part of v perpendicular to axis, or fallback when v lies along it */
+function r3mcPerp(out,v,axis,fallback){out.copy(v).addScaledVector(axis,-v.dot(axis));if(out.lengthSq()<.004)out.copy(fallback).addScaledVector(axis,-fallback.dot(axis));return out.normalize()}
+/* pose a rigged boxer. Root motion (cm) is scaled to this body and kept in place unless asked for. o.yaw turns the body (the
+   punching arm o.keepArm keeps its aim); o.lift (0..1) raises the hips toward standing height, with the feet kept where the clip
+   put them by two-bone leg IK; the hips take part of the chest's turn so the waist never wrings */
 function r3mcApply(bx,P,o={}){const u=bx.userData;if(!u.rig)return;const J=R3M.m[u.mk].extras.joints;
-  if(!u.mcRest){u.mcRest={};for(const [h,s] of [['L',1],['R',-1]]){const kp=u.legs[s].knee.position.clone().normalize(),an=new THREE.Vector3(...J['ankle'+h]).sub(new THREE.Vector3(...J['knee'+h])).normalize();u.mcRest[s]={th:kp,sh:an}}}
-  const sc=J.pelvis[1]/R3MC.restY,C=o.clip;
+  if(!u.mcRest){u.mcRest={};for(const [h,s] of [['L',1],['R',-1]]){const kp=u.legs[s].knee.position.clone(),an=new THREE.Vector3(...J['ankle'+h]).sub(new THREE.Vector3(...J['knee'+h]));
+    u.mcRest[s]={th:kp.clone().normalize(),sh:an.clone().normalize(),L1:kp.length(),L2:an.length()}}}
+  const sc=J.pelvis[1]/R3MC.restY,C=o.clip,Y=_mv[7].set(0,1,0);
   const qa=(i,q)=>q.set(P[3+i*4],P[4+i*4],P[5+i*4],P[6+i*4]);const Dh=qa(0,_mq[0]),Ds=qa(1,_mq[1]),Dd=qa(2,_mq[2]);
-  if(o.yaw){const y=_mq[5].setFromAxisAngle(new THREE.Vector3(0,1,0),o.yaw);Dh.premultiply(y);Ds.premultiply(y);Dd.premultiply(y)}
+  if(o.yaw){const y=_mq[5].setFromAxisAngle(Y,o.yaw);Dh.premultiply(y);Ds.premultiply(y);Dd.premultiply(y)}
   const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9;
-  const dir=(i,v)=>{v.set(P[15+i*3],P[16+i*3],P[17+i*3]);if(o.yaw&&(i<keep||i>keep+2))v.applyAxisAngle(_mv[2].set(0,1,0),o.yaw);return v};
-  const rk=o.root||0,x0=C?C.x0:0,z0=C?C.z0:0;
-  u.pelvis.position.set((P[0]-x0)*sc*rk,J.pelvis[1]+(P[1]-R3MC.restY)*sc,(P[2]-z0)*sc*rk);
-  u.pelvis.quaternion.copy(Dh);
-  const iDh=_mq[3].copy(Dh).invert();u.spine.quaternion.copy(iDh).multiply(Ds);
-  const iDs=_mq[3].copy(Ds).invert();u.headG.quaternion.copy(iDs).multiply(Dd);
+  const dir=(i,v)=>{v.set(P[15+i*3],P[16+i*3],P[17+i*3]);if(o.yaw&&(i<keep||i>keep+2))v.applyAxisAngle(Y,o.yaw);return v};
+  const rk=o.root||0,x0=C?C.x0:0,z0=C?C.z0:0,clipY=J.pelvis[1]+(P[1]-R3MC.restY)*sc,liftY=clipY+(J.pelvis[1]*.985-clipY)*(o.lift||0);
+  const px=(P[0]-x0)*sc*rk,pz=(P[2]-z0)*sc*rk;
+  // hips share a third of the chest's rotation (legs are aimed in world terms, so the feet do not move with it)
+  const Dp=_mq[4].copy(Dh).slerp(Ds,.35);u.pelvis.quaternion.copy(Dp);u.pelvis.position.set(px,liftY,pz);
+  const iDp=_mq[3].copy(Dp).invert();u.spine.quaternion.copy(iDp).multiply(Ds);
+  const iDs=_mq[5].copy(Ds).invert();u.headG.quaternion.copy(iDs).multiply(Dd);
+  const fwdS=_mv[6].copy(_mZ).applyQuaternion(Ds);
   for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s];
-    A.sh.quaternion.setFromUnitVectors(_mDOWN,dir(b,_mv[0]).applyQuaternion(iDs));
-    const shW=_mq[4].copy(Ds).multiply(A.sh.quaternion),ishW=_mq[3].copy(shW).invert();
-    A.elbow.quaternion.setFromUnitVectors(_mDOWN,dir(b+1,_mv[0]).applyQuaternion(ishW));
-    const elW=shW.multiply(A.elbow.quaternion),ielW=_mq[3].copy(elW).invert();
-    A.glove.quaternion.setFromUnitVectors(_mDOWN,dir(b+2,_mv[0]).applyQuaternion(ielW)).slerp(_mq[5].identity(),.35)}
-  for(const [s,b] of [[1,6],[-1,8]]){const Lg=u.legs[s],R=u.mcRest[s];
-    Lg.hip.quaternion.setFromUnitVectors(R.th,dir(b,_mv[0]).applyQuaternion(iDh));
-    const hW=_mq[4].copy(Dh).multiply(Lg.hip.quaternion),ihW=_mq[3].copy(hW).invert();
-    Lg.knee.quaternion.setFromUnitVectors(R.sh,dir(b+1,_mv[0]).applyQuaternion(ihW))}}
+    const U=dir(b,_mv[0]),F=dir(b+1,_mv[1]),H=dir(b+2,_mv[2]);
+    const bend=r3mcPerp(_mv[3],F,U,fwdS);                         // the elbow bends toward the forearm
+    r3mcAim(A.sh.quaternion,_mDOWN,_mZ,U.clone().applyQuaternion(iDs),bend.applyQuaternion(iDs));
+    const shW=_mq[1].copy(Ds).multiply(A.sh.quaternion),ishW=shW.clone().invert();
+    const zE=r3mcPerp(_mv[4],_mv[5].copy(U).negate(),F,_mv[3].copy(_mZ).applyQuaternion(shW));
+    r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,F.applyQuaternion(ishW),zE.applyQuaternion(ishW));
+    const elW=shW.multiply(A.elbow.quaternion),ielW=elW.clone().invert();
+    r3mcAim(A.glove.quaternion,_mDOWN,_mZ,H.applyQuaternion(ielW),_mZ).slerp(_mq[2].identity(),.35);Ds.copy(qa(1,_mq[1]));if(o.yaw)Ds.premultiply(_mq[2].setFromAxisAngle(Y,o.yaw))}
+  for(const [s,b] of [[1,6],[-1,8]]){const Lg=u.legs[s],R=u.mcRest[s],fwdP=_mv[6].copy(_mZ).applyQuaternion(Dp);
+    let T=dir(b,_mv[0]),S=dir(b+1,_mv[1]);const kf=r3mcPerp(_mv[2],_mv[3].copy(T).sub(S),T,fwdP);   // the knee points forward of the thigh
+    // the foot stays where the clip put it; if the hips were lifted, re-solve the knee in the clip's bend plane
+    if(liftY!==clipY){const hp=_mv[4].copy(Lg.hip.position).applyQuaternion(Dp);const A=_mv[5].copy(hp).add(_mv[3].set(px,clipY,pz)).addScaledVector(T,R.L1).addScaledVector(S,R.L2);
+      hp.x+=px;hp.y+=liftY;hp.z+=pz;const d=A.sub(hp),dist=Math.min(d.length(),(R.L1+R.L2)*.999),dn=d.normalize();
+      const ca=clamp((R.L1*R.L1+dist*dist-R.L2*R.L2)/(2*R.L1*dist),-1,1),sa=Math.sqrt(1-ca*ca),pp=r3mcPerp(_mv[3],kf,dn,fwdP);
+      const K=_mv[6].copy(dn).multiplyScalar(ca*R.L1).addScaledVector(pp,sa*R.L1);T=_mv[0].copy(K).normalize();S=_mv[1].copy(dn).multiplyScalar(dist).sub(K).normalize();
+      r3mcPerp(kf,_mv[3].copy(T).sub(S),T,_mv[3].copy(_mZ).applyQuaternion(Dp))}
+    r3mcAim(Lg.hip.quaternion,R.th,_mZ,T.clone().applyQuaternion(iDp),kf.clone().applyQuaternion(iDp));
+    const hW=_mq[1].copy(Dp).multiply(Lg.hip.quaternion),ihW=hW.clone().invert();
+    const zK=r3mcPerp(_mv[4],T,S,_mv[3].copy(_mZ).applyQuaternion(hW));
+    r3mcAim(Lg.knee.quaternion,R.sh,_mZ,S.applyQuaternion(ihW),zK.applyQuaternion(ihW))}}
+const mcOk=k=>!(Settings.mcOff||{})[k]&&!!R3MC.clips[k];
+/* a clip sample prepared for the fight view: punches and blocks take most of their legs and hip height from the stance (clips
+   step in with lunges, which in place read as kneeling) */
+function r3mcPrep(k,t,loop,mir,fight,tIdle,out,tmp){const C=R3MC.clips[k];r3mcSample(C,t,loop,mir,out);
+  if(fight&&(MC_PUNCH[k]||/Block$/.test(k))&&mcOk('fightingIdle')){const I=r3mcSample(R3MC.clips.fightingIdle,tIdle,true,mir,tmp);
+    out[1]=out[1]+(I[1]-out[1])*.6;for(let i=33;i<MC_F;i++)out[i]=out[i]+(I[i]-out[i])*.6;r3mcNorm(out)}
+  return out}
 function r3mcOn(u){return !!(Settings.mocap&&u&&u.rig&&R3MC.ready)}
 /* ---------- the fight driver: picks a clip for the opponent's state each frame and crossfades between them ---------- */
 const MC_HIT={light:'lightHitToHead',medium:'mediumHitToHead',big:'bigHitToHead',body:'hitToBody',upper:'receivingABigUppercut',face:'receivePunchToTheFace'};
@@ -3287,36 +3318,33 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
     // a hook from your left lands on their right side: they cover with the right arm (and vice versa)
     const bk=side==='L'?'rightBlock':side==='R'?'leftBlock':'centerBlock';want={k:bk,t:R3MC.clips[bk].dur*(bk==='centerBlock'?.45:.5),key:'blk'+bk}}
   else if(f.phase==='end'&&f.res&&f.res.winner==='o'){const c=r3mcCeleb(R);want={k:c,t:t-(M.celebT??(M.celebT=t)),loop:1,key:'cel',free:1,root:.25}}
-  else if(f.phase==='down'&&f.count&&f.count.d===f.p){const c=R.oL&&R.oL.expr==='cocky'?'standingTauntChestThump':'taunt1';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
+  else if(f.phase==='down'&&f.count&&f.count.d===f.p){const pool=(R.oL&&R.oL.expr==='cocky'?['standingTauntChestThump','taunt1','taunt']:['taunt1','taunt','standingTauntChestThump']).filter(mcOk),c=pool[0]||'fightingIdle';want={k:c,t:t-(M.tauntT??(M.tauntT=t)),loop:1,key:'tnt',free:1}}
+  if(M.react&&!mcOk(M.react.k))M.react=null;
   if(!want&&M.react){const C=R3MC.clips[M.react.k],el=(t-M.react.t0)*1.6;if(el<C.dur*.85)want={k:M.react.k,t:el,mir:M.react.mir,key:'r'+M.react.t0};else M.react=null}
   if(!want)want={k:'fightingIdle',t:t*(o.hurt>0?.8:1),loop:1,key:'idle'};
   // southpaws mirror everything (their lead hand is the right)
   if(south)want.mir=!want.mir;
+  if(!mcOk(want.k)){M.cur=null;return false}       // switched off in the animation studio: the classic posing takes this moment
   const dt=clamp(t-(M.lastT??t),0,.1)||1/60;M.lastT=t;
-  if(!M.cur||M.cur.key!==want.key){if(M.cur){M.prevPose=M.prevPose||new Float32Array(MC_F);M.prevPose.set(M.pose)}M.fade=0;M.fadeLen=want.key==='kd'||M.cur&&M.cur.key==='kd'?.2:want.key[0]==='p'?.06:.12}
+  if(!M.cur||M.cur.key!==want.key){M.prevPose=M.prevPose||new Float32Array(MC_F);M.prevPose.set(M.pose);M.fade=M.cur?0:1;
+    M.fadeLen=want.key==='kd'||M.cur&&M.cur.key==='kd'?.28:want.key[0]==='p'?.09:want.key[0]==='r'?.12:.22}
   M.cur=want;M.fade=Math.min(1,M.fade+dt/M.fadeLen);
-  const C=R3MC.clips[want.k];r3mcSample(C,want.t,!!want.loop,!!want.mir,M.tmp);
-  // punch clips step in with a lunge; in place that reads as kneeling, so the legs and hip height stay mostly in the stance
-  if(want.key[0]==='p'||want.key==='blk'){const I=r3mcSample(R3MC.clips.fightingIdle,t,true,!!south,M.tmp3||(M.tmp3=new Float32Array(MC_F)));
-    M.tmp[1]=M.tmp[1]+(I[1]-M.tmp[1])*.7;for(let k=33;k<MC_F;k++)M.tmp[k]=M.tmp[k]+(I[k]-M.tmp[k])*.7;r3mcNorm(M.tmp)}
-  const pose=M.prevPose&&M.fade<1?r3mcBlend(M.prevPose,M.tmp,M.fade*M.fade*(3-2*M.fade),M.tmp2):M.tmp;M.pose.set(pose);
-  // dodges keep the game's own slip and duck (lean and crouch) on top of the idle clip
-  // Mixamo's stance is almost side-on; turn the body toward the camera, but keep the punching arm aimed straight at you
-  const yaw=(south?-1:1)*MC_YAW*(want.key==='kd'||want.key==='up'?.3:want.free?0:1);
-  r3mcApply(R.opp,M.pose,{clip:C,root:want.root||0,yaw,keepArm:want.hand});
-  // the first-person camera sits close and high, where a real boxing crouch reads as kneeling: standing legs lean most of the way
-  // to the classic upright stance (keeping some of the bounce), and the hips follow
+  r3mcPrep(want.k,want.t,!!want.loop,!!want.mir,!want.free,t,M.tmp,M.tmp3||(M.tmp3=new Float32Array(MC_F)));
+  const tgt=M.fade<1?r3mcBlend(M.prevPose,M.tmp,M.fade*M.fade*(3-2*M.fade),M.tmp2):M.tmp;
+  // a light filter on top of the crossfades takes the last edge off sudden changes (tighter while punching, so timing holds)
+  if(M.had){const a=1-Math.exp(-dt*(want.key[0]==='p'?32:want.key[0]==='r'?22:14));r3mcBlend(M.pose,tgt,a,M.pose)}else{M.pose.set(tgt);M.had=1}
   if(want.key!=='tnt')M.tauntT=null;
-  if(!want.free&&want.key!=='kd'&&want.key!=='up'){const cr=raw.crouch||0,front=south?-1:1,e=_me||(_me=new THREE.Euler()),q=_mq[5];
-    for(const s of [-1,1]){const lead=s===front,Lg=u.legs[s];
-      q.setFromEuler(e.set(((lead?-14:8)+cr*55)*Math.PI/180,0,6*s*Math.PI/180));Lg.hip.quaternion.slerp(q,.75);
-      q.setFromEuler(e.set(((lead?-10:-8)-cr*95)*Math.PI/180,0,0));Lg.knee.quaternion.slerp(q,.75)}
-    u.pelvis.position.y=u.pelvis.position.y*.3+(u.legY-.11-cr*.32)*.7}
+  // Mixamo's stance is almost side-on: turn the body toward the camera, but keep the punching arm aimed straight at you. The close,
+  // high first-person camera makes a real crouch read as kneeling, so the hips rise part way (feet stay planted by leg IK)
+  const yaw=(south?-1:1)*MC_YAW*(want.key==='kd'||want.key==='up'?.3:want.free?.4:1);
+  r3mcApply(R.opp,M.pose,{clip:R3MC.clips[want.k],root:want.root||0,yaw,keepArm:want.hand,lift:want.key==='kd'||want.key==='up'?0:.45});
+  // dodges keep the game's own slip and duck (lean and crouch) on top
   if(st==='dodge'){const lean=raw.lean||0,cr=raw.crouch||0;u.pelvis.position.y-=cr*.32;u.spine.rotateZ(-lean*.55);u.spine.rotateX(cr*.5)}
-  R.opp.rotation.set(0,0,0)}
+  R.opp.rotation.set(0,0,0);return true}
 /* how a winner celebrates: dancers dance (and everyone does Thriller on Halloween week), cocky fighters taunt, the rest raise a fist */
-function r3mcCeleb(R){if(R.mcCel)return R.mcCel;const L=R.oL||{},d=new Date(),hw=d.getMonth()===9&&d.getDate()>=25;const r=(L.hseed||0)%7;
-  return R.mcCel=hw?'thrillerPart2':r===0?'snakeHipHopDance':r===1?'lockingHipHopDance':L.expr==='cocky'?'standingTauntChestThump':r%2?'victory':'victoryIdle1'}
+function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},d=new Date(),hw=d.getMonth()===9&&d.getDate()>=25;const r=(L.hseed||0)%7;
+  const pref=[hw?'thrillerPart2':null,r===0?'snakeHipHopDance':r===1?'lockingHipHopDance':null,L.expr==='cocky'?'standingTauntChestThump':null,['victory','victoryIdle1','victoryIdle'][r%3],'victory','victoryIdle1','victoryIdle','thrillerPart2','snakeHipHopDance','lockingHipHopDance'];
+  return R.mcCel=pref.find(k=>k&&mcOk(k))||'fightingIdle'}
 /* ================= real-time fight engine =================
    Simulation runs on a fixed 1/120 s step with its own seeded RNG; rendering interpolates poses. */
 const PUNCH={
@@ -4797,6 +4825,7 @@ function settingsHTML(inCareer){
     ${tg('gfx3d','3D fighters','Stylized 3D opponent and gloves. Off uses the 2D renderer.')}
     ${tg('sculpt','Sculpted fighters (beta)','Fighters use the new sculpted, rigged body models in their own colours, hair and build, with eye swelling and facial damage. Off brings back the classic fighters.')}
     ${tg('mocap','Motion-captured moves (beta)','Sculpted opponents punch, block, react and fall with motion-captured animation, timed to the same tells. Off uses the classic posing.')}
+    <div class="row sp card flat"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Animation Studio</b><div class="muted" style="font-size:13px">Watch every motion-captured move on the sculpted fighters, and switch any of them off.</div></div><button class="btn sm" data-go="anims">Open</button></div>
     ${tg('gfxHi','High detail','Shadows, antialiasing and a sharper render. Turn off on a hot or slow phone.')}
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Reaction assist</b><div class="muted" style="font-size:13px">Longer wind-ups on every opponent punch, so you have more time to read and react. No penalty, change it any time.</div>
     <div class="chips">${[[0,'Off'],[1,'+25% time'],[2,'+50% time']].map(([v,l])=>`<button class="chip${(Settings.assist||0)===v?' on':''}" data-act="setv" data-k="assist" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -5722,6 +5751,80 @@ SCR.trophies=()=>{
   if(G&&G.boxer)return shell('legacy','Trophies',body);
   return `<div class="scr"><div class="wrap" style="max-width:900px"><div class="topbar"><button class="btn sm back" data-go="title">◀</button><div class="t">Trophies</div></div>${body}</div></div>`;
 };
+/* ================= Animation Studio: review every motion-captured clip on the sculpted boxers, and switch any of them off =================
+   A switched-off clip is never used in fights: its moment falls back to the classic posing (or, for celebrations and taunts,
+   to another clip that is on). */
+const MC_INFO=[
+  ['Stance',[['fightingIdle','Fighting Idle','Stance between punches']]],
+  ['Punches',[['leadJab','Lead Jab','Jabs'],['crossPunch','Cross Punch','Crosses'],['hook','Hook','Lead-hand hooks'],['rightHook','Right Hook','Rear-hand hooks'],
+    ['uppercut','Uppercut','Uppercuts (mirrored for the other hand)'],['bodyJabCross','Body Jab Cross','Body jabs and body crosses']]],
+  ['Defense',[['centerBlock','Center Block','Blocking straight shots, and clinches'],['leftBlock','Left Block','Covering a hook to their left side'],['rightBlock','Right Block','Covering a hook to their right side'],
+    ['dodging','Dodging','Not used in fights yet']]],
+  ['Getting hit',[['lightHitToHead','Light Hit To Head','Taking a jab'],['mediumHitToHead','Medium Hit To Head','Taking a solid head shot'],['bigHitToHead','Big Hit To Head','Taking a big head shot'],
+    ['hitToBody','Hit To Body','Taking a body shot'],['receivePunchToTheFace','Receive Punch To The Face','Taking an uppercut'],['receivingABigUppercut','Receiving A Big Uppercut','Taking a big uppercut counter']]],
+  ['Knockdowns',[['knockedDown','Knocked Down','Going down'],['gettingUp','Getting Up','Beating the count']]],
+  ['Taunts',[['taunt','Taunt','Taunting while you are down'],['taunt1','Taunt (1)','Taunting while you are down'],['standingTauntChestThump','Standing Taunt Chest Thump','Cocky fighters taunting while you are down; some celebrate with it']]],
+  ['Celebrations',[['victory','Victory','Celebrating a win over you'],['victoryIdle','Victory Idle','Celebrating a win over you'],['victoryIdle1','Victory Idle (1)','Celebrating a win over you'],
+    ['snakeHipHopDance','Snake Hip Hop Dance','Some fighters dance when they beat you'],['lockingHipHopDance','Locking Hip Hop Dance','Some fighters dance when they beat you'],
+    ['thrillerPart2','Thriller Part 2','Every winner on Halloween week (Oct 25-31)']]],
+  ['Other',[['walking','Walking','Not used in fights yet']]]];
+const mcFree=k=>/^(victory|victoryIdle|victoryIdle1|snakeHipHopDance|lockingHipHopDance|thrillerPart2|taunt|taunt1|standingTauntChestThump|walking|dodging)$/.test(k);
+SCR.anims=()=>{
+  const A=UI.an=UI.an||{k:'fightingIdle',play:true,speed:1,mir:false,fight:true,fem:false,t:0};const off=Settings.mcOff||{};
+  const back=typeof G!=='undefined'&&G&&G.boxer?'settings':'tsettings';
+  const ready=R3MC.ready&&R3M.ok('boxer')&&R3M.ok('boxer_f');
+  const chip=(act,v,on,l)=>`<button class="chip${on?' on':''}" data-act="${act}" data-v="${v}">${l}</button>`;
+  const rows=MC_INFO.map(([g,list])=>`<h3 class="sec" style="margin:14px 0 6px">${g}</h3>`+list.map(([k,n,use])=>`<div class="row sp card flat" style="gap:8px;padding:8px 10px;${A.k===k?'border-color:var(--gold)':''}">
+      <button class="grow" data-act="anpick" data-v="${k}" style="all:unset;cursor:pointer;flex:1"><b class="ui" style="text-transform:uppercase;letter-spacing:.04em;font-size:14px">${esc(n)}</b><div class="muted" style="font-size:12.5px">${esc(use)}</div></button>
+      <button class="btn sm ${off[k]?'':'gold'}" data-act="mctog" data-k="${k}">${off[k]?'Off':'On'}</button></div>`).join('')).join('');
+  return `<div class="scr"><div class="wrap" style="max-width:760px"><div class="topbar"><button class="btn sm back" data-go="${back}">◀</button><div class="t">Animation Studio</div></div>
+    ${!Settings.sculpt||!Settings.mocap?`<div class="card" style="font-size:13.5px">Turn on <b>Sculpted fighters</b> and <b>Motion-captured moves</b> in Settings for these to be used in fights. You can still review them here.</div>`:''}
+    ${ready?`<div class="card col" style="gap:8px;padding:10px">
+      <div style="position:relative"><canvas id="ancv" style="width:100%;aspect-ratio:4/5;max-height:58vh;display:block;border-radius:10px;touch-action:none;background:#e9e4d8"></canvas>
+        <div id="anlbl" class="ui" style="position:absolute;left:10px;top:8px;font-size:13px;color:#2a2224;text-transform:uppercase;letter-spacing:.05em"></div>
+        <div class="muted" style="position:absolute;right:10px;bottom:6px;font-size:11.5px;color:#5a4950">Drag to turn</div></div>
+      <div class="row" style="gap:8px;align-items:center"><button class="btn sm gold" data-act="anplay" id="anpb">${A.play?'❚❚ Pause':'▶ Play'}</button>
+        <input type="range" id="anscr" min="0" max="1000" value="0" style="flex:1"><span id="ant" class="muted" style="font-size:12px;min-width:64px;text-align:right"></span></div>
+      <div class="chips" style="flex-wrap:wrap">${[[.25,'¼×'],[.5,'½×'],[1,'1×']].map(([v,l])=>chip('anspeed',v,A.speed===v,l)).join('')}
+        ${chip('anmir',1,A.mir,'Mirrored')}${chip('anfight',1,A.fight,'As in a fight')}${chip('anfem',0,!A.fem,"Men's")}${chip('anfem',1,A.fem,"Women's")}</div>
+      <div class="muted" style="font-size:12.5px">"As in a fight" shows the clip the way fights use it: turned toward you, hips raised a little with the feet planted, and punches keeping the stance's legs. Off shows the raw capture.</div></div>`
+      :`<div class="card">The animations are still loading. Open this again in a moment.</div>`}
+    <div class="row sp" style="margin-top:6px"><span class="muted" style="font-size:13px">${Object.values(off).filter(Boolean).length} of ${Object.keys(R3MC.clips).length} switched off</span><button class="btn sm" data-act="mcall">Turn all on</button></div>
+    ${rows}</div></div>`};
+AFTER.anims=()=>{const cv=$('#ancv');if(!cv)return;const A=UI.an;
+  const r=new THREE.WebGLRenderer({canvas:cv,antialias:true});r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;
+  const sc=new THREE.Scene();sc.background=new THREE.Color(0xe9e4d8);sc.environment=r3env();r3lights(sc,{});
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(2.2,48),new THREE.MeshBasicMaterial({color:0xd6cfbf}));floor.rotation.x=-Math.PI/2;sc.add(floor);
+  const cam=new THREE.PerspectiveCamera(32,.8,.05,40);
+  const look={skin:3,hair:A.fem?'braids':'short',hc:0,fem:A.fem?1:undefined,trunks:'#2f6fe2',trim:'#f0be48',gloves:'#d8392f'};
+  const bx=r3boxer(r3look(look,{}),{texSize:1024});sc.add(bx);let rot=-.35,drag=null;
+  cv.addEventListener('pointerdown',e=>{drag=e.clientX;cv.setPointerCapture(e.pointerId)});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
+  cv.addEventListener('pointerup',()=>drag=null);cv.addEventListener('pointercancel',()=>drag=null);
+  const scr=$('#anscr'),tl=$('#ant'),lbl=$('#anlbl');let scrubbing=false;
+  scr.addEventListener('input',()=>{scrubbing=true;A.play=false;$('#anpb').textContent='▶ Play';const C=R3MC.clips[A.k];A.t=scr.value/1000*C.dur});scr.addEventListener('change',()=>scrubbing=false);
+  const P=new Float32Array(MC_F),T=new Float32Array(MC_F);let last=performance.now();
+  const size=()=>{const w=cv.clientWidth,h=cv.clientHeight;if(cv.width!==Math.round(w*r.getPixelRatio())){r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}};
+  const tick=now=>{if(!cv.isConnected){r3dispose(sc);r.dispose();return}requestAnimationFrame(tick);const dt=Math.min(.05,(now-last)/1000);last=now;size();
+    const C=R3MC.clips[A.k];if(!C)return;if(A.play)A.t+=dt*A.speed;const loopT=C.dur+(MC_PUNCH[A.k]||/Hit|hit|Uppercut|Block|knocked|getting/i.test(A.k)?.6:0);if(A.t>loopT)A.t%=loopT;
+    const ct=Math.min(A.t,C.dur),free=mcFree(A.k),kd=A.k==='knockedDown'||A.k==='gettingUp';
+    r3mcPrep(A.k,ct,false,A.mir,A.fight&&!free,A.t,P,T);
+    const pk=MC_PUNCH[A.k],hand=pk&&A.fight?(A.mir?(pk.h==='L'?'R':'L'):pk.h):null;
+    r3mcApply(bx,P,{clip:C,root:kd?.45:0,yaw:A.fight?(A.mir?-1:1)*MC_YAW*(kd?.3:free?.4:1):0,keepArm:hand,lift:A.fight&&!kd?.45:0});
+    bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
+    cam.position.set(Math.sin(.15)*5.4,1.45,Math.cos(.15)*5.4);cam.lookAt(0,1.05,0);r.render(sc,cam);
+    if(!scrubbing)scr.value=Math.round(ct/C.dur*1000);tl.textContent=`${ct.toFixed(2)} / ${C.dur.toFixed(2)}s`;
+    lbl.textContent=(MC_INFO.flatMap(g=>g[1]).find(x=>x[0]===A.k)||[0,A.k])[1]+((Settings.mcOff||{})[A.k]?' (off)':'')};
+  requestAnimationFrame(tick)};
+Object.assign(ACT,{
+  anpick(el){UI.an.k=el.dataset.v;UI.an.t=0;UI.an.play=true;UI.render();const c=$('#ancv');if(c)c.scrollIntoView({block:'nearest',behavior:'smooth'})},
+  anplay(el){UI.an.play=!UI.an.play;el.textContent=UI.an.play?'❚❚ Pause':'▶ Play'},
+  anspeed(el){UI.an.speed=+el.dataset.v;$$('[data-act="anspeed"]').forEach(b=>b.classList.toggle('on',b===el))},
+  anmir(el){UI.an.mir=!UI.an.mir;el.classList.toggle('on',UI.an.mir)},
+  anfight(el){UI.an.fight=!UI.an.fight;el.classList.toggle('on',UI.an.fight)},
+  anfem(el){const f=el.dataset.v==='1';if(UI.an.fem!==f){UI.an.fem=f;UI.render()}},
+  mctog(el){const k=el.dataset.k;Settings.mcOff=Object.assign({},Settings.mcOff);if(Settings.mcOff[k])delete Settings.mcOff[k];else Settings.mcOff[k]=1;saveSettings();
+    el.textContent=Settings.mcOff[k]?'Off':'On';el.classList.toggle('gold',!Settings.mcOff[k])},
+  mcall(){Settings.mcOff={};saveSettings();UI.render()}});
 /* ================= dev mode: scenarios, fight lab, flags, logs, sims =================
    Everything here works on the sandbox slot (0). Real careers are never modified. */
 const DevState={tab:'lab',lab:{opp:'arch:boxerpuncher',rating:60,diff:'champion',rounds:3,god:false,onehit:false,freeze:false,dummy:'',tellMul:1,timescale:1,overlay:true,seed:''},simYears:2,lastLog:null};

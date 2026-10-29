@@ -719,15 +719,15 @@ class Render3D{
     const sx=o.south?-1:1;
     const closeness=(raw.scale||1)-1;
     this.opp.position.set((raw.hip?raw.hip[0]:0)*.004,.1,.2+closeness*1.7);
-    if(r3mcOn(u)){r3mcDrive(this,P);this.opp.updateWorldMatrix(true,true);
+    if(r3mcOn(u)&&r3mcDrive(this,P)){this.opp.updateWorldMatrix(true,true);
       for(const h of ['L','R']){const gw=glow&&glow[h]||0,g=u.arms[h==='L'?1:-1].gm;g.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');g.emissiveIntensity=gw*.9}
       return this.oppFace(P,u,st,t)}
-    u.pelvis.position.y=u.legY-.11-cr*.32;
+    u.pelvis.position.set(0,u.legY-.11-cr*.32,0);
     let fwd=0;
     if(st==='wind')fwd=-5*k;else if(st==='act')fwd=14;else if(st==='rec')fwd=14*(1-k);
     if(st==='stagger')fwd=-14;if(st==='clinch')fwd=12;if(o.hurt>0&&st!=='down')fwd+=Math.sin(t*5)*4;
     u.spine.rotation.set(fwd*Math.PI/180,tw*1.05,-lean*.55);
-    u.pelvis.rotation.y=tw*.35;
+    u.pelvis.rotation.set(0,tw*.35,0);
     const hdx=(raw.head?raw.head[0]:0)-(raw.chest?raw.chest[0]:0);
     u.headG.rotation.set((st==='down'?.35:0)+(o.hurt>0?.12:0),hdx*.004,-ht*1.0);
     if(st==='down'){const fall=rot;this.opp.rotation.x=-fall*.62;this.opp.rotation.y=sx*fall*.25;this.opp.position.y=.1+fall*.05;u.pelvis.position.y=u.legY-.11-cr*.32-fall*.1}

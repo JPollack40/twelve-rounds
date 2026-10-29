@@ -143,6 +143,7 @@ function settingsHTML(inCareer){
     ${tg('gfx3d','3D fighters','Stylized 3D opponent and gloves. Off uses the 2D renderer.')}
     ${tg('sculpt','Sculpted fighters (beta)','Fighters use the new sculpted, rigged body models in their own colours, hair and build, with eye swelling and facial damage. Off brings back the classic fighters.')}
     ${tg('mocap','Motion-captured moves (beta)','Sculpted opponents punch, block, react and fall with motion-captured animation, timed to the same tells. Off uses the classic posing.')}
+    <div class="row sp card flat"><div class="grow"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Animation Studio</b><div class="muted" style="font-size:13px">Watch every motion-captured move on the sculpted fighters, and switch any of them off.</div></div><button class="btn sm" data-go="anims">Open</button></div>
     ${tg('gfxHi','High detail','Shadows, antialiasing and a sharper render. Turn off on a hot or slow phone.')}
     <div class="card flat col"><b class="ui" style="text-transform:uppercase;letter-spacing:.05em">Reaction assist</b><div class="muted" style="font-size:13px">Longer wind-ups on every opponent punch, so you have more time to read and react. No penalty, change it any time.</div>
     <div class="chips">${[[0,'Off'],[1,'+25% time'],[2,'+50% time']].map(([v,l])=>`<button class="chip${(Settings.assist||0)===v?' on':''}" data-act="setv" data-k="assist" data-v="${v}">${l}</button>`).join('')}</div></div>
