@@ -57,7 +57,7 @@ AFTER.anims=()=>{const cv=$('#ancv');if(!cv)return;const A=UI.an;
     const ct=Math.min(A.t,C.dur),free=mcFree(A.k),kd=A.k==='knockedDown'||A.k==='gettingUp';
     r3mcPrep(A.k,ct,false,A.mir,A.fight&&!free,A.t,P,T);
     const pk=MC_PUNCH[A.k],hand=pk&&A.fight?(A.mir?(pk.h==='L'?'R':'L'):pk.h):null;
-    if(A.dun){if(kd){bx.userData.core.quaternion.identity()}else r3mcApplyDuncan(bx,P,{yaw:(A.mir?-1:1)*MC_DUN_YAW,keepArm:hand});r3duncanTubes(bx)}
+    if(A.dun){if(kd){r3duncanBend(bx.userData,_dq.identity(),0)}else r3mcApplyDuncan(bx,P,{yaw:(A.mir?-1:1)*MC_DUN_YAW,keepArm:hand});r3duncanTubes(bx)}
     else r3mcApply(bx,P,{clip:C,root:kd?.45:0,yaw:A.fight?(A.mir?-1:1)*MC_YAW*(kd?.3:free?.4:1):0,keepArm:hand,lift:A.fight&&!kd?.45:0});
     bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
     cam.position.set(Math.sin(.15)*5.4,1.45,Math.cos(.15)*5.4);cam.lookAt(0,1.05,0);r.render(sc,cam);

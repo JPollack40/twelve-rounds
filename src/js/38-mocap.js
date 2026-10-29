@@ -32,7 +32,7 @@ function r3mcMirror(P){P[0]=-P[0];for(let q=0;q<3;q++){const o=3+q*4;P[o+1]=-P[o
 function r3mcBlend(A,B,w,out){const P=out||new Float32Array(MC_F);for(let k=0;k<3;k++)P[k]=A[k]+(B[k]-A[k])*w;
   for(let q=0;q<3;q++){const o=3+q*4;const s=(A[o]*B[o]+A[o+1]*B[o+1]+A[o+2]*B[o+2]+A[o+3]*B[o+3])<0?-1:1;for(let k=0;k<4;k++)P[o+k]=A[o+k]+(B[o+k]*s-A[o+k])*w}
   for(let k=15;k<MC_F;k++)P[k]=A[k]+(B[k]-A[k])*w;r3mcNorm(P);return P}
-const _mq=[0,1,2,3,4,5].map(()=>new THREE.Quaternion()),_mv=[0,1,2,3,4,5,6,7].map(()=>new THREE.Vector3()),_mDOWN=new THREE.Vector3(0,-1,0),_mZ=new THREE.Vector3(0,0,1);
+const _mq=[0,1,2,3,4,5].map(()=>new THREE.Quaternion()),_mv=[0,1,2,3,4,5,6,7].map(()=>new THREE.Vector3()),_mDOWN=new THREE.Vector3(0,-1,0),_mZ=new THREE.Vector3(0,0,1),_mY=new THREE.Vector3(0,1,0);
 const _mB=[new THREE.Matrix4(),new THREE.Matrix4()],_mbv=[0,1,2].map(()=>new THREE.Vector3());
 /* the rotation that carries a rest frame (bone axis a0, bend side b0) onto a target frame (a1, b1): unlike a shortest-arc turn it
    also fixes the twist about the bone, so knees and elbows bend in the plane the clip bends them in */
@@ -139,14 +139,14 @@ function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},
 /* ---------- Duncan V.: the same clips mapped onto his rig. His core (body on the spring) takes the chest's lean and twist and
    squashes as the hips dip; his head takes the head's turn; each glove goes where the fighter's hand is, reached from his shoulder
    anchor along the clip's arm directions, and the conduit arms re-route to follow. His knockdown keeps its spring topple. */
-const MC_DUN_YAW=1.15,MC_DUN_K=.0125,_mde=new THREE.Euler(),MC_DUN_G0=new THREE.Vector3(0,1,.35).normalize();
+const MC_DUN_YAW=1.15,MC_DUN_K=.0125,_mde=new THREE.Euler();
 function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const qa=(i,q)=>q.set(P[3+i*4],P[4+i*4],P[5+i*4],P[6+i*4]);const Ds=qa(1,_mq[1]),Dd=qa(2,_mq[2]);
   const yq=_mq[5].setFromAxisAngle(Y,o.yaw||0);Ds.premultiply(yq);Dd.premultiply(yq);
-  // the core leans and twists with the chest (a little less: he is bolted down), and the spring takes the hips' dip
-  // he is bolted down: the core follows the chest's lean and twist within limits, so he never turns his back on you
-  const e=_mde.setFromQuaternion(Ds,'YXZ');u.core.quaternion.setFromEuler(_mde.set(clamp(e.x*.7,-.35,.35),clamp(e.y*.6,-.45,.45),clamp(e.z*.7,-.3,.3),'YXZ'));const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
-  u.core.scale.set(1+dip*.25,1-dip*.5,1+dip*.25);
+  // he bends at the waist (the top of his spring): the chest's lean comes through fully, twist and roll within limits so he never
+  // turns his back on you; the coil squashes as the hips dip
+  const e=_mde.setFromQuaternion(Ds,'YXZ');const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
+  r3duncanBend(u,_mq[0].setFromEuler(_mde.set(clamp(e.x*1.05,-.6,.6),clamp(e.y*.6,-.45,.45),clamp(e.z*.85,-.4,.4),'YXZ')),dip);
   const eh=_mde.setFromQuaternion(_mq[3].copy(Ds).invert().multiply(Dd),'YXZ');u.headG.quaternion.setFromEuler(_mde.set(clamp(eh.x*.7,-.3,.3),clamp(eh.y*.7,-.5,.5),clamp(eh.z*.7,-.3,.3),'YXZ'));
   root.updateMatrixWorld(true);const toRoot=_mB[0].copy(root.matrixWorld).invert().multiply(u.core.matrixWorld);
   // where a boxer's hand sits relative to their head (cm, from the clip with typical proportions), carried onto Duncan's head
@@ -157,7 +157,6 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
     if(b!==keep){U.applyAxisAngle(Y,o.yaw||0);F.applyAxisAngle(Y,o.yaw||0)}
     const hand=_mv[2].set(s*17,0,0).applyQuaternion(Ds).addScaledVector(U,28).addScaledVector(F,27).sub(hc);
     const T=_mv[3].copy(head).addScaledVector(hand,MC_DUN_K);T.y=Math.max(T.y,.4);T.z=Math.min(T.z,1.15);A.glove.position.copy(T);
-    // the fist faces where the forearm points
-    // the fist faces where the forearm points, but always mostly toward you (never the cuff)
-    // his known-good guard angle, turned by however far the clip's forearm has moved from a guard (forearm up and a little forward)
-    A.glove.quaternion.setFromUnitVectors(MC_DUN_G0,_mv[6].copy(F).add(_mv[4].set(0,0,.6)).normalize()).multiply(_mq[0].setFromEuler(_mde.set(-1.15,s*.15,s*-.1)))}}
+    // the elbow points the way the fighter's elbow points (the upper arm's lead over the forearm); the glove's top faces up and out
+    A.pole=(A.pole||new THREE.Vector3()).copy(U).sub(F).addScaledVector(_mv[4].set(s*.35,-1,-.2),.45);if(A.pole.lengthSq()<1e-4)A.pole.set(s*.7,-.6,-.45);
+    A.top=(A.top||new THREE.Vector3()).set(s*.3,1,.25)}}
