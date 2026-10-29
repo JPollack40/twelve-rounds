@@ -98,6 +98,9 @@ function r3duncanGloveFrame(g){const p=g.attributes.position,ix=[...new Set(g.in
 const MC_DUN_SPRING=[.14,.78],MC_DUN_SEG=[.34,.3],MC_DUN_BODY=[[0,.2,.33],[.2,.78,.23],[.78,1.34,.43],[1.34,2.5,.33]];
 function r3duncanPush(p,m){for(const [y0,y1,r] of MC_DUN_BODY){if(p.y<y0-m*.5||p.y>y1+m*.5)continue;const dz=p.z+.03,d=Math.hypot(p.x,dz),need=r+m;
     if(d<need){if(d<1e-4){p.z=need-.03;return p}p.x*=need/d;p.z=dz*need/d-.03}}return p}
+/* the same, but out the front: a fist or elbow inside him comes forward to his surface instead of being shoved sideways */
+function r3duncanPushFwd(p,m){for(const [y0,y1,r] of MC_DUN_BODY){if(p.y<y0-m*.6||p.y>y1+m*.6)continue;const need=r+m;if(Math.abs(p.x)>=need)continue;
+    const zf=Math.sqrt(need*need-p.x*p.x)-.03;if(p.z>-.03&&p.z<zf)p.z=zf;else if(p.z<=-.03&&Math.hypot(p.x,p.z+.03)<need)p.z=zf}return p}
 /* the arms are skinned now: nothing to rebuild per frame (kept for callers) */
 function r3duncanTubes(root){root.updateMatrixWorld(true)}
 /* classic posing and portraits: reach a fist target (root space) by two-bone IK, elbow down and out, the glove continuing the forearm */

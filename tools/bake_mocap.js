@@ -1,7 +1,8 @@
 // Bake the Mixamo animations in tools/mixamo/*.fbx into compact clips for the game (assets/mocap.json).
 // Each frame stores, in Mixamo world space (cm): the hips position, the world rotation of the hips, middle spine and head
 // relative to the T-pose, and the world direction of each limb segment (upper arm, forearm, hand, thigh, shin) on both sides.
-// The game aims its own bones along those directions, so the clips fit any body. Values are quantised to int16.
+// Then the head, neck and hand positions relative to the hips (tenths of a cm). The game aims its own bones along the directions, so
+// the clips fit any body; the positions place bodies that are not built like a boxer. Values are quantised to int16.
 // Needs Playwright and three@0.160 (FBXLoader): THREE_DIR=/path/to/node_modules/three node tools/bake_mocap.js
 const http=require('http'),fs=require('fs'),path=require('path'),{chromium}=require('playwright');
 const ROOT=path.join(__dirname,'..'),MIX=path.join(__dirname,'mixamo'),THREE_DIR=process.env.THREE_DIR||path.dirname(require.resolve('three/package.json'));
@@ -30,6 +31,8 @@ srv.listen(0,async()=>{const port=srv.address().port;const b=await chromium.laun
         g('Hips').getWorldPosition(v);fr.push(Math.round(v.x*10),Math.round(v.y*10),Math.round(v.z*10));
         for(const k of ['Hips','Spine1','Head']){g(k).getWorldQuaternion(q);q.multiply(R[k]);if(q.w<0)q.set(-q.x,-q.y,-q.z,-q.w);fr.push(...q.toArray().map(c=>Math.round(c*32767)))}
         for(const [s,e] of SEG){g(s).getWorldPosition(v);g(e).getWorldPosition(w);w.sub(v).normalize();fr.push(Math.round(w.x*32767),Math.round(w.y*32767),Math.round(w.z*32767))}
+        // world positions (cm, relative to the hips) of the head, neck and both hands, for bodies that are placed by position (Duncan)
+        const hp=g('Hips').getWorldPosition(new T.Vector3());for(const k of ['Head','Neck','LeftHand','RightHand']){g(k).getWorldPosition(v);v.sub(hp);fr.push(Math.round(v.x*10),Math.round(v.y*10),Math.round(v.z*10))}
         data.push(...fr)}
       return {n:n+1,dur:a.duration,data}},[f,fps,out.rest]);
     const buf=Buffer.from(Int16Array.from(r.data).buffer);out.clips[slug(f)]={fps,n:r.n,dur:+r.dur.toFixed(3),b64:buf.toString('base64')};

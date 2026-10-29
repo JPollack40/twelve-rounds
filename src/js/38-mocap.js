@@ -9,7 +9,7 @@ const R3MC={ready:false,clips:{},
     for(const [k,c] of Object.entries(R3MOCAP.clips)){const b=Uint8Array.from(atob(c.b64),ch=>ch.charCodeAt(0));const a=new Int16Array(b.buffer);
       const C={k,fps:c.fps,n:c.n,dur:(c.n-1)/c.fps,a};C.x0=a[0]/10;C.z0=a[2]/10;this.clips[k]=C;r3mcMarks(C)}
     this.restY=R3MOCAP.rest.hipsY;this.ready=true}};
-const MC_F=45,MC_YAW=.6; // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
+const MC_F=57,MC_YAW=.6;   // hips 3, quats 3x4, limb directions 10x3, then head, neck, left and right hand positions 4x3 // floats per frame: hips pos 3, quats 3x4, limb directions 10x3
 /* punch markers: when the hand leaves the guard, reaches full extension, and is home again (by forward reach of that arm) */
 const MC_PUNCH={leadJab:{h:'L'},crossPunch:{h:'R'},hook:{h:'L'},rightHook:{h:'R'},uppercut:{h:'L',up:1},bodyJabCross:{h:'L',two:1}};
 function r3mcMarks(C){const m=MC_PUNCH[C.k];if(!m)return;const a=C.a,reach=(i,h)=>{const o=i*MC_F+15+(h==='L'?0:9);return (a[o+2]+a[o+5])/32767+(m.up?(a[o+4])/32767*.6:0)};
@@ -21,13 +21,15 @@ function r3mcMarks(C){const m=MC_PUNCH[C.k];if(!m)return;const a=C.a,reach=(i,h)
 function r3mcSample(C,t,loop,mir,out){const n=C.n,ft=loop?((t*C.fps)%(n-1)+(n-1))%(n-1):clamp(t*C.fps,0,n-1);const i0=Math.floor(ft),i1=Math.min(n-1,i0+1),w=ft-i0,a=C.a;
   const P=out||new Float32Array(MC_F);const o0=i0*MC_F,o1=i1*MC_F;
   for(let k=0;k<3;k++)P[k]=(a[o0+k]*(1-w)+a[o1+k]*w)/10;
-  for(let k=3;k<MC_F;k++)P[k]=(a[o0+k]*(1-w)+a[o1+k]*w)/32767;
+  for(let k=3;k<45;k++)P[k]=(a[o0+k]*(1-w)+a[o1+k]*w)/32767;
+  for(let k=45;k<MC_F;k++)P[k]=(a[o0+k]*(1-w)+a[o1+k]*w)/10;
   r3mcNorm(P);if(mir)r3mcMirror(P);return P}
 function r3mcNorm(P){for(let q=0;q<3;q++){const o=3+q*4,l=Math.hypot(P[o],P[o+1],P[o+2],P[o+3])||1;for(let k=0;k<4;k++)P[o+k]/=l}
   for(let d=0;d<10;d++){const o=15+d*3,l=Math.hypot(P[o],P[o+1],P[o+2])||1;for(let k=0;k<3;k++)P[o+k]/=l}}
 function r3mcMirror(P){P[0]=-P[0];for(let q=0;q<3;q++){const o=3+q*4;P[o+1]=-P[o+1];P[o+2]=-P[o+2]}
   for(let d=0;d<10;d++)P[15+d*3]=-P[15+d*3];
-  const sw=(a,b,n)=>{for(let k=0;k<n;k++){const t=P[a+k];P[a+k]=P[b+k];P[b+k]=t}};sw(15,24,9);sw(33,39,6)}
+  for(let k=45;k<MC_F;k+=3)P[k]=-P[k];
+  const sw=(a,b,n)=>{for(let k=0;k<n;k++){const t=P[a+k];P[a+k]=P[b+k];P[b+k]=t}};sw(15,24,9);sw(33,39,6);sw(51,54,3)}
 /* blend b into a by w (quaternions on the same hemisphere, directions renormalised) */
 function r3mcBlend(A,B,w,out){const P=out||new Float32Array(MC_F);for(let k=0;k<3;k++)P[k]=A[k]+(B[k]-A[k])*w;
   for(let q=0;q<3;q++){const o=3+q*4;const s=(A[o]*B[o]+A[o+1]*B[o+1]+A[o+2]*B[o+2]+A[o+3]*B[o+3])<0?-1:1;for(let k=0;k<4;k++)P[o+k]=A[o+k]+(B[o+k]*s-A[o+k])*w}
@@ -85,7 +87,7 @@ const mcOk=k=>!(Settings.mcOff||{})[k]&&!!R3MC.clips[k];
    step in with lunges, which in place read as kneeling) */
 function r3mcPrep(k,t,loop,mir,fight,tIdle,out,tmp){const C=R3MC.clips[k];r3mcSample(C,t,loop,mir,out);
   if(fight&&(MC_PUNCH[k]||/Block$/.test(k))&&mcOk('fightingIdle')){const I=r3mcSample(R3MC.clips.fightingIdle,tIdle,true,mir,tmp);
-    out[1]=out[1]+(I[1]-out[1])*.6;for(let i=33;i<MC_F;i++)out[i]=out[i]+(I[i]-out[i])*.6;r3mcNorm(out)}
+    out[1]=out[1]+(I[1]-out[1])*.6;for(let i=33;i<45;i++)out[i]=out[i]+(I[i]-out[i])*.6;r3mcNorm(out)}
   return out}
 function r3mcOn(u){return !!(Settings.mocap&&u&&(u.rig||u.duncan)&&R3MC.ready)}
 /* ---------- the fight driver: picks a clip for the opponent's state each frame and crossfades between them ---------- */
@@ -140,6 +142,8 @@ function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},
    squashes as the hips dip; his head takes the head's turn; each glove goes where the fighter's hand is, reached from his shoulder
    anchor along the clip's arm directions, and the conduit arms re-route to follow. His knockdown keeps its spring topple. */
 const MC_DUN_YAW=1.15,_mde=new THREE.Euler();
+// a boxer's chest centre (in his core space) and the cm -> his-units scale for the fist offset (side, up, forward)
+const MC_DUN_NECK=[0,1.72,.12],MC_DUN_MAP=[.018,.02,.024],MC_DUN_ARMYAW=.15;
 function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const qa=(i,q)=>q.set(P[3+i*4],P[4+i*4],P[5+i*4],P[6+i*4]);const Ds=qa(1,_mq[1]),Dd=qa(2,_mq[2]);
   const yq=_mq[5].setFromAxisAngle(Y,o.yaw||0);Ds.premultiply(yq);Dd.premultiply(yq);
@@ -148,17 +152,25 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const e=_mde.setFromQuaternion(Ds,'YXZ');const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
   r3duncanBend(u,_mq[0].setFromEuler(_mde.set(clamp(e.x*1.05,-.6,.6),clamp(e.y*.6,-.45,.45),clamp(e.z*.85,-.4,.4),'YXZ')),dip);
   const eh=_mde.setFromQuaternion(_mq[3].copy(Ds).invert().multiply(Dd),'YXZ');u.headG.quaternion.setFromEuler(_mde.set(clamp(eh.x*.7,-.3,.3),clamp(eh.y*.7,-.5,.5),clamp(eh.z*.7,-.3,.3),'YXZ'));
-  // arms: the clip's upper arm, forearm and hand directions in his chest's frame (the punching arm keeps its aim at you), nudged so the
-  // elbow and fist stay clear of his body, then aimed with the same bend-plane rule as the boxers' arms
+  // arms: his proportions are far from a boxer's (shoulders twice as wide, a glove sleeve 2.5x the upper arm), so copying joint angles
+  // flings his gloves around. Instead the boxer's fist position relative to the chest is carried over, scaled to his body, and his
+  // elbow is solved to reach it, bending the way the boxer's elbow points. Fists and elbows inside him are pushed forward, never sideways.
   root.updateMatrixWorld(true);const qc=u.core.getWorldQuaternion(_mq[3]).premultiply(root.getWorldQuaternion(_mq[4]).invert()),iqc=_mq[4].copy(qc).invert();
-  const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9,[l1,l2]=MC_DUN_SEG;
-  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s],U=_mv[0],F=_mv[1],H=_mv[2];
-    for(const [v,k] of [[U,0],[F,1],[H,2]]){v.set(P[15+(b+k)*3],P[16+(b+k)*3],P[17+(b+k)*3]);if(b!==keep)v.applyAxisAngle(Y,o.yaw||0);v.applyQuaternion(iqc)}
-    const E=_mv[3].copy(A.S).addScaledVector(U,l1);r3duncanPush(E,.09);U.copy(E).sub(A.S).normalize();E.copy(A.S).addScaledVector(U,l1);
-    const G=_mv[4].copy(E).addScaledVector(F,l2+A.Lf*.85);r3duncanPush(G,.2);F.copy(G).sub(E).normalize();
-    const bend=r3mcPerp(_mv[5],F,U,_mZ);r3mcAim(A.sh.quaternion,_mDOWN,_mZ,U,bend);
-    const ish=_mq[0].copy(A.sh.quaternion).invert(),zE=r3mcPerp(_mv[6],_mv[3].copy(U).negate(),F,_mv[4].copy(_mZ).applyQuaternion(A.sh.quaternion));
-    r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,F.clone().applyQuaternion(ish),zE.applyQuaternion(ish));
-    const iel=_mq[0].copy(A.sh.quaternion).multiply(A.elbow.quaternion).invert();
-    r3mcAim(A.hand.quaternion,_mDOWN,_mZ,H.applyQuaternion(iel),_mZ).slerp(_mq[1].identity(),.6)}
+  const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9,l1=MC_DUN_SEG[0];
+  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s],U=_mv[0],F=_mv[1];
+    U.set(P[15+b*3],P[16+b*3],P[17+b*3]);F.set(P[18+b*3],P[19+b*3],P[20+b*3]);
+    // the boxer's hand relative to their neck (cm), carried to the same place relative to his face
+    const hi=s===1?51:54,off=_mv[2].set(P[hi]-P[48],P[hi+1]-P[49],P[hi+2]-P[50]);
+    const ay=(o.yaw||0)*(b===keep?0:MC_DUN_ARMYAW);off.applyAxisAngle(Y,ay);U.applyAxisAngle(Y,ay);F.applyAxisAngle(Y,ay);
+    off.applyQuaternion(iqc);U.applyQuaternion(iqc);F.applyQuaternion(iqc);
+    const T=_mv[3].set(clamp(off.x*MC_DUN_MAP[0],-.62,.62),MC_DUN_NECK[1]+off.y*MC_DUN_MAP[1],MC_DUN_NECK[2]+off.z*MC_DUN_MAP[2]);r3duncanPushFwd(T,.22);
+    // elbow: two-bone reach toward the boxer's elbow direction (upper arm leading the forearm), kept clear of the canister
+    const S=A.S,L2=A.L2,dv=_mv[4].copy(T).sub(S),dist=Math.min(dv.length(),(l1+L2)*.995);dv.normalize();T.copy(S).addScaledVector(dv,dist);
+    const pole=r3mcPerp(_mv[5],_mv[6].copy(U).sub(F).addScaledVector(_mv[7].set(s*.25,-.6,0),.5),dv,_mv[7].set(s,-1,0).normalize());
+    const ca=clamp((l1*l1+dist*dist-L2*L2)/(2*l1*dist),-1,1),E=_mv[6].copy(S).addScaledVector(dv,ca*l1).addScaledVector(pole,Math.sqrt(1-ca*ca)*l1);
+    r3duncanPushFwd(E,.09);
+    const Uc=_mv[0].copy(E).sub(S).normalize(),Fc=_mv[1].copy(T).sub(E).normalize();
+    r3mcAim(A.sh.quaternion,_mDOWN,_mZ,Uc,r3mcPerp(_mv[2],Fc,Uc,_mZ));
+    const ish=_mq[0].copy(A.sh.quaternion).invert(),zE=r3mcPerp(_mv[5],_mv[7].copy(Uc).negate(),Fc,_mv[4].copy(_mZ).applyQuaternion(A.sh.quaternion));
+    r3mcAim(A.elbow.quaternion,_mDOWN,_mZ,Fc.applyQuaternion(ish),zE.applyQuaternion(ish));A.hand.quaternion.identity()}
   root.updateMatrixWorld(true)}
