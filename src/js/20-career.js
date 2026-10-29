@@ -193,7 +193,7 @@ const RIVAL_MIN=30;
 function heatOf(id){return (G.heat||{})[id]||0}
 function addHeat(id,v){if(!id||id==='P'||!G.world.f[id])return;const H=G.heat=G.heat||{};H[id]=Math.min(150,(H[id]||0)+v)}
 function rivalTick(f,res,o){
-  const b=B(),d=b.div,H=G.heat=G.heat||{};
+  const b=B(),d=b.div,H=G.heat=G.heat||{};G.heatPrev=Object.assign({},H);
   for(const id in H){const x=G.world.f[id];if(!x||!x.active){delete H[id];continue}
     let k=x.rival?.93:.88;if(x.div!==d)k*=.7;if(Math.abs((x.pts||0)-b.pts)>300)k*=.8;else if(Math.abs(rankOf(id,d)-(playerRank()||99))>15)k*=.85;H[id]*=k;if(H[id]<1)delete H[id]}
   if(f&&f.id&&!o.amateur){const win=res.winner==='p',loss=res.winner==='o',ko=['KO','TKO','RTD','DQ'].includes(res.method);

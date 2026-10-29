@@ -53,7 +53,7 @@ function profileHTML(){
 const NAV=[
   ['home','Home','Next steps'],['fight','Fight','Offers & camp'],['boxer','Boxer','Stats & abilities'],['locker','Locker','Gear & kit'],['skills','Skills','Skill tree'],
   ['division','Division','Weight class'],['team','Team','Promoter, trainer'],['rankings','Rankings','Divisions & belts'],['record','Record','History & chapters'],
-  ['news','News','The boxing wire'],['legends','Legends','The greats'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
+  ['news','News','The boxing wire'],['rivalries','Rivalries','Bad blood'],['legends','Legends','The greats'],['legacy','Legacy','Hall of Fame'],['settings','Settings','Sound, saves'],
 ];
 function navHTML(active){
   const b=B();const dot={boxer:b.statPts>0,skills:b.skillPts>0&&SKILLS.some(s=>canBuySkill(s)),fight:!!G.next||G.offers.length>0};
@@ -256,7 +256,7 @@ SCR.home=()=>{
   const rv=rivalF();
   const hot=Object.entries(G.heat||{}).filter(([id,h])=>id!==rv?.id&&h>=10&&G.world.f[id]?.active&&G.world.f[id].div===B().div).sort((a,b)=>b[1]-a[1]).slice(0,3);
   const hotH=hot.length?`<div class="muted" style="font-size:13px"><b>Bad blood brewing:</b> ${hot.map(([id,h])=>`${esc(shortName(G.world.f[id]))} <span class="dim">(${h>=RIVAL_MIN?'boiling':h>=18?'heated':'simmering'})</span>`).join(', ')}</div>`:'';
-  const rivalC=rv?`<div class="card col"><div class="row sp"><h3>Rival</h3><span class="pill red">Head to head ${G.rival.w}-${G.rival.l}</span></div>${oppCard(rv)}${hotH}</div>`:hotH&&G.phase==='pro'?`<div class="card col"><h3>Rivalries</h3><p class="muted" style="font-size:13.5px;margin:0">No rival right now. Fight, call people out, and someone will step up.</p>${hotH}</div>`:'';
+  const rivalC=rv?`<div class="card col"><div class="row sp"><h3>Rival</h3><span class="pill red">Head to head ${G.rival.w}-${G.rival.l}</span></div>${oppCard(rv)}${hotH}<button class="btn sm" data-go="rivalries" style="align-self:flex-start">All rivalries</button></div>`:hotH&&G.phase==='pro'?`<div class="card col"><h3>Rivalries</h3><p class="muted" style="font-size:13.5px;margin:0">No rival right now. Fight, call people out, and someone will step up.</p>${hotH}<button class="btn sm" data-go="rivalries" style="align-self:flex-start">All rivalries</button></div>`:'';
   const nw=G.newsList.slice(0,5).map(n=>`<div style="padding:6px 0;border-bottom:1px solid #262c4a;font-size:14px" class="${n.tone==='gold'?'goldt':n.tone==='red'?'':''}"><span class="dim num" style="font-size:12px">${dateStr(n.w)}</span> ${esc(n.t)}</div>`).join('');
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);

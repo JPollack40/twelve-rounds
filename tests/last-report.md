@@ -1,6 +1,6 @@
-# Regression report 2026-10-28T23:42:08.119Z
+# Regression report 2026-10-29T00:07:40.482Z
 
-5 fights per matchup, 500 simulated careers, 161s.
+5 fights per matchup, 500 simulated careers, 160s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
@@ -29,21 +29,21 @@
  "champShare": 0.99,
  "undisputedShare": 0.04,
  "multiDivShare": 0,
- "legendsAvg": 1.26,
+ "legendsAvg": 1.27,
  "chaptersAvg": 0.96,
- "moneyMed": 48286056,
+ "moneyMed": 48060456,
  "womenN": 166,
  "womenChampShare": 1,
  "womenLegendsAvg": 1.11,
  "crossCircuitLegends": 0,
- "hofMed": 404,
+ "hofMed": 396,
  "tiers": {
-  "Champion": 99,
-  "All-Time Great": 123,
-  "Hall of Famer": 259,
+  "Champion": 97,
+  "Hall of Famer": 264,
+  "All-Time Great": 120,
+  "The Greatest of All Time": 5,
   "Contender": 11,
-  "The Greatest of All Time": 6,
-  "Journeyman": 2
+  "Journeyman": 3
  },
  "forcedRetireShare": 0.01,
  "dmgMed": 70
@@ -56,7 +56,7 @@
 | champShare | 0.99 | 0.4–1 | ✅ |
 | forcedRetireShare | 0.01 | 0–0.4 | ✅ |
 | chaptersAvg | 0.96 | 0.3–5 | ✅ |
-| legendsAvg | 1.26 | 0.2–6 | ✅ |
+| legendsAvg | 1.27 | 0.2–6 | ✅ |
 | womenChampShare | 1 | 0.4–1 | ✅ |
 | womenLegendsAvg | 1.11 | 0.1–6 | ✅ |
 | crossCircuitLegends | 0 | 0–0 | ✅ |
