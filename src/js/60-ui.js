@@ -104,6 +104,21 @@ SCR.help=()=>`<div class="scr"><div class="wrap" style="max-width:720px"><div cl
   <p>Before each fight you get a training camp, one session per week. Mini-games build stats and XP. Film study makes their tells last longer. Watch your fatigue: overtraining causes injuries.</p>
   <p>Level up for stat points and skill points. Beat legends to learn their signature moves. Story chapters, modeled on famous fights, unlock when your career matches the moment.</p>
   <p>Your frame sets a natural weight. Cutting down makes you bigger than your opponents but drains your stamina. Moving up makes you faster but smaller. You peak in your late 20s, and after 31 your speed starts to fade.</p></div>
+  <div class="card col"><h3>Reading and fighting</h3>
+  <p>Tells also carry a <b>symbol</b> over the winding glove (dot, down arrow, curl, up arrow, BODY), so you never need the color alone. Reaction assist in Settings gives you more time with no penalty.</p>
+  <p>Some opponents fight dirty: low blows and headbutts stop the action and give you a breather. The referee warns them first, then takes points, and a fifth foul is a disqualification.</p></div>
+  <div class="card col"><h3>Fight week</h3>
+  <p><b>Contract talks</b> on big fights: a bigger purse, a rematch clause (a loss guarantees the rematch) or, with a belt or 60+ hype, a home fight with no robbery risk.</p>
+  <p><b>Camp location</b>: home is free; altitude, elite sparring and sports-science camps cost a share of the purse and shape the camp.</p>
+  <p><b>Fight night</b>: answer at the press conference, choose how to make weight and how to face off at the weigh-in, and pick a <b>game plan</b>. Your corner grades the plan every round; on plan, those punches hit 6% harder next round.</p></div>
+  <div class="card col"><h3>Rivals, callouts and the rankings</h3>
+  <p>Bad blood builds with the fighters you meet, call out and sit beside in the rankings; the hottest becomes your <b>rival</b>, and rivals change over a career. See it all under Rivalries.</p>
+  <p>After a win, <b>call someone out</b>: each name shows honest odds. Champions answer top-3 contenders most of the time and almost never anyone outside the top 15.</p>
+  <p>After a loss you go to the <b>back of the line</b>: title shots wait until you win again (more wins after a stoppage, none after a robbery).</p>
+  <p>Climb the <b>pound-for-pound</b> list, watch the monthly <b>Saturday Night Boxing</b> show, and if you are top 8 you may be invited to the <b>World Super Series</b>, an eight-fighter knockout tournament.</p></div>
+  <div class="card col"><h3>Beyond one career</h3>
+  <p>Careers can be in <b>men's or women's</b> boxing, each with its own world and legends. Retire as a champion and your boxer returns as a legend in later careers; you can also come out of retirement once.</p>
+  <p>The <b>daily challenge</b> is the same legend fight for everyone each day. The Legends gallery offers <b>exhibitions</b> against any legend, and <b>Trophies</b> carry across every career.</p></div>
   <div class="card"><h3>Keyboard</h3><p class="muted">J K U I punches · A S D slip/duck · Space block · Shift body · E clinch · 1-3 abilities · Esc pause</p></div>
 </div></div>`;
 

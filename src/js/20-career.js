@@ -761,6 +761,10 @@ function simFight(o){
   const res={winner:draw?'draw':win?'p':'o',method:draw?'DRAW':ko?pick(['KO','TKO']):pick(['UD','UD','SD','MD']),round,time:ko?fmtTime(rand(10,170)):'3:00',
     cards:[],stats:{p:{thrown:randi(300,600),landed:0},o:{thrown:randi(300,600),landed:0}},dmgTaken:rand(60,220)*(win?.7:1.3),kdFor:win&&ko?randi(1,2):0,kdAgainst:!win&&ko?randi(1,2):0,cut:0};
   res.stats.p.landed=Math.round(res.stats.p.thrown*rand(.25,.45));res.stats.o.landed=Math.round(res.stats.o.thrown*rand(.25,.45));
+  // round-by-round numbers for the punch chart, spread from the totals with a hash-seeded RNG so the career stream is untouched
+  {const h=new Rng(hashStr(String(o.id)+'rs')),n=round,rs=[];const share=k=>{const w=[];for(let i=0;i<n;i++)w.push(.75+h.next()*.5);const t=w.reduce((a,c)=>a+c,0);return w.map(x=>x/t)};
+    const sp=share(),so=share();for(let i=0;i<n;i++){const part=ko&&i===n-1?.5:1;rs.push({p:{l:Math.round(res.stats.p.landed*sp[i]*part),t:Math.round(res.stats.p.thrown*sp[i]*part)},o:{l:Math.round(res.stats.o.landed*so[i]*part),t:Math.round(res.stats.o.thrown*so[i]*part)},partial:ko&&i===n-1})}
+    res.roundStats=rs;res.simulated=true}
   return res;
 }
 
