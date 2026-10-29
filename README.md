@@ -122,3 +122,9 @@ KO and first loss, title wins and losses, Continental titles, legend wins, chapt
 retirement and comebacks (`src/js/66-story.js`). A retired boxer who was not forced out (damage under 85, age 42 or younger) can come
 back once: a year passes, Speed, Footwork and Stamina drop by 3, ranking points fall to 35%, hype rises by 15, and any pending Hall of
 Fame induction is withdrawn.
+
+## Dirty fighters
+A new opponent quirk, Dirty fighter, throws low blows and headbutts, more often when tired, hurt or behind on the cards. Each foul
+stops the action and gives you a breather (+14 stamina, hurt cleared, a little damage; a headbutt can open a cut). The first foul is a
+warning, each one after costs them a point on the cards, and a fifth is a disqualification. A DQ win counts as a stoppage for
+rankings and rematch odds but not as a knockout on your record.

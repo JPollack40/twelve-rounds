@@ -19,6 +19,9 @@ const CALLS={
   pkd:{p:3,l:['{P} is down!','{P} goes down hard!','{O} drops {P}!']},
   orise:{p:3,l:['{O} beats the count!','{O} is up, but are the legs there?']},
   prise:{p:3,l:['{P} is up! Can {P} survive the round?','{P} beats the count!']},
+  foul:{p:3,l:['That was low! The referee steps in and warns {O}.','{O} goes low, and the referee has seen it.']},
+  ded:{p:3,l:['The referee takes a point from {O}!','{O} has been warned. That\'s a point gone.']},
+  dq:{p:3,l:['That\'s it! {O} is disqualified!']},
   clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.']},
 };
 const TELL_COL={jab:'#ffe58f',cross:'#ffb347',hook:'#ff7a2a',upper:'#ff3434'};
@@ -458,6 +461,8 @@ class Fight{
   }
   aiAttack(opts={}){
     const o=this.o,ai=o.ai,cb=(ai.combo||.3)+this.D.combo;let n=1;
+    // dirty fighters foul more when they are tired, hurt or losing
+    if(ai.dirty&&this.p.state!=='down'&&chance(.025*ai.dirty*(1+(o.sta<40?1:0)+(o.hurt>0?1:0)+(this.cards[0][0]<this.cards[0][1]?.5:0))))return this.foul(o);
     if(chance(cb))n++;if(chance(cb*.6))n++;if(chance(cb*.3))n++;
     if(this.p.hurt>0)n++;
     if(ai.sig&&!opts.quick&&chance(ai.sigP||.4)){
@@ -472,6 +477,17 @@ class Fight{
     const f=seq.shift();o.seq=seq;this.throwP(o,f.type,f.body,f.opts);
   }
   feint(o){const type=pick(['cross','hook','upper']);o.state='feint';o.t=0;o.dur=.28;o.pu={type,body:false,opts:{}}}
+  /* a foul: the referee calls time and you get a breather. First a warning, then a point each time, a fifth is a disqualification */
+  foul(o){
+    const p=this.p,head=chance(.35);o.fouls=(o.fouls||0)+1;const n=o.fouls;
+    p.hp=Math.max(1,p.hp-(head?4:2));p.sta=Math.min(p.maxSta,p.sta+14);p.hurt=0;p.pu=null;p.seq=[];p.state='idle';o.pu=null;o.seq=[];o.state='idle';
+    this.stop=.8;this.shake=Math.max(this.shake,6);Sfx.hit(.5,true);buzz(40);
+    if(head&&!p.cut&&chance(.4)){p.cut=15;this.text('CUT FROM A HEADBUTT','#ff3b3b',200,260,1.2,16)}
+    this.log({ev:'foul',who:'o',kind:head?'head':'low',n});
+    if(n>=5){this.text('DISQUALIFIED','#ff5a4a',200,140,3,26);this.call('dq');return this.finish('p','DQ','Disqualified for repeated fouls.')}
+    if(n>1)o.rs.ded++;
+    this.text(`${head?'HEADBUTT':'LOW BLOW'}! ${n===1?'REF WARNS '+(o.last||'THEM').toUpperCase():'POINT DEDUCTED'}`,'#ffd34d',200,90,1.8,16);this.call(n===1?'foul':'ded');
+  }
   clinch(a){
     if(this.phase!=='fight')return;
     const d=a.foe;if(d.state==='down'||a.state==='clinch')return;
@@ -598,7 +614,7 @@ class Fight{
     this.log({ev:'end',winner,method,round:this.round});
     this.res.log=this.cfg.headless?(Logs.cur=null):Logs.end(this.res);
     Sfx.bell(3);Sfx.roar(.4,3);
-    const big=winner==='p'?(method==='KO'?'KNOCKOUT!':method==='TKO'?'TKO!':method==='RTD'?'THEY QUIT!':'FINAL BELL'):winner==='o'?(method==='KO'?'KNOCKED OUT':method==='TKO'?'STOPPED':method==='RTD'?'CORNER STOPS IT':'FINAL BELL'):'FINAL BELL';
+    const big=method==='DQ'?(winner==='p'?'WIN BY DQ':'DISQUALIFIED'):winner==='p'?(method==='KO'?'KNOCKOUT!':method==='TKO'?'TKO!':method==='RTD'?'THEY QUIT!':'FINAL BELL'):winner==='o'?(method==='KO'?'KNOCKED OUT':method==='TKO'?'STOPPED':method==='RTD'?'CORNER STOPS IT':'FINAL BELL'):'FINAL BELL';
     this.ov.className='fov';this.ov.innerHTML=`<div class="bigtxt">${big}</div>${note?`<div class="pill">${esc(note)}</div>`:''}`;
     if(winner==='p'&&['KO','TKO'].includes(method)&&Settings.slowmo)this.slow=1.2;
     if(this.cfg.headless)return;

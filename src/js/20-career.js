@@ -613,7 +613,7 @@ function applyResult(o,res){
   const out={lines:[],levelUps:0,money:0,news:[]};
   const pro=!o.amateur;
   const prevRank=playerRank();
-  if(pro){if(win){b.record.w++;if(ko)b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
+  if(pro){if(win){b.record.w++;if(ko&&res.method!=='DQ')b.record.ko++}else if(loss)b.record.l++;else b.record.d++}
   if(pro){const Y=G.yrP=G.yrP||{w:0,l:0,d:0,ko:0,titles:0,ovr0:playerOvr(),pts0:b.pts,rank0:prevRank};if(win){Y.w++;if(ko)Y.ko++;if(o.title&&!o.title.regional&&!o.title.defense)Y.titles++}else if(loss)Y.l++;else Y.d++}
   if(pro){const me={id:'P',first:b.first,last:b.last,nick:b.nick,div:b.div,rating:playerOvr()};if(win)recYear(me,f,ko,!!(o.title&&!o.title.regional&&!o.title.defense));else if(loss)recYear(f,me,ko,false)}
   else{if(win)b.am.w++;else b.am.l++}
