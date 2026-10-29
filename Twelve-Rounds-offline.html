@@ -4237,7 +4237,10 @@ class Fight{
     const imgs=A.imgs?`<div class="row" style="gap:10px;justify-content:center;align-items:flex-end"><div class="al" style="animation-delay:${1.15*2}s"><img id="wkO" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#9fb3ff">Blue corner</div></div><div class="al" style="animation-delay:${1.15*3}s"><img id="wkP" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#ff8a7a">Red corner</div></div></div>`:'';
     el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+imgs+'<div class="skip">Tap to skip</div>';
     this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
-    if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg},80);
+    if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg;
+      // sculpted fighters walk to the ring in their robes (the still stays for anyone who cannot)
+      for(const [img,side] of [[o,r.oLive],[p,r.pLive]]){if(!img||!side)continue;const host=document.createElement('div');host.style.cssText=img.style.cssText+';overflow:hidden';
+        if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:'walking',robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3},side.opt))}}},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
@@ -5242,7 +5245,8 @@ function walkout(o,f){const A={lines:announceLines(o,f)};
   if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
-    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260})}catch(e){}return A};
+    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260});
+    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
   return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
@@ -6271,9 +6275,10 @@ function r3stage(host,look,opt={}){
   let r;try{r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){host.innerHTML='';return false}
   r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;
   const sc=new THREE.Scene();sc.environment=r3env();r3lights(sc,{});
-  const L=r3look(look,{arch:opt.arch,height:opt.height}),bx=r3boxer(L,{texSize:1024});sc.add(bx);if(bx.userData.rig)r3rigExpr(bx,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
+  const L=r3look(look,{arch:opt.arch,height:opt.height,legend:opt.legend}),bx=r3boxer(L,{texSize:1024,robe:!!opt.robe});sc.add(bx);if(bx.userData.rig)r3rigExpr(bx,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
+  if(opt.bg)sc.background=new THREE.Color(opt.bg);
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
   for(const ev of ['pointerup','pointercancel','pointerleave'])cv.addEventListener(ev,()=>drag=null);
@@ -6287,7 +6292,7 @@ function r3stage(host,look,opt={}){
     r3mcSample(C,Math.min(ct,C.dur),!hold&&list.length===1,!!opt.mirror,P);
     if(fade<1){fade=Math.min(1,fade+dt/.35);r3mcBlend(prev,P,fade*fade*(3-2*fade),blend);P.set(blend)}
     r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
-    const h=2.45*bx.scale.y;cam.position.set(Math.sin(.15)*h*2.55,h*.6,Math.cos(.15)*h*2.55);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
+    const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
 /* ================= saves (local + cloud) & boot ================= */
 const Save={

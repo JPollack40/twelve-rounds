@@ -454,7 +454,8 @@ function walkout(o,f){const A={lines:announceLines(o,f)};
   if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
-    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260})}catch(e){}return A};
+    A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260});
+    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
   return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();

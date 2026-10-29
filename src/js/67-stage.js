@@ -9,9 +9,10 @@ function r3stage(host,look,opt={}){
   let r;try{r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){host.innerHTML='';return false}
   r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;
   const sc=new THREE.Scene();sc.environment=r3env();r3lights(sc,{});
-  const L=r3look(look,{arch:opt.arch,height:opt.height}),bx=r3boxer(L,{texSize:1024});sc.add(bx);if(bx.userData.rig)r3rigExpr(bx,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
+  const L=r3look(look,{arch:opt.arch,height:opt.height,legend:opt.legend}),bx=r3boxer(L,{texSize:1024,robe:!!opt.robe});sc.add(bx);if(bx.userData.rig)r3rigExpr(bx,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
+  if(opt.bg)sc.background=new THREE.Color(opt.bg);
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
   for(const ev of ['pointerup','pointercancel','pointerleave'])cv.addEventListener(ev,()=>drag=null);
@@ -25,5 +26,5 @@ function r3stage(host,look,opt={}){
     r3mcSample(C,Math.min(ct,C.dur),!hold&&list.length===1,!!opt.mirror,P);
     if(fade<1){fade=Math.min(1,fade+dt/.35);r3mcBlend(prev,P,fade*fade*(3-2*fade),blend);P.set(blend)}
     r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
-    const h=2.45*bx.scale.y;cam.position.set(Math.sin(.15)*h*2.55,h*.6,Math.cos(.15)*h*2.55);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
+    const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
