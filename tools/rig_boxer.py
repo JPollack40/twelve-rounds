@@ -120,7 +120,31 @@ EYE['L']=EYE['R']*[-1,1,1]   # the mesh is slightly asymmetric; mirror the clean
 morph={}
 for s in 'LR':
   d=np.linalg.norm(P-EYE[s]-[0,.004,0],axis=1);g=np.exp(-(d/.013)**2)*(L=='head')
-  dv=(nrm*.0075+[0,-.002,.002])*g[:,None];dv[g<.02]=0;morph[s]=(dv*S).astype(np.float32)
+  dv=(nrm*.0075+[0,-.002,.002])*g[:,None];dv[g<.02]=0;morph['swell'+s]=(dv*S).astype(np.float32)
+# face landmarks measured on the midline profile (raw units)
+LM={'nose':np.array([0,.4065,.079]),'mouth':np.array([0,.388,.066]),'chin':np.array([0,.356,.055]),'chinB':np.array([0,.349,.035])}
+def ssn(e0,e1,x):t=np.clip((x-e0)/(e1-e0),0,1);return t*t*(3-2*t)
+# body bulk: muscle pushed out along the normal, by bone (weights blend it across joints); heads and gloves keep their size
+AMT={'pelvis':.006,'spine':.0105,'chest':.0105,'headG':0,'shL':.0095,'shR':.0095,'elbowL':.0065,'elbowR':.0065,'gloveL':0,'gloveR':0,'hipL':.008,'hipR':.008,'kneeL':.0048,'kneeR':.0048}
+am=W@np.array([AMT[b] for b in BONES]);morph['bulk']=((nrm*am[:,None])*S).astype(np.float32)
+# belly: the lower front of the torso rounds out, the waist widens a little
+tor=np.isin(L,['spine','pelvis'])
+gb=np.exp(-((P[:,1]-.08)/.07)**2-(P[:,0]/.09)**2)*tor*ssn(-.02,.04,P[:,2])
+gw=np.exp(-((P[:,1]-.06)/.07)**2)*tor
+morph['belly']=((np.stack([np.sign(P[:,0])*.016*gw,0*gw,.034*gb],1))*S).astype(np.float32)
+# jaw open: the chin and lower lip swing down about a pivot under the ears
+hd=(L=='head');piv=np.array([0,.405,-.005]);a=.32
+wj=hd*ssn(LM['mouth'][1]+.001,LM['mouth'][1]-.006,P[:,1])*ssn(.0,.035,P[:,2])*(P[:,1]>LM['chinB'][1]-.02)
+q=P-piv;ry=q[:,1]*np.cos(a)-q[:,2]*np.sin(a);rz=q[:,1]*np.sin(a)+q[:,2]*np.cos(a)
+morph['jaw']=((np.stack([0*ry,ry-q[:,1],rz-q[:,2]],1)*wj[:,None])*S).astype(np.float32)
+# brows: down and in (anger), inner ends up (hurt)
+bd=np.zeros_like(P);bu=np.zeros_like(P)
+for sg in (1,-1):
+  c=EYE['R']*[-sg,1,1]+[0,.013,.002]
+  g=np.exp(-(np.linalg.norm(P-c,axis=1)/.017)**2)*hd;bd+=np.stack([-sg*.003*g,-.006*g,.002*g],1)
+  ci=c+[-sg*.008,.002,.002];g2=np.exp(-(np.linalg.norm(P-ci,axis=1)/.015)**2)*hd;bu+=np.stack([0*g2,.0065*g2,.001*g2],1)
+morph['browDown']=(bd*S).astype(np.float32);morph['browUp']=(bu*S).astype(np.float32)
+MORPHS=['swellL','swellR','bulk','belly','jaw','browDown','browUp']
 # ---- damage spots in 3D (game units); the game paints bruises by surface distance, so UV seams never cut them ----
 SPOT={'eyeL':EYE['L']+[0,.004,0],'eyeR':EYE['R']+[0,.004,0],'cheekL':EYE['L']+[.004,-.018,-.004],'cheekR':EYE['R']+[-.004,-.018,-.004],
       'nose':np.array([0,.428,.072]),'browL0':EYE['L']+[-.006,.014,.002],'browL1':EYE['L']+[.016,.016,-.006]}
@@ -169,18 +193,18 @@ for n,v in MAT.items():
 tex=img.resize((2048,2048),Image.LANCZOS) if img.size[0]!=2048 else img
 buf=io.BytesIO();tex.save(buf,'JPEG',quality=86);jpg=buf.getvalue()
 mbuf=io.BytesIO();mask.save(mbuf,'PNG',optimize=True);mpng=mbuf.getvalue()
-blobs=[P2.astype(np.float32).tobytes(),UV.astype(np.float32).tobytes(),I.astype(np.uint32).ravel().tobytes(),idx.astype(np.uint8).tobytes(),wt.astype(np.float32).tobytes(),morph['L'].tobytes(),morph['R'].tobytes(),jpg,mpng]
+blobs=[P2.astype(np.float32).tobytes(),UV.astype(np.float32).tobytes(),I.astype(np.uint32).ravel().tobytes(),idx.astype(np.uint8).tobytes(),wt.astype(np.float32).tobytes(),jpg,mpng]+[morph[k].tobytes() for k in MORPHS]
 def pad(b):return b+b'\0'*((4-len(b)%4)%4)
 bin_=b'';views=[]
 for b in blobs:views.append({'buffer':0,'byteOffset':len(bin_),'byteLength':len(b)});bin_+=pad(b)
-X={'bones':BONES,'parent':PARENT,'joints':{k:JG[k] for k in JG},'eyes':{s:G(EYE[s]).round(4).tolist() for s in 'LR'},'spots':spots,'mat':MAT,'ref':ref,'scale':S}
+X={'bones':BONES,'parent':PARENT,'joints':{k:JG[k] for k in JG},'eyes':{s:G(EYE[s]).round(4).tolist() for s in 'LR'},'spots':spots,'lm':{k:G(v).round(4).tolist() for k,v in LM.items()},'morphs':MORPHS,'mat':MAT,'ref':ref,'scale':S}
 Jn={'asset':{'version':'2.0','generator':'twelve-rounds rig_boxer'},'buffers':[{'byteLength':len(bin_)}],'bufferViews':views,
  'accessors':[{'bufferView':0,'componentType':5126,'count':N,'type':'VEC3','min':P2.min(0).tolist(),'max':P2.max(0).tolist()},{'bufferView':1,'componentType':5126,'count':N,'type':'VEC2'},
    {'bufferView':2,'componentType':5125,'count':int(I.size),'type':'SCALAR'},{'bufferView':3,'componentType':5121,'count':N,'type':'VEC4'},{'bufferView':4,'componentType':5126,'count':N,'type':'VEC4'},
-   {'bufferView':5,'componentType':5126,'count':N,'type':'VEC3'},{'bufferView':6,'componentType':5126,'count':N,'type':'VEC3'}],
- 'images':[{'bufferView':7,'mimeType':'image/jpeg'},{'bufferView':8,'mimeType':'image/png','name':'mask'}],'textures':[{'source':0}],
+   ]+[{'bufferView':7+i,'componentType':5126,'count':N,'type':'VEC3'} for i in range(len(MORPHS))],
+ 'images':[{'bufferView':5,'mimeType':'image/jpeg'},{'bufferView':6,'mimeType':'image/png','name':'mask'}],'textures':[{'source':0}],
  'materials':[{'pbrMetallicRoughness':{'baseColorTexture':{'index':0},'metallicFactor':0,'roughnessFactor':.9}}],
- 'meshes':[{'primitives':[{'attributes':{'POSITION':0,'TEXCOORD_0':1,'JOINTS_0':3,'WEIGHTS_0':4},'targets':[{'POSITION':5},{'POSITION':6}],'indices':2,'material':0}],'extras':X}],
+ 'meshes':[{'primitives':[{'attributes':{'POSITION':0,'TEXCOORD_0':1,'JOINTS_0':3,'WEIGHTS_0':4},'targets':[{'POSITION':5+i} for i in range(len(MORPHS))],'indices':2,'material':0}],'extras':X}],
  'nodes':[{'mesh':0}],'scenes':[{'nodes':[0]}],'scene':0}
 jb=json.dumps(Jn,separators=(',',':')).encode();jb+=b' '*((4-len(jb)%4)%4)
 out=struct.pack('<4sII',b'glTF',2,12+8+len(jb)+8+len(bin_))+struct.pack('<I4s',len(jb),b'JSON')+jb+struct.pack('<I4s',len(bin_),b'BIN\0')+bin_

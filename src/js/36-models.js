@@ -43,7 +43,7 @@ function r3duncan(L){
   const mat=r3cel(0xffffff,M.tex,true,.9);
   core.add(r3mesh(M.parts.body,mat,{olw:.0042}));
   const hb=r3partBox(M.parts.head);const neckY=hb.min.y;const headG=new THREE.Group();headG.position.y=neckY;core.add(headG);
-  const head=r3mesh(M.parts.head,mat,{olw:.0042});head.position.y=-neckY;headG.add(head);
+  const headM=r3cel(0xffffff,M.tex,true,.9);headM.emissive=new THREE.Color(0);const head=r3mesh(M.parts.head,headM,{olw:.0042});head.position.y=-neckY;headG.add(head);
   const arms={};const sh=M.extras.shoulders||{L:[.44,1.2,0],R:[-.44,1.2,0]};
   for(const [h,s] of [['L',1],['R',-1]]){const g=M.parts['glove'+h],gb=r3partBox(g);const c=gb.getCenter(new THREE.Vector3()),top=gb.max.y;
     const gm=r3cel(0xffffff,M.tex,true,.9);gm.emissive=new THREE.Color(0);
@@ -51,7 +51,7 @@ function r3duncan(L){
     arms[s]={glove,gm,rest:c.clone(),wrist:top-c.y,sh:new THREE.Vector3(...sh[h]),tube:null}}
   r3outline(root);
   const tubeM=r3cel(0xffffff,r3conduitTex(),true,.8);
-  root.userData={duncan:true,core,headG,arms,legs:{},hy0:neckY+(hb.max.y-neckY)*.33,legY:0,tubeM,P:{}};
+  root.userData={duncan:true,headM,core,headG,arms,legs:{},hy0:neckY+(hb.max.y-neckY)*.33,legY:0,tubeM,P:{}};
   r3duncanTubes(root);return root}
 /* rebuild the two conduit arms from each shoulder (riding the core) to the top of each glove */
 function r3duncanTubes(root){const u=root.userData;root.updateMatrixWorld(true);
@@ -77,6 +77,9 @@ function r3duncanPose(R,P,glow){const f=R.f,o=f.o,root=R.opp,u=root.userData,t=f
     if(st==='down')T.set(s*.6,.5,.4);
     A.glove.position.copy(T);const up=clamp((T.y-A.rest.y)/.6,0,1);A.glove.rotation.set(-1.25*up-(g2[2]||0)*.5,s*.15,s*-.1);
     const gw=glow&&glow[h]||0;A.gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');A.gm.emissiveIntensity=gw*.9}
+  // wear: the valve head scuffs and darkens with damage
+  const d=P.dmg||{},wear=clamp(((d.swellL||0)+(d.swellR||0)+(d.cheek||0))*.22+(P.cut||0)/220,0,.55);
+  u.headM.color.setRGB(1-wear*.6,1-wear*.66,1-wear*.7);
   r3duncanTubes(root)}
 /* portrait pose (guard kinds as for boxers: high, mid, low, down, punch, wave) */
 function r3duncanGuard(bx,kind='high'){const u=bx.userData;const hy=u.hy0;

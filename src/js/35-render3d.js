@@ -576,7 +576,7 @@ function r3glove(gl,gm,s,dir,tape){
 const _v=[0,1,2,3,4,5,6,7,8].map(()=>new THREE.Vector3()),_q=[0,1,2].map(()=>new THREE.Quaternion()),_DOWN=new THREE.Vector3(0,-1,0);
 function r3ik(arm,target,pole){
   const L1=arm.L1||.44,L2=arm.L2||.5,S=_v[0],T=_v[1],E=_v[2],d=_v[3],n=_v[4],pl=_v[5];
-  const sc=arm.sh.parent.getWorldScale(_v[6]).x;const l1=L1*sc,l2=L2*sc;
+  const ws=arm.sh.parent.getWorldScale(_v[6]),sc=(ws.x+ws.y+ws.z)/3;const l1=L1*sc,l2=L2*sc;
   arm.sh.getWorldPosition(S);T.copy(target);d.subVectors(T,S);let dist=d.length();const max=l1+l2-.02*sc;if(dist>max){d.multiplyScalar(max/dist);dist=max;T.copy(S).add(d)}if(dist<.05)dist=.05;
   d.normalize();
   const a=clamp((l1*l1+dist*dist-l2*l2)/(2*l1*dist),-1,1);const ang=Math.acos(a);
@@ -668,7 +668,7 @@ const R3P={cache:new Map(),
     this.init();this.r.setSize(size,size,false);
     const L=r3look(look,{arch:o.arch,legend:o.legend,height:mode==='full'?o.height:70,mass:o.mass});if(o.expr)L.expr=o.expr;
     const bx=r3boxer(L,{robe:!!o.robe,texSize:512});bx.rotation.y=o.rot??(mode==='full'?(o.robe?(L.robe==='vest'?.3:-.18):-.42):-.22);this.scene.add(bx);r3guard(bx,o.robe&&L.robe&&R3_ROBE[L.robe]?R3_ROBE[L.robe].pose:o.guard);
-    if(bx.userData.head)r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
+    if(bx.userData.head)r3expr(bx.userData.head,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));else if(bx.userData.rig)r3rigExpr(bx,Object.assign({lidOpen:1},R3_EXPR[L.expr]||{}));
     bx.updateWorldMatrix(true,true);const dn=bx.userData.duncan,hp=dn?new THREE.Vector3(0,bx.userData.hy0-.12,0).applyMatrix4(bx.matrixWorld):(bx.userData.hc||bx.userData.headG).getWorldPosition(new THREE.Vector3());
     if(mode==='full'){const h=dn?2.7:hp.y+.3;this.cam.fov=30;this.cam.position.set(.55,h*.58,h*2.25);this.cam.lookAt(0,h*.5,0)}
     else if(mode==='face'){const k=dn?1.7:1;this.cam.fov=22;this.cam.position.set(hp.x+.35*k,hp.y+.08,hp.z+1.75*k);this.cam.lookAt(hp.x,hp.y+.03,hp.z)}
@@ -746,7 +746,6 @@ class Render3D{
       gl.rotation.set(active&&type!=='upper'?-.5:-.15,0,active&&type==='hook'?s*.9:0);
       const gw=glow&&glow[h]||0;u.arms[s].gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');u.arms[s].gm.emissiveIntensity=gw*.9;
     }
-    if(u.rig)return r3rigFace(this,P);
     const face=P.face||'normal';
     const E=Object.assign({lidOpen:.9,squint:0,angry:0,hurt:0,open:0,grit:0,smile:0,look:0,lookY:0},this.base);
     if(P.blink)E.lidOpen=.05;
@@ -758,6 +757,7 @@ class Render3D{
     if(st==='act'&&o.pu&&o.pu.type!=='jab'){E.grit=1;E.angry=1}
     if(P.flash){E.squint=Math.max(E.squint,.4)}
     if(st==='stagger'&&!P.flash){E.open=Math.max(E.open,.5);E.grit=0}
+    if(u.rig){r3rigExpr(this.opp,E);return r3rigFace(this,P)}
     r3expr(u.head,E);
     const d=P.dmg||{};const key=[Math.round((d.swellL||0)*5),Math.round((d.swellR||0)*5),Math.round((d.cheek||0)*4),Math.round((P.cut||0)/12),Math.min(5,P.sweat||0)].join(',');
     if(key!==this.texKey){this.texKey=key;const c=u.head.userData.ctl;r3skinTex(this.oL,{dmg:d,cut:P.cut,sweat:P.sweat},c.texC);c.tex.needsUpdate=true}
