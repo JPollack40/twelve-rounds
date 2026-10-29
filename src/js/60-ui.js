@@ -306,7 +306,9 @@ SCR.camp=()=>{
   const scout=n.scout>=1?`<p style="font-size:14px">${oc.scout?'<b>Scouting report:</b> '+esc(oc.scout)+' ':''}Favorite punch is the <b>${PUNCH[fav].name.toLowerCase()}</b>. ${(oc.ai.body||0)>.35?'Works the body a lot. ':''}${(oc.ai.counter||0)>.5?'A patient counter-puncher. ':''}${(oc.ai.agg||0)>.7?'Comes forward relentlessly. ':''}Their guard is usually ${(oc.ai.guard||['high'])[0]}.</p>`:`<p class="muted" style="font-size:13.5px">Do some film study to scout their habits.</p>`;
   const keys=keyDrills(f);const acts=Object.keys(CAMP).map(k=>{const C=CAMP[k];const off=(k==='cut'&&(!wi||wi.diff>=0))||(k==='film'&&n.scout>=2);const key=keys.find(x=>x[0]===k);const done=n.edge&&n.edge[k];return `<button class="navb${key?' on':''}" data-act="camp" data-k="${k}"${off?' disabled style="opacity:.4"':''}>${key?`<span class="pill gold" style="position:absolute;top:6px;right:6px;font-size:10px">${done?'✓ edge':'key drill'}</span>`:''}<b>${C.name}</b><small>${key?esc(key[1]):C.desc}</small></button>`}).join('');
   const fat=n.fatigue;
-  return shell('fight','Training camp',`<div class="card col"><div class="row sp"><h3>Training camp</h3><span class="pill ${n.weeksLeft?'gold':'red'}">${n.weeksLeft} week${n.weeksLeft!==1?'s':''} left</span></div>${oppCard(f)}${scout}</div>
+  const locC=!o.amateur&&n.weeksLeft>0?(!n.loc&&!n.sessions.length?`<div class="card col"><span class="lbl">Where do you hold camp?</span><div class="col" style="gap:6px">${Object.entries(CAMPLOC).map(([k,L])=>{const c=campLocCost(k,o);return `<button class="arch" data-act="camploc" data-k="${k}"${c>B().money?' disabled style="opacity:.5"':''}><b>${esc(L.name)}${c?' · '+money(c):''}</b><small>${esc(L.desc)}${c>B().money?' You can\'t afford it.':''}</small></button>`}).join('')}</div></div>`
+    :n.loc&&n.loc!=='home'?`<div class="card flat"><span class="lbl">${esc(CAMPLOC[n.loc].name)}</span><p style="margin:4px 0 0;font-size:13.5px">${esc(CAMPLOC[n.loc].desc)}</p></div>`:''):'';
+  return shell('fight','Training camp',`<div class="card col"><div class="row sp"><h3>Training camp</h3><span class="pill ${n.weeksLeft?'gold':'red'}">${n.weeksLeft} week${n.weeksLeft!==1?'s':''} left</span></div>${oppCard(f)}${scout}</div>${locC}
     ${n.weeksLeft>0?`<div class="card col"><div class="row sp"><span class="lbl">Fatigue</span><span class="num ${fat>60?'bad':fat>35?'warnt':''}">${Math.round(fat)}</span></div><div class="bar r"><i style="width:${Math.min(100,fat)}%"></i></div>
       <p class="muted" style="font-size:13px">Above 60, every hard session risks an injury. Training at ${esc(GYMS[G.gym].name)} with ${esc(TRAINERS[G.trainer].name)} (x${campBoosts().toFixed(2)} gains).</p>
       ${wi&&wi.diff<0?`<p class="warnt" style="font-size:13.5px">${wi.label}: stamina at ${Math.round(wi.sta*100)}% on fight night. Weight management helps.</p>`:''}</div>
@@ -441,6 +443,7 @@ function startFight(sim,resume){
   if(n.cut==='hard'){pc.stats.sta=Math.round(pc.stats.sta*.92);pc.stats.chin=Math.max(15,pc.stats.chin-3)}
   if(n.cut==='heavy')pc.stats.pow=Math.min(99,Math.round(pc.stats.pow*1.04));
   if(n.faceoff==='loose')pc.stats.sta=Math.min(99,Math.round(pc.stats.sta*1.04));
+  if(n.loc==='alt')pc.stats.sta=Math.min(99,Math.round(pc.stats.sta*1.03));
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))pc.cutProne=1;
   const oc=oppCombat(f);
   if(n.faceoff==='stare')oc.ai.agg=Math.min(1,(oc.ai.agg||.5)*1.08);if(n.faceoff==='shove')oc.ai.agg=Math.min(1,(oc.ai.agg||.5)*1.18);
@@ -480,6 +483,21 @@ function coachNotes(res,win){
   if(win&&!out.length)out.push('Clean work. Keep doing what got you here.');
   return out.slice(0,3);
 }
+/* punch stats by round: grouped bars, you vs them (validated pair on the dark card surface), tap a bar for the numbers */
+const PS_COL={p:'#bd8a2e',o:'#5b8def'};
+function punchStatsHTML(res,oppLast){const R=res.roundStats;if(!R||!R.length)return '';
+  const W=320,H=120,pad=18,n=R.length,gw=(W-pad)/n,bw=Math.max(3,Math.min(12,(gw-6)/2)),mx=Math.max(4,...R.map(r=>Math.max(r.p.l,r.o.l)));
+  const y=v=>H-v/mx*(H-14),pct=(l,t)=>t?Math.round(l/t*100)+'%':'–';
+  const bar=(x,v,c,tip)=>{const h=Math.max(0,H-y(v));const r=Math.min(4,bw/2,h);return `<path d="M${x},${H}V${H-h+r}Q${x},${H-h} ${x+r},${H-h}H${x+bw-r}Q${x+bw},${H-h} ${x+bw},${H-h+r}V${H}Z" fill="${c}"/><rect x="${x-2}" y="0" width="${bw+4}" height="${H}" fill="transparent" class="hitpt" data-tip="${esc(tip)}"><title>${esc(tip)}</title></rect>`};
+  const tot=k=>R.reduce((s,r)=>[s[0]+r[k].l,s[1]+r[k].t],[0,0]);const tp=tot('p'),to=tot('o');
+  return `<div class="card col" style="gap:6px"><div class="row sp"><span class="lbl">Punches landed by round</span><span class="row" style="gap:10px;font-size:12.5px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PS_COL.p};margin-right:4px"></i>You</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PS_COL.o};margin-right:4px"></i>${esc(oppLast)}</span></span></div>
+    <svg viewBox="0 0 ${W} ${H+16}" style="width:100%;height:auto" role="img" aria-label="Punches landed by round, you versus ${esc(oppLast)}">
+      <line x1="${pad}" y1="${H+.5}" x2="${W}" y2="${H+.5}" stroke="currentColor" stroke-opacity=".25"/>
+      <text x="${pad-4}" y="10" text-anchor="end" font-size="9" fill="currentColor" fill-opacity=".55">${mx}</text>
+      ${R.map((r,i)=>{const x0=pad+i*gw+(gw-(bw*2+2))/2;return bar(x0,r.p.l,PS_COL.p,`Round ${i+1}${r.partial?' (stopped)':''}: you landed ${r.p.l} of ${r.p.t} (${pct(r.p.l,r.p.t)})`)+bar(x0+bw+2,r.o.l,PS_COL.o,`Round ${i+1}${r.partial?' (stopped)':''}: ${oppLast} landed ${r.o.l} of ${r.o.t} (${pct(r.o.l,r.o.t)})`)+`<text x="${pad+i*gw+gw/2}" y="${H+12}" text-anchor="middle" font-size="9" fill="currentColor" fill-opacity=".6">${i+1}</text>`}).join('')}
+    </svg><div class="muted tipline" style="font-size:12.5px;min-height:16px">Tap a bar for that round.</div>
+    <div class="muted num" style="font-size:13px">Totals: you ${tp[0]}/${tp[1]} (${pct(tp[0],tp[1])}) · ${esc(oppLast)} ${to[0]}/${to[1]} (${pct(to[0],to[1])})</div>
+    <details style="font-size:13px"><summary class="muted">Table</summary><div class="tblw"><table class="t"><tr><th>Round</th><th class="r">You</th><th class="r">${esc(oppLast)}</th></tr>${R.map((r,i)=>`<tr><td>${i+1}${r.partial?'*':''}</td><td class="r num">${r.p.l}/${r.p.t}</td><td class="r num">${r.o.l}/${r.o.t}</td></tr>`).join('')}</table></div></details></div>`}
 /* post-fight interview: one choice with a real consequence */
 function rematchChance(f,res){const dec=!['KO','TKO','RTD','DQ'].includes(res.method);return clamp((res.robbery?.95:dec?(['SD','MD'].includes(res.method)?.8:.6):.4)+(heatOf(f.id)>=20?.08:0),0,.95)}
 function interviewOpts(){const {o,res}=UI.lastResult,f=G.world.f[o.oppId],win=res.winner==='p',dec=!['KO','TKO','RTD','DQ'].includes(res.method);
@@ -522,7 +540,7 @@ SCR.result=()=>{
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
       <div class="card"><span class="lbl">Health</span><p class="num">Recovery: ${sum.recovery} week${sum.recovery!==1?'s':''}</p>${sum.injuries.length?`<p class="bad">${sum.injuries.map(i=>INJ[i].name).join(', ')}</p>`:''}<p class="muted num" style="font-size:13px">Long-term damage ${Math.round(b.damage)}/100</p></div>
     </div>
-    ${interviewHTML()}${cn}${cards}${cbx}${mny}
+    ${interviewHTML()}${punchStatsHTML(res,f.last)}${cn}${cards}${cbx}${mny}
     <button class="btn primary wide" data-act="resultdone">Continue</button></div></div>`;
 };
 
@@ -770,6 +788,7 @@ const ACT={
     Save.write();UI.render();
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },
+  camploc(el){const n=G.next;if(!n||n.loc||n.sessions.length)return;const k=el.dataset.k,c=campLocCost(k,n.offer);if(c>B().money)return;B().money-=c;n.loc=k;if(c)news(`You set up camp: ${CAMPLOC[k].name} (${money(c)}).`);Save.write();Sfx.click();UI.render()},
   weighin(el){const n=G.next;if(!n)return;const k=el.dataset.k,v=el.dataset.v,f=G.world.f[n.offer.oppId];
     if(k==='cut'&&!n.cut)n.cut=v;
     if(k==='faceoff'&&!n.faceoff){n.faceoff=v;

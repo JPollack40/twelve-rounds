@@ -1,6 +1,6 @@
-# Regression report 2026-10-29T00:31:33.208Z
+# Regression report 2026-10-29T00:49:37.617Z
 
-5 fights per matchup, 500 simulated careers, 155s.
+5 fights per matchup, 500 simulated careers, 169s.
 
 ## Fight bands
 | matchup | win rate | band | KO for/against | acc you/them | ok |
@@ -21,29 +21,29 @@
 ```
 {
  "n": 500,
- "retireAgeMed": 37,
+ "retireAgeMed": 38,
  "winsMed": 46,
  "lossesMed": 22,
  "titlesMed": 2,
- "titlesAvg": 2.17,
- "champShare": 0.98,
+ "titlesAvg": 2.18,
+ "champShare": 0.99,
  "undisputedShare": 0.11,
  "multiDivShare": 0,
- "legendsAvg": 1.31,
- "chaptersAvg": 0.95,
- "moneyMed": 45098607,
+ "legendsAvg": 1.3,
+ "chaptersAvg": 0.97,
+ "moneyMed": 44973717,
  "womenN": 166,
  "womenChampShare": 0.98,
  "womenLegendsAvg": 1.11,
  "crossCircuitLegends": 0,
- "hofMed": 393,
+ "hofMed": 396,
  "tiers": {
-  "All-Time Great": 109,
-  "Hall of Famer": 257,
+  "Hall of Famer": 240,
+  "All-Time Great": 120,
   "Champion": 113,
-  "Contender": 10,
-  "The Greatest of All Time": 7,
-  "Journeyman": 4
+  "Contender": 15,
+  "Journeyman": 2,
+  "The Greatest of All Time": 10
  },
  "forcedRetireShare": 0.01,
  "dmgMed": 70
@@ -52,11 +52,12 @@
 
 | check | value | band | ok |
 |---|---|---|---|
-| retireAgeMed | 37 | 31–40 | ✅ |
-| champShare | 0.98 | 0.4–1 | ✅ |
+| retireAgeMed | 38 | 31–40 | ✅ |
+| champShare | 0.99 | 0.4–1 | ✅ |
 | forcedRetireShare | 0.01 | 0–0.4 | ✅ |
-| chaptersAvg | 0.95 | 0.3–5 | ✅ |
-| legendsAvg | 1.31 | 0.2–6 | ✅ |
+| chaptersAvg | 0.97 | 0.3–5 | ✅ |
+| legendsAvg | 1.3 | 0.2–6 | ✅ |
+| undisputedShare | 0.11 | 0–0.2 | ✅ |
 | womenChampShare | 0.98 | 0.4–1 | ✅ |
 | womenLegendsAvg | 1.11 | 0.1–6 | ✅ |
 | crossCircuitLegends | 0 | 0–0 | ✅ |

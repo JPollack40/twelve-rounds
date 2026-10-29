@@ -592,7 +592,8 @@ class Fight{
     this.releaseAll();
     const elapsed=this.cfg.roundLen-this.clock;
     const tScaled=Math.round(elapsed/this.cfg.roundLen*180);
-    Object.assign(this.res,{winner,method,round:this.round,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,hitBy:Object.assign({},this.hitBy),
+    const rsx=this.roundStats.map(r=>({p:{l:r.p.l,t:r.p.t},o:{l:r.o.l,t:r.o.t}}));if(rsx.length<this.round&&this.p.rs)rsx.push({p:{l:this.p.rs.landed||0,t:this.p.rs.thrown||0},o:{l:this.o.rs.landed||0,t:this.o.rs.thrown||0},partial:true});
+    Object.assign(this.res,{winner,method,round:this.round,roundStats:rsx,time:['KO','TKO'].includes(method)?fmtTime(tScaled):'3:00',cards:this.cards,roundCards:this.roundCards,hitBy:Object.assign({},this.hitBy),
       stats:{p:this.p.stats,o:this.o.stats},dmgTaken:this.p.dmgTaken,dmgDealt:this.o.dmgTaken,kdFor:this.o.kdTotal,kdAgainst:this.p.kdTotal,cut:this.p.cut,note});
     this.log({ev:'end',winner,method,round:this.round});
     this.res.log=this.cfg.headless?(Logs.cur=null):Logs.end(this.res);

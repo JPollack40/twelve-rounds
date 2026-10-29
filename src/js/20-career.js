@@ -404,30 +404,39 @@ const CAMP={
   cut:{name:'Weight Management',desc:'Dial in the diet. Reduces weight-cut penalties.'},
   rest:{name:'Rest Day',desc:'Recover. Fatigue down, heal injuries one week faster.'},
 };
+/* where you hold camp: home is free; the others cost money up front and shape the camp */
+const CAMPLOC={
+  home:{name:'Home gym',cost:0,desc:'No travel, no cost. Train as usual.'},
+  alt:{name:'Altitude camp',cost:.06,min:12000,desc:'Mountain air: stamina and footwork sessions gain more and you fight with +3% stamina, but every session is 3 fatigue harder.'},
+  spar:{name:'Elite sparring camp',cost:.08,min:18000,desc:'World-class partners: sparring earns 30% more XP and scouts their style faster.'},
+  sci:{name:'Sports-science camp',cost:.1,min:25000,desc:'Recovery staff and monitoring: 30% less fatigue per session and half the overtraining-injury risk.'},
+};
+function campLocCost(k,o){const L=CAMPLOC[k];return L.cost?Math.round(Math.max(L.min,o.purse*L.cost)/500)*500:0}
 function campResult(kind,q,auto){
   const b=B(),n=G.next,C=CAMP[kind],out={kind,q,lines:[]};
   const boost=campBoosts();
   if(['bag','speed','rope','mitts','spar'].includes(kind)){
-    let xp=(kind==='spar'?110:55)+q*(kind==='spar'?150:95);xp*=boost*(auto?.7:1);
+    let xp=(kind==='spar'?110:55)+q*(kind==='spar'?150:95);xp*=boost*(auto?.7:1)*(n.loc==='spar'&&kind==='spar'?1.3:1);
     out.xp=Math.round(xp);
     const tf=TRAINERS[G.trainer].focus;
     const sloppy=!auto&&q<.4&&kind!=='spar';
     let g=q>=.85?2:q>=.6?1:(chance(q)?1:0);if(auto)g=chance(.45)?1:0;
     if(boost>=1.25&&chance(.35))g++;
     if(tf&&C.stat===tf)g++;
+    if(n.loc==='alt'&&(C.stat==='sta'||C.alt==='foot')&&chance(.5))g++;
     out.deltas=[];
     const gain=(k,n)=>{const before=b.stats[k];const got=gainStat(k,n);if(got){out.lines.push(`+${got} ${STAT_NAME[k]}`);out.deltas.push([k,before,b.stats[k]])}};
     if(sloppy){out.xp=Math.round(out.xp*.5);out.lines.push('Sloppy session: no stat gain, and it wore you out. Drill it again or rest.');out.sloppy=true;n.fatigue+=6}
     else{if(g)gain(C.stat,g);if(chance(q*.45))gain(C.alt,1)}
     if(!auto){G.pb=G.pb||{};if(q>(G.pb[kind]||0)){if(G.pb[kind]!=null)out.pb=true;G.pb[kind]=q}out.best=G.pb[kind]}
-    n.fatigue+=kind==='spar'?22:13;
+    n.fatigue+=(kind==='spar'?22:13)*(n.loc==='sci'?.7:1)+(n.loc==='alt'?3:0);
     if(G.flags.teamBoost){G.flags.teamBoost=0;n.fatigue=Math.max(0,n.fatigue-14);out.lines.push('Your team is fired up: fatigue down.')}
     const ups=addXP(out.xp);out.ups=ups;
-    if(kind==='spar'){n.scout=Math.min(2,n.scout+.5)}
+    if(kind==='spar'){n.scout=Math.min(2,n.scout+(n.loc==='spar'?.75:.5))}
   }else if(kind==='film'){n.scout=Math.min(2,n.scout+1);out.lines.push('Their tells will last longer on fight night.');n.fatigue=Math.max(0,n.fatigue-6);addXP(25)}
   else if(kind==='cut'){n.cutWork=Math.min(2,n.cutWork+1);out.lines.push('Weight-cut penalty reduced.');n.fatigue+=4}
   else if(kind==='rest'){n.fatigue=Math.max(0,n.fatigue-35);b.injuries.forEach(i=>i.wk=Math.max(0,i.wk-1));out.lines.push('Fatigue down.')}
-  if(n.fatigue>60&&kind!=='rest'&&chance((n.fatigue-55)/180)){
+  if(n.fatigue>60&&kind!=='rest'&&chance((n.fatigue-55)/180*(n.loc==='sci'?.5:1))){
     const id=pick(['knee','ribs','hand','shoulder']);addInjury(id,true);out.lines.push(`Overtraining injury: ${INJ[id].name}!`);out.injury=id;
   }
   n.sessions.push({kind,q:Math.round(q*100)});

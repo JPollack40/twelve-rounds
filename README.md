@@ -108,3 +108,10 @@ A top-8 contender (8+ wins, at most once every two years, one invite chance per 
 knockout tournament in their division (`src/js/24-tour.js`), seeded 1v8, 4v5, 2v7, 3v6. While it runs, the next bracket bout is the
 only offer; the rest of the bracket is simulated as you go and shown on Home. Your own belts are defended in every round; only the
 final can take an opponent's belts. Winning the final pays an 80% bonus, +20 hype, a trophy and 35 legacy points.
+
+## Camp locations and punch stats
+At the start of camp choose where to train: home (free), altitude (+stamina/footwork gains, +3% stamina on fight night, +3 fatigue a
+session), elite sparring (+30% sparring XP, faster scouting) or sports science (30% less fatigue, half the injury risk). Paid camps cost
+6–10% of the purse with a floor, so money finally has a recurring use. The result screen shows punches landed by round, you vs them,
+as grouped bars (palette #bd8a2e/#5b8def, validated on the dark card), with tap-for-numbers, totals and a table; the round a fight
+was stopped in is included and marked.
