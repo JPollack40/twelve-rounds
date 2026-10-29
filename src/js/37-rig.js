@@ -15,12 +15,13 @@ function r3rigPixels(L,size){
   const ls=lum(ref.skin);
   const lh=lum(ref.hair),lb=lum(ref.band),lg=lum(ref.glove),lt=lum(ref.trunks),lto=ref.top?lum(ref.top):0,lbt=lum(ref.boot),bald=L.hair==='bald'||L.hair==='none';
   // shaved sides (mohawk) and buzz cuts tint the painted hair toward the scalp; cornrows show scalp between rows
-  const nat=r3rigNative(L),sh=nat?0:L.hair==='mohawk'?.72:L.hair==='buzz'?.38:L.hair==='braids'?.3:0;if(sh)for(let k=0;k<3;k++)hair[k]=hair[k]*(1-sh)+skin[k]*sh*.92;
+  // any fitted style brings its own hair: the painted hair under it turns to scalp, so no painted hairline peeks out below the new one
+  const nat=r3rigNative(L),sh=nat||bald?0:L.hair==='buzz'?.38:L.hair==='braids'?.3:.82;const hair0=hair.slice();
   for(let y=0;y<size;y++){const row=((y*ms)|0)*mk.w;
     for(let xx=0;xx<size;xx++){const i=(y*size+xx)*4,m=mk.m[row+((xx*ms)|0)];if(m===0||m===7)continue;
       const r=d[i],g=d[i+1],b=d[i+2],l=.299*r+.587*g+.114*b;let o;
       if(m===1||m===8){const k=m===8?clamp(1+.9*(l/ls-1),.3,1.35):clamp(1+.5*(l/ls-1),.55,1.35);o=[skin[0]*k,skin[1]*k,skin[2]*k]}
-      else if(m===2)o=bald?[skin[0]*(.84+.12*l/lh),skin[1]*(.84+.12*l/lh),skin[2]*(.84+.12*l/lh)]:[hair[0]*.35+hair[0]*.75*l/lh,hair[1]*.35+hair[1]*.75*l/lh,hair[2]*.35+hair[2]*.75*l/lh];
+      else if(m===2){if(bald||sh){const k=clamp(.8+.08*l/lh,.78,.96),q=bald?1:sh;o=[skin[0]*k*q+hair0[0]*.55*(1-q),skin[1]*k*q+hair0[1]*.55*(1-q),skin[2]*k*q+hair0[2]*.55*(1-q)]}else o=[hair[0]*.35+hair[0]*.75*l/lh,hair[1]*.35+hair[1]*.75*l/lh,hair[2]*.35+hair[2]*.75*l/lh]}
       else if(m===3||m===9){const k=clamp(.82+(l-(m===9?lto:lt))/70,.7,1.25);o=[tr[0]*k,tr[1]*k,tr[2]*k]}
       else if(m===4){const k=clamp(l/lb,.55,1.2);o=[trim[0]*k,trim[1]*k,trim[2]*k]}
       else if(m===5){const rd=r-(g+b)/2,k=rd<30?(l<40?.82:.92):clamp(.6+.4*l/lg,.6,1.3);o=[gl[0]*k,gl[1]*k,gl[2]*k]}
@@ -141,6 +142,8 @@ function r3rigHead(mk){const M=R3M.m[mk];if(M.hf)return M.hf;const X=M.extras,g=
     const h=rc.intersectObject(hm,false)[0];if(h)rad[j*NT+i]=.8-h.distance}
   for(let it=0;it<60;it++){let left=0;for(let j=0;j<NL;j++)for(let i=0;i<NT;i++){const k=j*NT+i;if(!isNaN(rad[k]))continue;left++;let s=0,n=0;
     for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const jj=j+dj;if(jj<0||jj>=NL)continue;const kk=jj*NT+(i+di+NT)%NT;if(!isNaN(rad[kk])){s+=rad[kk];n++}}if(n)rad[k]=s/n}if(!left)break}
+  // the scalp envelope: each cell takes the highest of its neighbours, so fitted hair clears modelled braids and bumps
+  {const r2=rad.slice();for(let j=0;j<NL;j++)for(let i=0;i<NT;i++){let m=r2[j*NT+i];for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const jj=j+dj;if(jj<0||jj>=NL)continue;m=Math.max(m,r2[jj*NT+((i+di)%NT+NT)%NT])}rad[j*NT+i]=m}}
   const radAt=(th,lat)=>{let fi=((th+Math.PI)/(Math.PI*2))*NT-.5,fj=(lat+1)/2*NL-.5;fj=clamp(fj,0,NL-1.001);const i0=Math.floor(fi),j0=Math.floor(fj),ti=fi-i0,tj=fj-j0;
     const at=(i,j)=>rad[j*NT+((i%NT)+NT)%NT];return (at(i0,j0)*(1-ti)+at(i0+1,j0)*ti)*(1-tj)+(at(i0,j0+1)*(1-ti)+at(i0+1,j0+1)*ti)*tj};
   // warps: model latitude <-> procedural latitude through the eye, mouth and chin; angle scaled so the eyes line up
@@ -159,7 +162,7 @@ function r3rigHead(mk){const M=R3M.m[mk];if(M.hf)return M.hf;const X=M.extras,g=
   const toP=(x,y,z)=>{const w=new THREE.Vector3(x-C.x,y-C.y,z-C.z).normalize();return [thP(Math.atan2(w.x,w.z)),pl(w.y,0,1)]};
   return M.hf={C,k,S,cap,toP,radAt}}
 /* facial hair and scars, painted in the procedural head's layout and carried onto the texture through the head texel map */
-function r3rigFacePaint(L,size){const beard=L.beard&&L.beard!=='none',scar=L.scar&&L.scar!=='none';if(!beard&&!scar)return null;
+function r3rigFacePaint(L,size){const beard=L.beard&&L.beard!=='none',scar=L.scar&&L.scar!=='none';if(!beard&&!scar&&!L.fem)return null;
   const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d'),fx=768,fy=256,hc=L.hairColor||'#1a120c';
   const ink=a=>`rgba(29,21,23,${a})`,line=(pts,w=4,a=.6)=>{x.strokeStyle=ink(a);x.lineWidth=w;x.lineCap='round';x.lineJoin='round';x.beginPath();pts.forEach(([th,lat],i)=>{const [px,py]=r3tx(th,lat);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()};
   const beardPath=()=>{x.beginPath();x.moveTo(fx-190,fy+40);x.quadraticCurveTo(fx-170,fy+220,fx,fy+250);x.quadraticCurveTo(fx+170,fy+220,fx+190,fy+40);x.quadraticCurveTo(fx+140,fy+150,fx,fy+158);x.quadraticCurveTo(fx-140,fy+150,fx-190,fy+40)};
@@ -167,6 +170,9 @@ function r3rigFacePaint(L,size){const beard=L.beard&&L.beard!=='none',scar=L.sca
   if(L.beard==='beard'){x.fillStyle=hc;x.globalAlpha=.94;beardPath();x.fill();x.globalAlpha=1}
   if(L.beard==='goatee'){x.fillStyle=hc;x.beginPath();x.moveTo(fx-36,fy+128);x.quadraticCurveTo(fx-30,fy+178,fx,fy+186);x.quadraticCurveTo(fx+30,fy+178,fx+36,fy+128);x.quadraticCurveTo(fx,fy+138,fx-36,fy+128);x.fill()}
   if(L.beard==='mustache'||L.beard==='beard'||L.beard==='goatee'){x.fillStyle=hc;x.beginPath();x.moveTo(fx-50,fy+92);x.quadraticCurveTo(fx,fy+66,fx+50,fy+92);x.quadraticCurveTo(fx,fy+84,fx-50,fy+92);x.fill()}
+  // women: a fine upper liner with a winged flick at each outer corner, and tinted lips (as on the classic head)
+  if(L.fem){for(const s of [-1,1]){line([[s*.24,.085],[s*.34,.105],[s*.45,.1],[s*.54,.075]],3.2,.7);line([[s*.53,.075],[s*.6,.09],[s*.66,.115]],3,.75)}
+    x.fillStyle='rgba(168,58,82,.38)';x.beginPath();x.ellipse(fx,fy+95,42,8,0,0,7);x.fill();x.beginPath();x.ellipse(fx,fy+117,36,10,0,0,7);x.fill()}
   const sc=(pts)=>{line(pts,7,.25);x.strokeStyle='rgba(255,225,215,.55)';x.lineWidth=3.5;x.beginPath();pts.forEach(([th,lat],i)=>{const [px,py]=r3tx(th,lat);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()};
   if(L.scar==='brow'||L.scar==='both')sc([[.3,.32],[.4,.24],[.5,.18],[.56,.1]]);if(L.scar==='cheek'||L.scar==='both')sc([[-.42,-.12],[-.52,-.24],[-.6,-.36]]);if(L.scar==='nose')sc([[-.12,.02],[0,-.02],[.12,-.06]]);
   const mk=r3rigKey(L),src=x.getImageData(0,0,1024,512).data,hm=r3rigHeadMap(mk),HF=r3rigHead(mk),R=R3_HM;

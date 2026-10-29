@@ -110,10 +110,23 @@ for st in list(nxt):
   loop=[];w=st
   while w in nxt and w not in seen:seen.add(w);wa,a_,b_=nxt[w];loop.append((a_,b_));w=wa
   if len(loop)<3 or len(loop)>40 or not any(a_ in gone or b_ in gone or weld[a_] in gone for a_,b_ in loop):continue
-  vs=[b_ for a_,b_ in loop];c=len(P);P.append(np.mean([P[v] for v in vs],0));
-  labs=[Ll[v] for v in vs];maj=max(set(labs),key=labs.count);Ll.append(maj);UV.append(UV[[v for v in vs if Ll[v]==maj][0]]);adj.append([(v,0.01) for v in vs]);dist.append(float(np.mean([dist[v] for v in vs])));weld.append(c)
-  vcol.append(vcol[vs[0]]);vlum.append(vlum[vs[0]]);redness.append(redness[vs[0]]);TAIL.append(False)
-  for a_,b_ in loop:newT.append([b_,a_,c])
+  # a hole can run along both an arm and the body; patch each side separately so no new face joins them
+  grp=lambda v:'arm' if Ll[v] in ARMS else 'body'
+  k0=next((k for k in range(len(loop)) if grp(loop[k][0])!=grp(loop[k-1][0])),0);loop=loop[k0:]+loop[:k0]
+  runs=[];cur=[]
+  for a_,b_ in loop:
+    if grp(a_)!=grp(b_):
+      if cur:runs.append(cur);cur=[]
+      continue
+    if cur and grp(cur[-1][0])!=grp(a_):runs.append(cur);cur=[]
+    cur.append((a_,b_))
+  if cur:runs.append(cur)
+  for run in runs:
+    if len(run)<2:continue
+    vs=[a_ for a_,b_ in run]+[run[-1][1]];c=len(P);P.append(np.mean([P[v] for v in vs],0))
+    labs=[Ll[v] for v in vs];maj=max(set(labs),key=labs.count);Ll.append(maj);UV.append(UV[[v for v in vs if Ll[v]==maj][0]]);adj.append([(v,0.01) for v in vs]);dist.append(float(np.mean([dist[v] for v in vs])));weld.append(c)
+    vcol.append(vcol[vs[0]]);vlum.append(vlum[vs[0]]);redness.append(redness[vs[0]]);TAIL.append(False)
+    for a_,b_ in run:newT.append([b_,a_,c])
 P=np.array(P);UV=np.array(UV);L=np.array(Ll);weld=np.array(weld);dist=np.array(dist);vcol=np.array(vcol);vlum=np.array(vlum);redness=np.array(redness);TAIL=np.array(TAIL);N=len(P)
 ax=np.abs(P[:,0]);yb=P[:,1]
 if newT:I=np.vstack([I,np.array(newT,dtype=I.dtype)])
@@ -213,7 +226,7 @@ SPOT={'eyeL':EYE['L']+[0,.004,0],'eyeR':EYE['R']+[0,.004,0],'cheekL':EYE['L']+[.
 spots={k:G(v).round(4).tolist() for k,v in SPOT.items()}
 # ---- material mask, painted per triangle in UV space ----
 T=np.array(img).astype(float);TH,TW=T.shape[:2]
-MS=512;mask=Image.new('L',(MS,MS),0);md=ImageDraw.Draw(mask);ymap=Image.new('L',(MS,MS),0);yd=ImageDraw.Draw(ymap)
+MS=1024;mask=Image.new('L',(MS,MS),0);md=ImageDraw.Draw(mask);ymap=Image.new('L',(MS,MS),0);yd=ImageDraw.Draw(ymap);amap=Image.new('L',(MS,MS),0);ad=ImageDraw.Draw(amap)
 MAT={'skin':1,'hair':2,'trunks':3,'band':4,'glove':5,'boot':6,'sock':7,'face':8,'top':9}
 lum=lambda c:.299*c[...,0]+.587*c[...,1]+.114*c[...,2]
 C=P[I].mean(1);uvc=UV[I].mean(1);tl=L[I[:,0]]
@@ -232,10 +245,10 @@ for ti,t in enumerate(I):
   elif CFG['top'] and CFG['top'][0]<y<CFG['top'][1] and lu<120 and lb=='spine':m='top'
   else:m='skin'
   pts=[(float(UV[v,0]*MS),float(UV[v,1]*MS)) for v in t]
-  md.polygon(pts,fill=MAT[m]);yd.polygon(pts,fill=int(np.clip((y+.5)*250,1,255)))
+  md.polygon(pts,fill=MAT[m]);yd.polygon(pts,fill=int(np.clip((y+.5)*250,1,255)));ad.polygon(pts,fill=2 if lb.startswith('glove') else 1 if lb.startswith(('elbow','sh')) else 0)
 # grow islands by a few pixels so filtering at edges reads the right material
 mk=np.array(mask)
-for _ in range(3):
+for _ in range(6):
   z=mk==0;g=mk.copy()
   for dy,dx in ((0,1),(0,-1),(1,0),(-1,0)):
     sh_=np.roll(np.roll(mk,dy,0),dx,1);g=np.where(z&(g==0),sh_,g)
@@ -250,9 +263,15 @@ if sex=='f':
   # the sports top and shorts share islands with skin: neutral dark grey texels are cloth, warm light texels are skin
   yv=np.array(ymap).astype(float)/250-.5;r_,g_,b_=big[...,0],big[...,1],big[...,2]
   neutral=(np.abs(r_-b_)<14)&(bl_<105);warm=(r_-b_>22)&(bl_>70)
-  body=(mk==1)|(mk==3)|(mk==9)
+  am_=np.array(amap);body=((mk==1)|(mk==3)|(mk==9))&(am_==0)
   mk=np.where(body&neutral&(yv>.12)&(yv<.31),9,mk);mk=np.where(body&neutral&(yv>-.15)&(yv<.075),3,mk)
   mk=np.where(((mk==9)|(mk==3))&warm,1,mk)
+  # shorts texture painted onto a fused forearm or glove reads as that arm part instead
+  mk=np.where((am_==2)&(mk!=0),5,mk);mk=np.where((am_==1)&((mk==3)|(mk==9)),1,mk)
+# above the brows every dark head texel is hair (the painted hairline is ragged braids/strands; split between hair and face it
+# shows as a sawtooth once a fitted style turns the painted hair to scalp)
+yv_=np.array(ymap).astype(float)/250-.5
+mk=np.where(((mk==8)|(mk==2))&(yv_>EYE['L'][1]+.024)&(bl_<105),2,mk)
 mask=Image.fromarray(mk.astype(np.uint8))
 # reference colour of each material (median of the texels it covers), used as the recolor anchor
 ref={}
