@@ -16,9 +16,12 @@ yellow=(col[:,0]>110)&(col[:,1]>100)&(col[:,2]<col[:,0]*.6)
 ax=np.abs(C[:,0])
 ground=(C[:,1]<-.472)|((C[:,1]<-.465)&(ax>.13))
 glove=(ax>.15)&(C[:,1]<-.06)&~ground
+# the cut-off cable stub at the top of each glove is grey conduit, not red leather: drop it so the live cable meets a clean cuff
+sat=col.max(1)-col.min(1);stub=glove&(sat<40)&(C[:,1]>-.2)
+glove=glove&~stub
 arm=(ax>.17)&(C[:,1]>=-.1)&(C[:,1]<.06)&~yellow&~glove
 head=(C[:,1]>.05)&~arm
-part=np.where(ground|arm,-1,np.where(glove,np.where(C[:,0]>0,2,3),np.where(head,0,1)))  # 0 head 1 body 2 gloveL(+x) 3 gloveR(-x)
+part=np.where(ground|arm|stub,-1,np.where(glove,np.where(C[:,0]>0,2,3),np.where(head,0,1)))  # 0 head 1 body 2 gloveL(+x) 3 gloveR(-x)
 print({n:int((part==k).sum()) for k,n in [(-1,'dropped'),(0,'head'),(1,'body'),(2,'gloveL'),(3,'gloveR')]})
 keep=part>=0;I2=I[keep];part2=part[keep];order=np.argsort(part2,kind='stable');I2=I2[order];part2=part2[order]
 used=np.unique(I2);remap=-np.ones(len(P),int);remap[used]=np.arange(len(used));I2=remap[I2];P2=P[used];UV2=UV[used]

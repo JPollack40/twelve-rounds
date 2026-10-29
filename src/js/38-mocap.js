@@ -139,7 +139,7 @@ function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},
 /* ---------- Duncan V.: the same clips mapped onto his rig. His core (body on the spring) takes the chest's lean and twist and
    squashes as the hips dip; his head takes the head's turn; each glove goes where the fighter's hand is, reached from his shoulder
    anchor along the clip's arm directions, and the conduit arms re-route to follow. His knockdown keeps its spring topple. */
-const MC_DUN_YAW=1.15,MC_DUN_K=.0125,_mde=new THREE.Euler();
+const MC_DUN_YAW=1.15,_mde=new THREE.Euler();
 function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const qa=(i,q)=>q.set(P[3+i*4],P[4+i*4],P[5+i*4],P[6+i*4]);const Ds=qa(1,_mq[1]),Dd=qa(2,_mq[2]);
   const yq=_mq[5].setFromAxisAngle(Y,o.yaw||0);Ds.premultiply(yq);Dd.premultiply(yq);
@@ -148,15 +148,7 @@ function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
   const e=_mde.setFromQuaternion(Ds,'YXZ');const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
   r3duncanBend(u,_mq[0].setFromEuler(_mde.set(clamp(e.x*1.05,-.6,.6),clamp(e.y*.6,-.45,.45),clamp(e.z*.85,-.4,.4),'YXZ')),dip);
   const eh=_mde.setFromQuaternion(_mq[3].copy(Ds).invert().multiply(Dd),'YXZ');u.headG.quaternion.setFromEuler(_mde.set(clamp(eh.x*.7,-.3,.3),clamp(eh.y*.7,-.5,.5),clamp(eh.z*.7,-.3,.3),'YXZ'));
-  root.updateMatrixWorld(true);const toRoot=_mB[0].copy(root.matrixWorld).invert().multiply(u.core.matrixWorld);
-  // where a boxer's hand sits relative to their head (cm, from the clip with typical proportions), carried onto Duncan's head
-  const head=_mv[5].set(0,u.hy0,0).applyMatrix4(toRoot),hc=_mv[4].set(0,26,2).applyQuaternion(Ds);
+  // his arms take the clip's upper-arm and forearm directions directly (the punching arm keeps its aim at you)
   const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9;
-  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s];
-    const U=_mv[0].set(P[15+b*3],P[16+b*3],P[17+b*3]),F=_mv[1].set(P[18+b*3],P[19+b*3],P[20+b*3]);
-    if(b!==keep){U.applyAxisAngle(Y,o.yaw||0);F.applyAxisAngle(Y,o.yaw||0)}
-    const hand=_mv[2].set(s*17,0,0).applyQuaternion(Ds).addScaledVector(U,28).addScaledVector(F,27).sub(hc);
-    const T=_mv[3].copy(head).addScaledVector(hand,MC_DUN_K);T.y=Math.max(T.y,.4);T.z=Math.min(T.z,1.15);A.glove.position.copy(T);
-    // the elbow points the way the fighter's elbow points (the upper arm's lead over the forearm); the glove's top faces up and out
-    A.pole=(A.pole||new THREE.Vector3()).copy(U).sub(F).addScaledVector(_mv[4].set(s*.35,-1,-.2),.45);if(A.pole.lengthSq()<1e-4)A.pole.set(s*.7,-.6,-.45);
-    A.top=(A.top||new THREE.Vector3()).set(s*.3,1,.25)}}
+  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s];A.U.set(P[15+b*3],P[16+b*3],P[17+b*3]);A.F.set(P[18+b*3],P[19+b*3],P[20+b*3]);
+    if(b!==keep){A.U.applyAxisAngle(Y,o.yaw||0);A.F.applyAxisAngle(Y,o.yaw||0)}A.fk=true}}
