@@ -31,6 +31,6 @@ const ROOT=path.join(__dirname,'..'),ANG=+(process.argv[2]||60)*Math.PI/180;
   const L=[`mtllib ${N}.mtl`,'usemtl duncan'];for(let i=0;i<r.V.length;i+=3)L.push(`v ${(r.V[i]*k).toFixed(3)} ${((r.V[i+1]-y0)*k).toFixed(3)} ${(r.V[i+2]*k).toFixed(3)}`);
   for(let i=0;i<r.T.length;i+=2)L.push(`vt ${r.T[i].toFixed(5)} ${r.T[i+1].toFixed(5)}`);for(const [a,b2,c] of r.F)L.push(`f ${a+1}/${a+1} ${b2+1}/${b2+1} ${c+1}/${c+1}`);
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'dun-'));fs.writeFileSync(path.join(tmp,N+'.obj'),L.join('\n'));fs.writeFileSync(path.join(tmp,N+'.mtl'),`newmtl duncan\nKd 1 1 1\nmap_Kd ${N}.png\n`);
-  fs.writeFileSync(path.join(tmp,N+'.png'),Buffer.from(r.png,'base64'));const zip=path.join(__dirname,'mixamo',N+'.zip');if(fs.existsSync(zip))fs.unlinkSync(zip);
+  fs.writeFileSync(path.join(tmp,N+'.png'),Buffer.from(r.png,'base64'));const zip=path.join(__dirname,'mixamo','DUNCAN_NO_SPRING_v4.zip');if(fs.existsSync(zip))fs.unlinkSync(zip);
   execFileSync('python3',['-c',"import zipfile,sys,os;z=zipfile.ZipFile(sys.argv[1],'w',zipfile.ZIP_DEFLATED);[z.write(os.path.join(sys.argv[2],f),f) for f in os.listdir(sys.argv[2])];z.close()",zip,tmp]);
   console.log('wrote',zip,(fs.statSync(zip).size/1e6).toFixed(1)+'MB',r.V.length/3,'verts');await b.close()})();
