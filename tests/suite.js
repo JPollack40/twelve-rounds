@@ -70,7 +70,7 @@ const MATCHUPS=[
  out.careers={n:C.length,retireAgeMed:med(C.map(r=>r.age)),winsMed:med(C.map(r=>r.w)),lossesMed:med(C.map(r=>r.l)),titlesMed:med(C.map(r=>r.titles)),titlesAvg:+avg(C.map(r=>r.titles)).toFixed(2),champShare:+(C.filter(r=>r.titles>0).length/C.length).toFixed(2),
    undisputedShare:+(C.filter(r=>r.undisp>0).length/C.length).toFixed(2),multiDivShare:+(C.filter(r=>r.divs>1).length/C.length).toFixed(2),legendsAvg:+avg(C.map(r=>r.legends)).toFixed(2),chaptersAvg:+avg(C.map(r=>r.chapters)).toFixed(2),
    moneyMed:med(C.map(r=>r.money)),womenN:C.filter(r=>r.circ==='w').length,womenChampShare:+(C.filter(r=>r.circ==='w'&&r.titles>0).length/Math.max(1,C.filter(r=>r.circ==='w').length)).toFixed(2),womenLegendsAvg:+avg(C.filter(r=>r.circ==='w').map(r=>r.legends).concat([0])).toFixed(2),crossCircuitLegends:C.filter(r=>r.circ==='w'?r.legendsM>0:r.legendsW>0).length,hofMed:med(C.map(r=>r.hof)),tiers,forcedRetireShare:+(C.filter(r=>r.forced).length/C.length).toFixed(2),dmgMed:med(C.map(r=>r.dmg))};
- const cb=[['retireAgeMed',[31,40]],['champShare',[.4,1]],['forcedRetireShare',[0,.4]],['chaptersAvg',[.3,5]],['legendsAvg',[.2,6]],['womenChampShare',[.4,1]],['womenLegendsAvg',[.1,6]],['crossCircuitLegends',[0,0]]];
+ const cb=[['retireAgeMed',[31,40]],['champShare',[.4,1]],['forcedRetireShare',[0,.4]],['chaptersAvg',[.3,5]],['legendsAvg',[.2,6]],['undisputedShare',[0,.2]],['womenChampShare',[.4,1]],['womenLegendsAvg',[.1,6]],['crossCircuitLegends',[0,0]]];
  out.careerChecks=cb.map(([k,band])=>({k,v:out.careers[k],band,ok:out.careers[k]>=band[0]&&out.careers[k]<=band[1]}));
  out.seconds=Math.round((Date.now()-t0)/1000);
  fs.writeFileSync(__dirname+'/last-report.json',JSON.stringify(out,null,1));

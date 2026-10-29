@@ -102,3 +102,9 @@ Retiring at Champion tier or better (legacy 150+) turns your boxer into a legend
 peak rating +2 (82–95), with a signature combination from their style and a weakness from their lowest stat. Each career snapshots
 the alumni it was created with (`G.alumni`), so older saves are unaffected; they also appear in the Legends gallery with an
 exhibition button. The daily challenge only draws from the built-in legends, so it stays the same for everyone.
+
+## World Super Series
+A top-8 contender (8+ wins, at most once every two years, one invite chance per 26 weeks) may be invited to an eight-fighter
+knockout tournament in their division (`src/js/24-tour.js`), seeded 1v8, 4v5, 2v7, 3v6. While it runs, the next bracket bout is the
+only offer; the rest of the bracket is simulated as you go and shown on Home. Your own belts are defended in every round; only the
+final can take an opponent's belts. Winning the final pays an 80% bonus, +20 hype, a trophy and 35 legacy points.

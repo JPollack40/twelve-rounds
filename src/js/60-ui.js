@@ -261,7 +261,7 @@ SCR.home=()=>{
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
   ensureGoals();const goals=(G.goals||[]).length?`<div class="card"><h3>Goals</h3><div class="col" style="gap:6px;margin-top:6px">${G.goals.map(g=>{const d=GOALS.find(x=>x.id===g.id);return d?`<div class="row sp"><span>${esc(d.t)}</span><span class="pill gold">+${d.xp} XP</span></div>`:''}).join('')}</div></div>`:'';
-  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
+  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}${tourHTML()}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
 };
 function pathHTML(){
   const b=B();

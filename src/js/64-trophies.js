@@ -17,6 +17,7 @@ const TROPHIES=[
   {id:'rival',name:'Settled',desc:'Beat your rival three times.',fight:()=>(G.rival?.w||0)>=3},
   {id:'chapters',name:'Storyteller',desc:'Complete three story chapters in one career.',fight:()=>G.chapters.length>=3},
   {id:'p4p',name:'Pound-for-Pound King',desc:'Be ranked the best fighter in the world, pound for pound.',fight:()=>p4pRank()===1},
+  {id:'tour',name:'Super Series',desc:'Win a World Super Series tournament.',fight:()=>(B().tourWins||0)>0},
   {id:'women',name:'Trailblazer',desc:"Win a world title in women's boxing.",fight:()=>isW()&&B().titleWins>0},
   {id:'men',name:'Lineal',desc:"Win a world title in men's boxing.",fight:()=>!isW()&&B().titleWins>0},
   {id:'hof',name:'Canastota',desc:'Retire as a Hall of Famer.',retire:L=>L.score>=300},

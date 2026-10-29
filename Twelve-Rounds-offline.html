@@ -1082,7 +1082,10 @@ function mkOffer(f,type,label,desc,extra={}){
 }
 function genOffers(){
   const b=B(),d=b.div,me=b.pts,mom=momentum(),pr=G.promoter?PROMOTERS[G.promoter.id]:null,rank=playerRank()||99;
+  // in a tournament, your next bracket fight is the only offer
+  if(G.tour&&G.tour.alive){const t=tourNextOffer();if(t){G.offers=[t];return G.offers}}
   const used=new Set(),offers=[];
+  {const inv=tourInvite();if(inv){offers.push(inv);used.add(inv.oppId)}}
   const last=G.history.filter(h=>h.pro).slice(-1)[0];
   if(last)used.add(last.oppId);
   const rv=rivalF();
@@ -1137,6 +1140,7 @@ function genOffers(){
 function acceptOffer(o){
   G.next={offer:o,weeksLeft:o.weeks,sessions:[],fatigue:0,scout:0,cutWork:0,gameplan:0,keys:keyDrills(G.world.f[o.oppId]).map(k=>k[0]),edge:{}};
   G.offers=[];
+  if(o.tourField)tourStart(o);
   if(o.chapter)G.flags['ch_'+o.chapter+'_off']=true;
   const f=G.world.f[o.oppId];
   news(`Signed: ${fullName(B())} vs ${fullName(f)}, ${o.rounds} rounds${o.venue?' at the '+o.venue:''}.`);
@@ -1424,6 +1428,7 @@ function applyResult(o,res){
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
   if(pro)b.peakOvr=Math.max(b.peakOvr||0,playerOvr());
+  if(pro&&o.tour!=null)tourAfter(o,win,out);
   if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
   if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}
@@ -1530,7 +1535,7 @@ function legacy(){
     ['Pro wins',r.w*2],['Knockouts',r.ko],['Losses',-r.l*3],
     ['World titles won',b.titleWins*25],['Title defenses',b.defenses*10],['Undisputed reigns',b.undisputed*60],
     ['Multi-division champion',Math.max(0,b.titleDivs.length-1)*40],['Legends beaten',b.legendsBeaten.length*15],
-    ['Story chapters',G.chapters.length*20],['Rivalry wins',rivalryWins()*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
+    ['Story chapters',G.chapters.length*20],['Super Series wins',(b.tourWins||0)*35],['Rivalry wins',rivalryWins()*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
     ['Amateur gold',(G.flags.am_gold_0?5:0)+(G.flags.am_gold_1?10:0)],
   ];
   const aw=b.awards||[];parts.push(['Fighter of the Year',aw.filter(x=>x==='foy').length*20],['Knockout of the Year',aw.filter(x=>x==='koy').length*10],['Upset of the Year',aw.filter(x=>x==='uoy').length*8]);
@@ -1583,6 +1588,55 @@ function showHTML(full){const S=G.show;if(!S)return '';const mv=m=>m==='new'?'<s
     ${full?`<div><span class="lbl">Pound for pound</span>${S.p4p.map((p,i)=>`<div style="font-size:14px;margin-top:3px" class="${p.id==='P'?'goldt':''}">${i+1}. ${esc(p.name)} <span class="dim">${DIVS[p.div].short}</span> ${mv(p.mv)}</div>`).join('')}</div>`:''}
     <div style="font-size:14px"><span class="lbl">${esc(S.host)} on you</span><div style="margin-top:3px;font-style:italic">${esc(showTake(S))}</div></div>
     ${full?'':'<button class="btn sm" data-act="showseen" style="align-self:flex-start">Watch the full show</button>'}</div>`}
+/* ================= World Super Series: an eight-fighter knockout tournament in your division =================
+   Invites top-8 contenders (every two years at most). Seeds 1v8, 4v5, 2v7, 3v6 by ranking. Your three fights are booked offers;
+   the rest of the bracket is simulated as you go. Only the final can take an opponent's belts; your own belts are on the line in every round. */
+const TOUR_ROUNDS=['Quarter-final','Semi-final','Final'];
+function tourName(){return isW()?"Women's World Super Series":'World Super Series'}
+function tourEligible(){const b=B();if(G.phase!=='pro'||G.tour?.alive||b.record.w<8)return false;
+  return (playerRank()||99)<=8&&G.week-(G.flags.tourWeek??-999)>=104&&G.week-(G.flags.tourInv??-999)>=26}
+function tourBoutOffer(oppId,round,extra={}){
+  const f=G.world.f[oppId],d=B().div,mine=beltsOf('P',d),cb=beltsOf(oppId,d);
+  // only the final can take an opponent's belts; earlier rounds put your own belts on the line, as a mandatory defense would
+  const fin=round===2,title=fin&&cb.length&&mine.length?{belts:[...mine,...cb],unify:true}:fin&&cb.length?{belts:cb}:mine.length?{belts:mine,defense:true}:null;
+  const rounds=round===2?(isW()?10:12):(isW()?8:10);
+  const o=mkOffer(f,'tour',`${tourName()} ${TOUR_ROUNDS[round]}`,round===2?`The final. Win and you lift the ${tourName()} trophy.`:`Win and you advance to the ${TOUR_ROUNDS[round+1].toLowerCase()}.`,Object.assign({rounds,weeks:round?7:8},title?{title}:{},extra));
+  o.purse=Math.round(purseFor(f,'world',rounds)*[.7,.9,1.3][round]);o.tour=round;o.venue=['Riyadh Season Arena','Manchester Arena','Madison Square Garden'][round];return o}
+/* an invitation shows up among your offers; accepting it books your quarter-final */
+function tourInvite(){
+  if(!tourEligible()||!chance(.35))return null;G.flags.tourInv=G.week;
+  const d=B().div,field=ranking(d).slice(0,8).map(e=>e.id);if(field.length<8||!field.includes('P'))return null;
+  const seeds=field;const pairs=[[0,7],[3,4],[1,6],[2,5]].map(([a,b])=>[seeds[a],seeds[b]]);const mine=pairs.find(p=>p.includes('P'));const opp=mine[0]==='P'?mine[1]:mine[0];
+  const o=tourBoutOffer(opp,0,{tourField:pairs});o.label=`${tourName()} invitation`;o.desc=`Eight of the best in the division, three rounds of knockout. Your quarter-final opponent is ${shortName(G.world.f[opp])}. Win it all for the trophy, a big bonus and a place in history.`;
+  return o}
+function tourStart(o){G.tour={div:B().div,week:G.week,round:0,alive:true,done:false,winner:null,rounds:[o.tourField.map(p=>({a:p[0],b:p[1],w:null}))]};G.flags.tourWeek=G.week;
+  news(`You accept a place in the ${tourName()}. Eight fighters, one trophy.`,'gold')}
+function tourBout(a,c){ // simulated bracket bout: no draws
+  const d=G.tour.div,fa=G.world.f[a],fc=G.world.f[c];if(!fa||!fa.active)return c;if(!fc||!fc.active)return a;
+  const pa=1/(1+Math.pow(10,(fc.rating-fa.rating)/12));const w=chance(pa)?fa:fc,l=w===fa?fc:fa;w.w++;l.l++;const ko=chance(w.arch==='slugger'?.55:.35);if(ko)w.ko++;
+  w.pts=Math.min(1000,w.pts+30);l.pts=Math.max(0,l.pts-20);recYear(w,l,ko,false);
+  const lb=beltsOf(l.id,d);if(lb.length&&G.tour.round===2){lb.forEach(k=>G.world.champs[d][k]=w.id);w.titles=(w.titles||0)+1}
+  return w.id}
+function tourResolveRound(T){const R=T.rounds[T.round];for(const m of R)if(!m.w)m.w=tourBout(m.a,m.b);
+  if(T.round<2){const W=R.map(m=>m.w),next=[];for(let i=0;i<W.length;i+=2)next.push({a:W[i],b:W[i+1],w:null});T.rounds.push(next);T.round++}
+  else{T.done=true;T.winner=R[0].w;T.alive=false}}
+/* after your tournament fight: record it, simulate the rest of the round, and advance or finish */
+function tourAfter(o,win,out){
+  const T=G.tour;if(!T||o.tour==null)return;const R=T.rounds[T.round];const m=R.find(x=>x.a==='P'||x.b==='P');if(!m)return;
+  m.w=win?'P':(m.a==='P'?m.b:m.a);
+  if(!win){T.alive=false;out.lines.push(`Eliminated from the ${tourName()} in the ${TOUR_ROUNDS[T.round].toLowerCase()}.`);
+    while(!T.done)tourResolveRound(T);const cw=G.world.f[T.winner];news(`${shortName(cw)} wins the ${tourName()}.`,'gold');return}
+  if(T.round===2){T.done=true;T.alive=false;T.winner='P';const b=B();b.tourWins=(b.tourWins||0)+1;const bonus=Math.round(o.purse*.8);b.money+=bonus;b.hype=Math.min(100,b.hype+20);
+    out.lines.push(`${tourName()} champion! Trophy, a ${money(bonus)} bonus and +20 hype.`);news(`You win the ${tourName()}. The trophy is yours.`,'gold');return}
+  tourResolveRound(T);const nm=T.rounds[T.round].find(x=>x.a==='P'||x.b==='P');const next=nm.a==='P'?nm.b:nm.a;
+  out.lines.push(`Through to the ${TOUR_ROUNDS[T.round].toLowerCase()} of the ${tourName()}. Next: ${shortName(G.world.f[next])}.`)}
+function tourNextOffer(){const T=G.tour;if(!T||!T.alive||T.div!==B().div)return null;const m=T.rounds[T.round]?.find(x=>(x.a==='P'||x.b==='P')&&!x.w);if(!m)return null;
+  const opp=m.a==='P'?m.b:m.a;if(!G.world.f[opp]?.active){m.w='P';tourResolveRound(T);return tourNextOffer()}return tourBoutOffer(opp,T.round)}
+function tourHTML(){const T=G.tour;if(!T||(!T.alive&&G.week-T.week>60))return '';
+  const nm=id=>id==='P'?'<b class="goldt">You</b>':esc(G.world.f[id]?shortName(G.world.f[id]):'—');
+  const col=(R,i)=>`<div class="col" style="gap:6px;flex:1;min-width:0"><span class="lbl">${TOUR_ROUNDS[i]}</span>${R.map(m=>`<div class="card flat" style="padding:6px 8px;font-size:12.5px;line-height:1.35">${[m.a,m.b].map(id=>`<div style="${m.w&&m.w!==id?'opacity:.45;text-decoration:line-through':''}">${nm(id)}</div>`).join('')}</div>`).join('')}</div>`;
+  return `<div class="card col"><div class="row sp"><h3>${tourName()}</h3><span class="pill ${T.winner==='P'?'gold':T.alive?'blue':''}">${T.winner==='P'?'Champion':T.alive?TOUR_ROUNDS[T.round]:T.done?'Finished':'Eliminated'}</span></div>
+    <div class="row" style="gap:8px;align-items:flex-start">${T.rounds.map(col).join('')}</div>${T.done&&T.winner!=='P'?`<p class="muted" style="font-size:13px;margin:0">Won by ${nm(T.winner)}.</p>`:''}</div>`}
 /* ================= story chapters (homages to boxing history) ================= */
 function champsIn(d){return BODIES.map(x=>G.world.champs[d][x.k]).filter(id=>id&&id!=='P').map(id=>G.world.f[id]).filter(Boolean)}
 const CHAPTERS=[
@@ -4357,7 +4411,7 @@ SCR.home=()=>{
   const prof=isWide()?'':`<div class="card col">${profileHTML()}</div>`;
   const pts=[];if(b.statPts)pts.push(`<button class="btn gold sm" data-go="boxer">${b.statPts} stat point${b.statPts>1?'s':''} to spend</button>`);if(b.skillPts&&SKILLS.some(s=>canBuySkill(s)))pts.push(`<button class="btn gold sm" data-go="skills">${b.skillPts} skill point${b.skillPts>1?'s':''}</button>`);
   ensureGoals();const goals=(G.goals||[]).length?`<div class="card"><h3>Goals</h3><div class="col" style="gap:6px;margin-top:6px">${G.goals.map(g=>{const d=GOALS.find(x=>x.id===g.id);return d?`<div class="row sp"><span>${esc(d.t)}</span><span class="pill gold">+${d.xp} XP</span></div>`:''}).join('')}</div></div>`:'';
-  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
+  return shell('home','Home',`${prof}${G.show&&!G.show.seen?showHTML(false):''}${pts.length?`<div class="row">${pts.join('')}</div>`:''}${hero}${goals}${tourHTML()}<div class="grid2">${path}${rivalC}</div><div class="card"><div class="row sp"><h3>Boxing wire</h3><button class="btn ghost sm" data-go="news">All news</button></div>${nw}</div>${isWide()?'':navHTML('home')}`);
 };
 function pathHTML(){
   const b=B();
@@ -5096,6 +5150,7 @@ const TROPHIES=[
   {id:'rival',name:'Settled',desc:'Beat your rival three times.',fight:()=>(G.rival?.w||0)>=3},
   {id:'chapters',name:'Storyteller',desc:'Complete three story chapters in one career.',fight:()=>G.chapters.length>=3},
   {id:'p4p',name:'Pound-for-Pound King',desc:'Be ranked the best fighter in the world, pound for pound.',fight:()=>p4pRank()===1},
+  {id:'tour',name:'Super Series',desc:'Win a World Super Series tournament.',fight:()=>(B().tourWins||0)>0},
   {id:'women',name:'Trailblazer',desc:"Win a world title in women's boxing.",fight:()=>isW()&&B().titleWins>0},
   {id:'men',name:'Lineal',desc:"Win a world title in men's boxing.",fight:()=>!isW()&&B().titleWins>0},
   {id:'hof',name:'Canastota',desc:'Retire as a Hall of Famer.',retire:L=>L.score>=300},

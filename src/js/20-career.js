@@ -329,7 +329,10 @@ function mkOffer(f,type,label,desc,extra={}){
 }
 function genOffers(){
   const b=B(),d=b.div,me=b.pts,mom=momentum(),pr=G.promoter?PROMOTERS[G.promoter.id]:null,rank=playerRank()||99;
+  // in a tournament, your next bracket fight is the only offer
+  if(G.tour&&G.tour.alive){const t=tourNextOffer();if(t){G.offers=[t];return G.offers}}
   const used=new Set(),offers=[];
+  {const inv=tourInvite();if(inv){offers.push(inv);used.add(inv.oppId)}}
   const last=G.history.filter(h=>h.pro).slice(-1)[0];
   if(last)used.add(last.oppId);
   const rv=rivalF();
@@ -384,6 +387,7 @@ function genOffers(){
 function acceptOffer(o){
   G.next={offer:o,weeksLeft:o.weeks,sessions:[],fatigue:0,scout:0,cutWork:0,gameplan:0,keys:keyDrills(G.world.f[o.oppId]).map(k=>k[0]),edge:{}};
   G.offers=[];
+  if(o.tourField)tourStart(o);
   if(o.chapter)G.flags['ch_'+o.chapter+'_off']=true;
   const f=G.world.f[o.oppId];
   news(`Signed: ${fullName(B())} vs ${fullName(f)}, ${o.rounds} rounds${o.venue?' at the '+o.venue:''}.`);
@@ -671,6 +675,7 @@ function applyResult(o,res){
   if(f.rival){G.rival.met++;G.rival.lastMet=G.week;if(win)G.rival.w++;else if(loss)G.rival.l++}
   if(pro&&G.phase==='pro')rivalTick(f,res,o);
   if(pro)b.peakOvr=Math.max(b.peakOvr||0,playerOvr());
+  if(pro&&o.tour!=null)tourAfter(o,win,out);
   if(pro&&loss&&!beltsOf('P',b.div).length){const n=titleLock();out.lines.push(n?`Back of the line: win ${n} more before title shots come back.`:'The judges robbed you, and everyone knows it. Your place in line is safe.')}
   if(pro&&G.phase==='pro'){const pr=p4pRank(),best=G.flags.p4pBest||99;if(pr&&pr<best){G.flags.p4pBest=pr;if(pr===1)news(`The boxing writers name you the best fighter in the world, pound for pound.`,'gold');else if(best>10)news(`You enter the pound-for-pound top 10 at #${pr}.`,'gold');out.lines.push(`Pound for pound: #${pr} in the world`)}}
   if(win&&f.legend&&!b.legendsBeaten.includes(f.legend)){b.legendsBeaten.push(f.legend);out.lines.push(`Beat a legend: ${fullName(f)}`);out.legendUnlock=f.legend;news(`You beat ${fullName(f)}. Their signature move, ${AB[LEGEND_BY[f.legend].ab].name}, is now learnable in Skills.`,'gold')}
@@ -777,7 +782,7 @@ function legacy(){
     ['Pro wins',r.w*2],['Knockouts',r.ko],['Losses',-r.l*3],
     ['World titles won',b.titleWins*25],['Title defenses',b.defenses*10],['Undisputed reigns',b.undisputed*60],
     ['Multi-division champion',Math.max(0,b.titleDivs.length-1)*40],['Legends beaten',b.legendsBeaten.length*15],
-    ['Story chapters',G.chapters.length*20],['Rivalry wins',rivalryWins()*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
+    ['Story chapters',G.chapters.length*20],['Super Series wins',(b.tourWins||0)*35],['Rivalry wins',rivalryWins()*8],['Regional title',b.regional!=null||G.history.some(h=>h.title==='Continental'&&h.res==='W')?5:0],
     ['Amateur gold',(G.flags.am_gold_0?5:0)+(G.flags.am_gold_1?10:0)],
   ];
   const aw=b.awards||[];parts.push(['Fighter of the Year',aw.filter(x=>x==='foy').length*20],['Knockout of the Year',aw.filter(x=>x==='koy').length*10],['Upset of the Year',aw.filter(x=>x==='uoy').length*8]);
