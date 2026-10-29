@@ -1113,8 +1113,8 @@ function genOffers(){
     const bl=beltsOf(rv.id,d);
     offers.push(mkOffer(rv,bl.length?'world':'grudge',G.rival.met?'Grudge Rematch':'Grudge Match',`${shortName(rv)}. Years of trash talk end in the ring.`,bl.length?{title:{belts:bl},grudge:true}:{grudge:true}));
   }
-  if(last&&(last.res==='L'||last.robbery)&&G.world.f[last.oppId]?.active&&G.world.f[last.oppId].div===d&&!last.rematched){
-    const f=G.world.f[last.oppId];offers.push(mkOffer(f,'rematch','Rematch',last.robbery?'Everyone saw the robbery. The commission ordered an immediate rematch.':'Your rematch clause kicks in. Get it back.',{rematchOf:last.id}));
+  if(last&&(last.res==='L'||last.robbery)&&(last.robbery||last.rematchClause||last.rmRoll!==false)&&G.world.f[last.oppId]?.active&&G.world.f[last.oppId].div===d&&!last.rematched){
+    const f=G.world.f[last.oppId];offers.push(mkOffer(f,'rematch','Rematch',last.robbery?'Everyone saw the robbery. The commission ordered an immediate rematch.':last.rematchClause?'Your rematch clause kicks in. Get it back.':'They agreed to run it back. Get it back.',{rematchOf:last.id}));
   }
   G.offers=offers.filter(Boolean).slice(0,6);
   return G.offers;
@@ -1318,7 +1318,8 @@ function yearTick(){
 /* ---------- fight setup & results ---------- */
 function oppCombat(f,o={}){
   const L=f.legend?LEGEND_BY[f.legend]:null;
-  const st=statsFromRating(f.rating+(o.spar?-6:0),f.arch);
+  // stat spread is seeded by the fighter and their rating, so the tale of the tape is stable across screens and doesn't draw on the career RNG
+  const st=RNG.with(new Rng(hashStr(f.id+'|'+Math.round(f.rating)+(o.spar?'s':''))),()=>statsFromRating(f.rating+(o.spar?-6:0),f.arch));
   if(L?.ai?.chinBonus)st.chin=Math.min(99,st.chin+L.ai.chinBonus);
   const ai=deep(ARCH[f.arch].ai);if(L?.ai)Object.assign(ai,deep(L.ai));
   const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
@@ -1416,7 +1417,7 @@ function applyResult(o,res){
   if(o.rematchOf){const h=G.history.find(x=>x.id===o.rematchOf);if(h)h.rematched=true}
   // history
   const h={id:'h'+uid(),w:G.week,oppId:f.id,opp:fullName(f),oppRec:recStr(f),oppRating:Math.round(f.rating),res:win?'W':loss?'L':'D',method:res.method,round:res.round,time:res.time,level:b.level,ovr:playerOvr(),ptsAfter:b.pts,age:ageOf(b.born),sim:!!o.sim,
-    title:o.title?(o.title.regional?'Continental':o.title.belts.join('/')):'',type:o.type,label:o.label,purse:o.purse,pro,robbery:res.robbery,cards:res.cards,div:b.div,chapter:o.chapter||null};
+    title:o.title?(o.title.regional?'Continental':o.title.belts.join('/')):'',type:o.type,label:o.label,purse:o.purse,pro,robbery:res.robbery,rematchClause:o.terms==='rematch',rmRoll:loss?chance(.45):null,terms:o.terms||null,cards:res.cards,div:b.div,chapter:o.chapter||null};
   G.history.push(h);out.hist=h;
   // chapters
   if(o.chapter){const ch=CHAPTERS.find(c=>c.id===o.chapter);if(ch&&ch.done){const t=ch.done(win,res,o);if(t)out.lines.push(t)}}
@@ -4442,12 +4443,45 @@ SCR.fightnight=()=>{
       ${wi&&wi.diff!==0?`<p style="text-align:center" class="${wi.tone==='bad'?'bad':'warnt'}">${esc(wi.label)}: ${esc(wi.note)}</p>`:''}
       ${b.injuries.length?`<p style="text-align:center" class="bad">Fighting hurt: ${b.injuries.map(i=>INJ[i.id].name).join(', ')}</p>`:''}
     </div>
-    ${pressHTML(n,f,o)}
+    ${pressHTML(n,f,o)}${weighinHTML(n,f,o)}
     <button class="btn primary wide" data-act="walk" style="min-height:60px;font-size:20px">Walk to the ring</button>
     ${o.amateur||o.title||o.chapter?'':`<button class="btn ghost" data-act="simfight">Simulate fight (60% XP)</button>`}
   </div></div>`;
 };
 /* press conference: the opponent talks, you answer, and the answer changes the fight */
+/* ---------- contract talks: big fights let you trade money for protection ---------- */
+const BIG_FIGHT=['world','unify','grudge','chapter','rematch'];
+const TERMS={
+  standard:{name:'Standard terms',fx:o=>`${money(o.purse)}. No extras.`},
+  purse:{name:'Bigger purse split',fx:o=>`${money(Math.round(o.purse*1.25))} (+25%). No rematch if you lose.`},
+  rematch:{name:'Rematch clause',fx:o=>`${money(Math.round(o.purse*.92))}. Lose and the rematch is guaranteed.`},
+  home:{name:'Fight at home',fx:o=>`${money(Math.round(o.purse*.9))} in front of your own crowd: no robbery risk and +3 hype.`},
+};
+function negotiateModal(o,done){const f=G.world.f[o.oppId],lev=beltsOf('P',B().div).length||B().hype>=60;
+  const keys=['standard','purse','rematch','home'].filter(k=>k!=='home'||lev||o.type==='grudge');
+  const m=modal(`<div class="kicker">Contract talks</div><h2 class="sec">${esc(o.label)} vs ${esc(shortName(f))}</h2><p class="muted" style="font-size:13.5px">Your team can push for one thing. ${lev?'You have leverage: the home fight is on the table.':'Win a belt or build your hype to 60 and you can demand a home fight.'}</p>
+    <div class="col" style="gap:6px">${keys.map(k=>`<button class="arch" data-t="${k}"><b>${TERMS[k].name}</b><small>${esc(TERMS[k].fx(o))}</small></button>`).join('')}</div><button class="btn ghost" data-close="x">Back to offers</button>`);
+  m.addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(!b)return;const k=b.dataset.t;o.terms=k;
+    if(k==='purse')o.purse=Math.round(o.purse*1.25);if(k==='rematch')o.purse=Math.round(o.purse*.92);if(k==='home'){o.purse=Math.round(o.purse*.9);B().hype=Math.min(100,B().hype+3);o.venue=`Home crowd · ${B().home||'your hometown'}`}
+    m.remove();done()})}
+/* ---------- weigh-in: how you make weight, and the face-off ---------- */
+const CUTS={
+  hard:{name:'Dry out hard',fx:'Sauna and no water the last day. Almost no chance of missing weight, but you fight drained: -8% stamina, -3 chin.',miss:.3},
+  steady:{name:'Steady cut',fx:'Follow the nutritionist\'s plan. The normal risk of missing weight, no side effects.',miss:1},
+  heavy:{name:'Come in heavy',fx:'Cut as little as possible and rehydrate big: +4% power, but a much bigger chance of missing weight.',miss:1.7},
+};
+const FACEOFF={
+  stare:{name:'Stare them down',fx:'You start the fight fired up with one special bar charged. They come out a little more aggressive.'},
+  loose:{name:'Stay loose',fx:'Smile, shake hands, save energy: +4% stamina on fight night. The bad blood cools a little.'},
+  shove:{name:'Shove them',fx:'Hype +5 and one special bar charged, but they come out much angrier, the bad blood boils, and the commission may fine you.'},
+};
+function weighinHTML(n,f,o){
+  if(o.amateur||!G||G.phase!=='pro')return '';const wi=weightInfo(),cut=wi&&wi.miss>0;
+  const done=n.faceoff&&(!cut||n.cut);
+  if(done)return `<div class="card flat"><span class="lbl">Weigh-in</span><p style="margin:6px 0 2px">${cut?`<b>${esc(CUTS[n.cut].name)}.</b> ${esc(CUTS[n.cut].fx)} `:''}<b>${esc(FACEOFF[n.faceoff].name)}.</b> ${esc(FACEOFF[n.faceoff].fx)}</p></div>`;
+  return `<div class="card col"><span class="lbl">Weigh-in</span>${cut&&!n.cut?`<p class="muted" style="margin:4px 0">You are cutting down to ${DIVS[B().div].name} (${divLb(B().div)} lb). Base chance of missing weight: ${Math.round(wi.miss*100)}%.</p>
+    <div class="col" style="gap:6px">${Object.entries(CUTS).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="cut" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)} Chance to miss: ${Math.round(Math.min(.95,wi.miss*c.miss)*100)}%.</small></button>`).join('')}</div>`
+    :`<p class="muted" style="margin:4px 0">${cut?esc(CUTS[n.cut].name)+'. ':'You make weight easily. '}Now the face-off with ${esc(f.last)}.</p><div class="col" style="gap:6px">${Object.entries(FACEOFF).map(([k,c])=>`<button class="arch" data-act="weighin" data-k="faceoff" data-v="${k}"><b>${esc(c.name)}</b><small>${esc(c.fx)}</small></button>`).join('')}</div>`}</div>`}
 const PRESS={
   trash:{name:'Talk trash',fx:'Hype sells tickets: +8% purse. They come out angry: more aggressive and harder-hitting, but they take more risks.'},
   respect:{name:'Show respect',fx:'The judges and the crowd warm to you: fairer scoring, and stare-downs don\'t rattle you.'},
@@ -4482,13 +4516,18 @@ function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
   if(!sim&&!resume&&G.fightSave&&G.fightSave.offerId===o.id)resume=G.fightSave;
   o.foughtHurt=B().injuries.length>0;
-  if(!resume&&wi&&wi.miss&&chance(wi.miss)&&!o.amateur){o.missedWeight=true;news('You missed weight at the weigh-in. 20% of your purse goes to your opponent.','red');toast('Missed weight! 20% purse fine')}
+  const cutK=n.cut&&CUTS[n.cut]?CUTS[n.cut]:CUTS.steady;
+  if(!resume&&wi&&wi.miss&&chance(Math.min(.95,wi.miss*cutK.miss))&&!o.amateur){o.missedWeight=true;news('You missed weight at the weigh-in. 20% of your purse goes to your opponent.','red');toast('Missed weight! 20% purse fine')}
   if(sim){afterFight(o,simFight(o));return}
   const pc=playerCombat();if(o.missedWeight)pc.stats.sta=Math.round(pc.stats.sta*.9);
+  if(n.cut==='hard'){pc.stats.sta=Math.round(pc.stats.sta*.92);pc.stats.chin=Math.max(15,pc.stats.chin-3)}
+  if(n.cut==='heavy')pc.stats.pow=Math.min(99,Math.round(pc.stats.pow*1.04));
+  if(n.faceoff==='loose')pc.stats.sta=Math.min(99,Math.round(pc.stats.sta*1.04));
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))pc.cutProne=1;
   const oc=oppCombat(f);
+  if(n.faceoff==='stare')oc.ai.agg=Math.min(1,(oc.ai.agg||.5)*1.08);if(n.faceoff==='shove')oc.ai.agg=Math.min(1,(oc.ai.agg||.5)*1.18);
   const pr=G.promoter?PROMOTERS[G.promoter.id]:null;
-  const rob=(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
+  const rob=o.terms==='home'?0:(o.title&&!o.title.defense&&!o.title.regional?.25:0)+(G.flags.persona==='villain'?.2:0)+(pr&&pr.shady>.3&&chance(.3)?.25:0);
   Sfx.init();
   const fight=new Fight({p:pc,o:oc,rounds:o.rounds,roundLen:Settings.roundLen,diff:G.diff,amateur:!!o.amateur,mods:o.mods||{},scout:n.scout,corner:TRAINERS[G.trainer].corner,trainerName:TRAINERS[G.trainer].name,
     edge:Object.keys(n.edge||{}).length,press:n.press||null,cutman:G.staff.cutman,longCount:!!(o.title&&!o.title.regional&&!G.chapters.includes('longcount')),robbery:rob,tutorial:G.history.length===0,
@@ -4496,6 +4535,7 @@ function startFight(sim,resume){
     onCheckpoint:cp=>{G.fightSave=Object.assign(cp,{offerId:o.id});Save.write()},
     onEnd:res=>afterFight(o,res)});
   if(o.foughtHurt&&B().injuries.some(i=>i.id==='cut'))fight.p.cutProne=2;
+  if(!resume&&(n.faceoff==='stare'||n.faceoff==='shove'))fight.p.meter=Math.max(fight.p.meter,100);
   fight.mount();window.__fight=fight;
 }
 function afterFight(o,res){
@@ -4798,7 +4838,8 @@ const ACT={
   nationals(){startAmateur(1);G.am.done=false;G.next=null;Save.write();UI.render()},
   turnpro(){turnPro();G.next=null;Save.write();UI.render();promotersModal()},
   promoters(){promotersModal()},
-  accept(el){const o=G.offers[+el.dataset.i];if(!o)return;acceptOffer(o);Save.write();Sfx.good();UI.go('camp');setTimeout(()=>checkEvent(),200)},
+  accept(el){const o=G.offers[+el.dataset.i];if(!o)return;const go=()=>{acceptOffer(o);Save.write();Sfx.good();UI.go('camp');setTimeout(()=>checkEvent(),200)};
+    if(BIG_FIGHT.includes(o.type)&&!o.amateur)negotiateModal(o,go);else go()},
   showseen(){if(G.show)G.show.seen=true;UI.go('news')},
   wait(){advanceWeeks(2);G.offers=[];genOffers();Save.write();UI.render();toast('Two weeks pass. New offers are in.');checkEvent()},
   restheal(){const w=Math.max(...B().injuries.map(i=>i.wk));advanceWeeks(w);G.offers=[];genOffers();Save.write();UI.render();toast(`${w} weeks of rest. You're healthy.`)},
@@ -4810,6 +4851,13 @@ const ACT={
     Save.write();UI.render();
     modal(`<h2 class="sec">Camp complete</h2><p class="rec">+${xp} XP</p><p style="font-size:13.5px">${lines.map(esc).join(' · ')||'Steady work.'}</p>${ups?`<p class="goldt">Level up! Now level ${B().level}.</p>`:''}<button class="btn primary" data-close="ok">Continue</button>`,{onClose:()=>UI.render()});
   },
+  weighin(el){const n=G.next;if(!n)return;const k=el.dataset.k,v=el.dataset.v,f=G.world.f[n.offer.oppId];
+    if(k==='cut'&&!n.cut)n.cut=v;
+    if(k==='faceoff'&&!n.faceoff){n.faceoff=v;
+      if(v==='loose')addHeat(f.id,-4);
+      if(v==='stare')addHeat(f.id,3);
+      if(v==='shove'){B().hype=Math.min(100,B().hype+5);addHeat(f.id,10);if(chance(.3)){const fine=Math.round(n.offer.purse*.05);B().money-=fine;news(`The commission fines you ${money(fine)} for shoving ${f.last} at the weigh-in.`,'red')}else news(`You shove ${f.last} at the weigh-in. Security separates you. The fight just got bigger.`,'gold')}}
+    Save.write();Sfx.click();UI.render()},
   press(el){const n=G.next;if(!n||n.press)return;const k=el.dataset.k;n.press=k;const f=G.world.f[n.offer.oppId];
     if(k==='trash'){n.offer.purse=Math.round(n.offer.purse*1.08);news(`Press conference: you went at ${f.last} hard. Ticket sales jumped.`)}
     else if(k==='respect')news(`Press conference: you praised ${f.last}. Fans and media liked it.`);else news(`Press conference: you kept it short and went back to the film room.`);

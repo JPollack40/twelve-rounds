@@ -1,5 +1,5 @@
 {
- "when": "2026-10-29T00:07:40.482Z",
+ "when": "2026-10-29T00:14:58.203Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -144,15 +144,15 @@
     0.05,
     0.6
    ],
-   "winRate": 0.4,
+   "winRate": 0.6,
    "n": 5,
-   "kos": 2,
+   "kos": 3,
    "koed": 0,
    "ok": true,
-   "avgLanded": 142.2,
+   "avgLanded": 137.2,
    "avgAcc": 0.57,
-   "avgOppAcc": 0.41,
-   "results": "p:KOR4 o:DECR6 o:DECR6 o:DECR6 p:KOR2"
+   "avgOppAcc": 0.36,
+   "results": "o:DECR6 p:KOR5 p:TKOR3 o:DECR6 p:KOR3"
   },
   {
    "id": "human_legend_hollis",
@@ -161,15 +161,15 @@
     0.3,
     1
    ],
-   "winRate": 1,
+   "winRate": 0.6,
    "n": 5,
-   "kos": 5,
+   "kos": 2,
    "koed": 0,
    "ok": true,
-   "avgLanded": 163.6,
-   "avgAcc": 0.58,
-   "avgOppAcc": 0.68,
-   "results": "p:KOR6 p:KOR5 p:KOR6 p:KOR4 p:KOR3"
+   "avgLanded": 175.2,
+   "avgAcc": 0.51,
+   "avgOppAcc": 0.54,
+   "results": "o:DECR6 p:KOR6 o:DECR6 p:KOR6 p:DECR6"
   },
   {
    "id": "daily_40_days",
@@ -178,7 +178,7 @@
     0.2,
     0.9
    ],
-   "winRate": 0.725,
+   "winRate": 0.875,
    "n": 40,
    "kos": 0,
    "koed": 0,
@@ -186,37 +186,37 @@
    "avgLanded": 0,
    "avgAcc": 0,
    "avgOppAcc": 0,
-   "results": "496 1431 463 2327 1408 1990 2414 1470 2598 1293 2502 2472 1456 2017 2386 356 2132 722 1296 2402 577 1880 2505 2350 531 1413 392 389 1788 632 1978 2376 2092 1329 1895 459 1996 561 1956 2297"
+   "results": "2344 1567 641 2425 1280 2319 2316 1487 2476 1240 536 2142 2064 2426 2249 328 2323 2554 1431 2234 2054 2226 2284 1983 2236 1564 578 1572 1803 525 2268 2569 2232 1668 2076 1581 2115 2412 2397 2314"
   }
  ],
  "careers": {
   "n": 500,
   "retireAgeMed": 37,
-  "winsMed": 46,
+  "winsMed": 45,
   "lossesMed": 22,
   "titlesMed": 2,
-  "titlesAvg": 2.01,
+  "titlesAvg": 2.03,
   "champShare": 0.99,
   "undisputedShare": 0.04,
   "multiDivShare": 0,
-  "legendsAvg": 1.27,
-  "chaptersAvg": 0.96,
-  "moneyMed": 48060456,
+  "legendsAvg": 1.29,
+  "chaptersAvg": 0.94,
+  "moneyMed": 45905118,
   "womenN": 166,
   "womenChampShare": 1,
   "womenLegendsAvg": 1.11,
   "crossCircuitLegends": 0,
-  "hofMed": 396,
+  "hofMed": 390,
   "tiers": {
-   "Champion": 97,
-   "Hall of Famer": 264,
-   "All-Time Great": 120,
-   "The Greatest of All Time": 5,
-   "Contender": 11,
-   "Journeyman": 3
+   "Hall of Famer": 258,
+   "All-Time Great": 121,
+   "Champion": 108,
+   "Contender": 9,
+   "The Greatest of All Time": 2,
+   "Journeyman": 2
   },
-  "forcedRetireShare": 0.01,
-  "dmgMed": 70
+  "forcedRetireShare": 0,
+  "dmgMed": 69
  },
  "errors": [],
  "careerChecks": [
@@ -240,7 +240,7 @@
   },
   {
    "k": "forcedRetireShare",
-   "v": 0.01,
+   "v": 0,
    "band": [
     0,
     0.4
@@ -249,7 +249,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 0.96,
+   "v": 0.94,
    "band": [
     0.3,
     5
@@ -258,7 +258,7 @@
   },
   {
    "k": "legendsAvg",
-   "v": 1.27,
+   "v": 1.29,
    "band": [
     0.2,
     6

@@ -86,3 +86,12 @@ up to two ranked contenders just above you, so you can choose whom to climb past
 After a loss, title shots and champion callouts wait until you win again (`titleLock`: robbery 0, split/majority 1, clear decision 2,
 stoppage 3). A pound-for-pound top 10 spans all divisions (`p4pList`). Every four weeks of a pro career a studio show
 (`src/js/22-show.js`) recaps headlines, risers in your division, P4P movement and a host's take on you; it uses no RNG.
+
+## Contract talks and the weigh-in
+Accepting a big fight (world, unification, grudge, chapter, rematch) opens contract talks: standard terms, a 25% bigger purse, a
+rematch clause (8% less; a loss guarantees the rematch), or, with a belt or 60+ hype, a home fight (10% less, no robbery risk, +3 hype).
+Without a clause a rematch after a loss comes 45% of the time (always after a robbery). Fight night adds a weigh-in: when cutting
+weight, choose dry out hard (miss chance x0.3, -8% stamina, -3 chin), steady, or come in heavy (x1.7, +4% power); then the face-off:
+stare down (one special bar charged; they are a little more aggressive), stay loose (+4% stamina, bad blood cools), or shove (hype +5,
+a bar charged, much angrier opponent, bad blood boils, 30% chance of a 5% fine). Opponent stat spreads are now seeded per fighter, so
+the tale of the tape no longer changes between screens.

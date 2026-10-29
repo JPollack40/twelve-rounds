@@ -360,8 +360,8 @@ function genOffers(){
     const bl=beltsOf(rv.id,d);
     offers.push(mkOffer(rv,bl.length?'world':'grudge',G.rival.met?'Grudge Rematch':'Grudge Match',`${shortName(rv)}. Years of trash talk end in the ring.`,bl.length?{title:{belts:bl},grudge:true}:{grudge:true}));
   }
-  if(last&&(last.res==='L'||last.robbery)&&G.world.f[last.oppId]?.active&&G.world.f[last.oppId].div===d&&!last.rematched){
-    const f=G.world.f[last.oppId];offers.push(mkOffer(f,'rematch','Rematch',last.robbery?'Everyone saw the robbery. The commission ordered an immediate rematch.':'Your rematch clause kicks in. Get it back.',{rematchOf:last.id}));
+  if(last&&(last.res==='L'||last.robbery)&&(last.robbery||last.rematchClause||last.rmRoll!==false)&&G.world.f[last.oppId]?.active&&G.world.f[last.oppId].div===d&&!last.rematched){
+    const f=G.world.f[last.oppId];offers.push(mkOffer(f,'rematch','Rematch',last.robbery?'Everyone saw the robbery. The commission ordered an immediate rematch.':last.rematchClause?'Your rematch clause kicks in. Get it back.':'They agreed to run it back. Get it back.',{rematchOf:last.id}));
   }
   G.offers=offers.filter(Boolean).slice(0,6);
   return G.offers;
@@ -565,7 +565,8 @@ function yearTick(){
 /* ---------- fight setup & results ---------- */
 function oppCombat(f,o={}){
   const L=f.legend?LEGEND_BY[f.legend]:null;
-  const st=statsFromRating(f.rating+(o.spar?-6:0),f.arch);
+  // stat spread is seeded by the fighter and their rating, so the tale of the tape is stable across screens and doesn't draw on the career RNG
+  const st=RNG.with(new Rng(hashStr(f.id+'|'+Math.round(f.rating)+(o.spar?'s':''))),()=>statsFromRating(f.rating+(o.spar?-6:0),f.arch));
   if(L?.ai?.chinBonus)st.chin=Math.min(99,st.chin+L.ai.chinBonus);
   const ai=deep(ARCH[f.arch].ai);if(L?.ai)Object.assign(ai,deep(L.ai));
   const Q=!L&&f.quirk?QUIRKS[f.quirk]:null;if(Q){Object.assign(ai,deep(Q.ai));if(Q.weak)ai.weak=Q.weak}
@@ -663,7 +664,7 @@ function applyResult(o,res){
   if(o.rematchOf){const h=G.history.find(x=>x.id===o.rematchOf);if(h)h.rematched=true}
   // history
   const h={id:'h'+uid(),w:G.week,oppId:f.id,opp:fullName(f),oppRec:recStr(f),oppRating:Math.round(f.rating),res:win?'W':loss?'L':'D',method:res.method,round:res.round,time:res.time,level:b.level,ovr:playerOvr(),ptsAfter:b.pts,age:ageOf(b.born),sim:!!o.sim,
-    title:o.title?(o.title.regional?'Continental':o.title.belts.join('/')):'',type:o.type,label:o.label,purse:o.purse,pro,robbery:res.robbery,cards:res.cards,div:b.div,chapter:o.chapter||null};
+    title:o.title?(o.title.regional?'Continental':o.title.belts.join('/')):'',type:o.type,label:o.label,purse:o.purse,pro,robbery:res.robbery,rematchClause:o.terms==='rematch',rmRoll:loss?chance(.45):null,terms:o.terms||null,cards:res.cards,div:b.div,chapter:o.chapter||null};
   G.history.push(h);out.hist=h;
   // chapters
   if(o.chapter){const ch=CHAPTERS.find(c=>c.id===o.chapter);if(ch&&ch.done){const t=ch.done(win,res,o);if(t)out.lines.push(t)}}
