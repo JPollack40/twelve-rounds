@@ -193,7 +193,7 @@ const LEGEND_VIS={
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
-const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
+const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe',entrance:'Ring entrance'};
 const GEAR=[
   {id:'g_std',slot:'gloves',name:'Standard 10 oz',desc:'Reliable sparring-weight gloves.',price:0},
   {id:'g_pillow',slot:'gloves',name:'Pillow 12 oz',desc:'Extra foam: your guard absorbs more, your punches carry less.',price:2500,unlock:{level:3},fx:{def:3,pow:-2},look:{gloveTape:'#f4efe3'}},
@@ -227,6 +227,14 @@ const GEAR=[
   {id:'r_hood',slot:'robe',name:"Heavy hooded robe",desc:'Terry cloth, hood pulled low. +2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood',hoodLow:true}},
   {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
+  // ring entrances: how your fighter walks out (motion-captured; with the sculpted fighters on)
+  {id:'e_walk',slot:'entrance',name:'Straight to business',desc:'Head down, walk to the ring.',price:0,look:{entrance:'walk'}},
+  {id:'e_shadow',slot:'entrance',name:'Shadowboxing',desc:'Jabs and crosses at the air on the way in.',price:3000,unlock:{level:3},look:{entrance:'shadow'}},
+  {id:'e_taunt',slot:'entrance',name:'Trash talk',desc:'Taunting the crowd and the other corner. +1 hype for every win.',price:8000,unlock:{wins:5},hype:1,look:{entrance:'taunt'}},
+  {id:'e_thump',slot:'entrance',name:'Chest thump',desc:'Beat your chest at the crowd. +1 hype for every win.',price:15000,unlock:{level:7},hype:1,look:{entrance:'thump'}},
+  {id:'e_snake',slot:'entrance',name:'Dance in: hip hop',desc:'Dance all the way to the ring. +1 hype for every win.',price:25000,unlock:{wins:10},hype:1,look:{entrance:'snake'}},
+  {id:'e_lock',slot:'entrance',name:'Dance in: locking',desc:'A full locking routine on the way in. +1 hype for every win.',price:25000,unlock:{wins:10},hype:1,look:{entrance:'lock'}},
+  {id:'e_thriller',slot:'entrance',name:'Thriller',desc:'The whole arena knows the moves. +2 hype for every win.',price:60000,unlock:{wins:20},hype:2,look:{entrance:'thriller'}},
 ];
 const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
 /* sponsors: pay a share of each purse (half on a loss) and put their name on your waistband for a set number of fights */

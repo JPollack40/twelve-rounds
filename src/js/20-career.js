@@ -119,7 +119,9 @@ function weightInfo(div){
   return r;
 }
 /* ---------- gear ---------- */
-function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none'},seen:[]};return b.gear}
+function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none',entrance:'e_walk'},seen:[]};
+  // careers from before ring entrances get the free one
+  if(!b.gear.eq.entrance){b.gear.eq.entrance='e_walk';if(!b.gear.owned.includes('e_walk'))b.gear.owned.push('e_walk')}return b.gear}
 function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
   if(u.level&&b.level<u.level)return {ok:false,why:`Reach level ${u.level}`};
   if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};

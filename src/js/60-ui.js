@@ -457,7 +457,7 @@ function walkout(o,f){const A={lines:announceLines(o,f)};
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
     A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260});
-    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
+    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,seed:hashStr(String(f.id)),opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
   return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
@@ -908,7 +908,7 @@ AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=
   const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
   el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
-AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el)r3stage(el,playerLook(),{clip:['fightingIdle','taunt'],height:b.height,arch:b.arch})}})();
+AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 
 /* the weigh-in face-off: you and your opponent square up, live where the sculpted fighters allow, otherwise as portraits */
 AFTER.fightnight=()=>{const P=$('#wiP'),O=$('#wiO');if(!P||!O||!G||!G.next)return;const b=B(),f=G.world.f[G.next.offer.oppId];if(!f)return;

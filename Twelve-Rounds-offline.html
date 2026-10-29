@@ -643,7 +643,7 @@ const LEGEND_VIS={
   hollis:{bt:'athletic',hair:'curly',expr:'cocky',trim:'#161616',robe:'satin',robeCol:'#f4efe3',robeTrim:'#d9a93a',shape:{jaw:1.1,chin:1.05,nose:.95,cheek:1.05,brow:1.15}},
 };
 /* gear: cosmetic kit, some with trade-off stat effects. unlock = condition shown in the Locker, price in dollars */
-const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe'};
+const GEAR_SLOTS={gloves:'Gloves',trunks:'Trunks',shoes:'Shoes',mg:'Mouthguard',wraps:'Hand wraps',robe:'Walkout robe',entrance:'Ring entrance'};
 const GEAR=[
   {id:'g_std',slot:'gloves',name:'Standard 10 oz',desc:'Reliable sparring-weight gloves.',price:0},
   {id:'g_pillow',slot:'gloves',name:'Pillow 12 oz',desc:'Extra foam: your guard absorbs more, your punches carry less.',price:2500,unlock:{level:3},fx:{def:3,pow:-2},look:{gloveTape:'#f4efe3'}},
@@ -677,6 +677,14 @@ const GEAR=[
   {id:'r_hood',slot:'robe',name:"Heavy hooded robe",desc:'Terry cloth, hood pulled low. +2 hype for every win.',price:30000,unlock:{level:10},hype:2,look:{robe:'hood',hoodLow:true}},
   {id:'r_gold',slot:'robe',name:"Champion's robe",desc:'+3 hype for every win.',price:150000,unlock:{title:1},hype:3,look:{robe:'gold'}},
   {id:'r_amateur',slot:'robe',name:'Golden Gloves jacket',desc:'Earned with amateur gold. +1 hype for every win.',price:0,unlock:{amgold:1},hype:1,look:{robe:'satin'}},
+  // ring entrances: how your fighter walks out (motion-captured; with the sculpted fighters on)
+  {id:'e_walk',slot:'entrance',name:'Straight to business',desc:'Head down, walk to the ring.',price:0,look:{entrance:'walk'}},
+  {id:'e_shadow',slot:'entrance',name:'Shadowboxing',desc:'Jabs and crosses at the air on the way in.',price:3000,unlock:{level:3},look:{entrance:'shadow'}},
+  {id:'e_taunt',slot:'entrance',name:'Trash talk',desc:'Taunting the crowd and the other corner. +1 hype for every win.',price:8000,unlock:{wins:5},hype:1,look:{entrance:'taunt'}},
+  {id:'e_thump',slot:'entrance',name:'Chest thump',desc:'Beat your chest at the crowd. +1 hype for every win.',price:15000,unlock:{level:7},hype:1,look:{entrance:'thump'}},
+  {id:'e_snake',slot:'entrance',name:'Dance in: hip hop',desc:'Dance all the way to the ring. +1 hype for every win.',price:25000,unlock:{wins:10},hype:1,look:{entrance:'snake'}},
+  {id:'e_lock',slot:'entrance',name:'Dance in: locking',desc:'A full locking routine on the way in. +1 hype for every win.',price:25000,unlock:{wins:10},hype:1,look:{entrance:'lock'}},
+  {id:'e_thriller',slot:'entrance',name:'Thriller',desc:'The whole arena knows the moves. +2 hype for every win.',price:60000,unlock:{wins:20},hype:2,look:{entrance:'thriller'}},
 ];
 const GEAR_BY=Object.fromEntries(GEAR.map(g=>[g.id,g]));
 /* sponsors: pay a share of each purse (half on a loss) and put their name on your waistband for a set number of fights */
@@ -879,7 +887,9 @@ function weightInfo(div){
   return r;
 }
 /* ---------- gear ---------- */
-function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none'},seen:[]};return b.gear}
+function gearState(){const b=B();if(!b.gear)b.gear={owned:GEAR.filter(g=>!g.price&&!g.unlock).map(g=>g.id),eq:{gloves:'g_std',trunks:'t_std',shoes:'s_std',mg:'m_std',wraps:'w_std',robe:'r_none',entrance:'e_walk'},seen:[]};
+  // careers from before ring entrances get the free one
+  if(!b.gear.eq.entrance){b.gear.eq.entrance='e_walk';if(!b.gear.owned.includes('e_walk'))b.gear.owned.push('e_walk')}return b.gear}
 function gearUnlock(g){const b=B(),u=g.unlock;if(!u)return {ok:true};
   if(u.level&&b.level<u.level)return {ok:false,why:`Reach level ${u.level}`};
   if(u.wins&&b.record.w<u.wins)return {ok:false,why:`Win ${u.wins} pro fights`};
@@ -3486,21 +3496,35 @@ const PUNCH={
 };
 /* ringside commentary lines: {P} you, {O} the opponent, {T} the punch. p = priority (bigger moments override smaller ones) */
 const CALLS={
-  big:{p:1,l:['Big {T} from {P}!','{P} lands a thudding {T}.','That {T} snapped {O}\'s head back!','Oh, what a shot by {P}!','{P} connects with the {T}!']},
-  body:{p:1,l:['{P} digs one downstairs.','To the body! {O} felt that one.','{P} going to the ribs.','A thudding shot to the midsection by {P}.']},
-  counter:{p:2,l:['Beautiful counter by {P}!','{O} pays for the miss!','Slip and rip: {P} makes {O} pay.','Perfectly timed by {P}!']},
-  perfect:{p:1,l:['{P} makes {O} miss by an inch.','Slick defense from {P}.','Nothing but air!','{O} can\'t find the target.']},
-  ohit:{p:1,l:['{O} catches {P} clean!','Big {T} from {O}!','{P} has to be careful here.','{O} lands the {T}!']},
-  hurt:{p:2,l:['{O} is hurt!','{O} is in trouble!','The legs are going on {O}!','{O} is wobbled!']},
-  phurt:{p:2,l:['{P} is hurt!','{P} needs to hold on!','{P} is in trouble!']},
-  kd:{p:3,l:['DOWN GOES {O}!','{O} is down!','What a punch! {O} hits the canvas!']},
-  pkd:{p:3,l:['{P} is down!','{P} goes down hard!','{O} drops {P}!']},
-  orise:{p:3,l:['{O} beats the count!','{O} is up, but are the legs there?']},
-  prise:{p:3,l:['{P} is up! Can {P} survive the round?','{P} beats the count!']},
-  foul:{p:3,l:['That was illegal! The referee steps in and warns {O}.','{O} fights dirty, and the referee has seen it.']},
-  ded:{p:3,l:['The referee takes a point from {O}!','{O} has been warned. That\'s a point gone.']},
+  big:{p:1,l:['Big {T} from {P}!','{P} lands a thudding {T}.','That {T} snapped {O}\'s head back!','Oh, what a shot by {P}!','{P} connects with the {T}!','{P} puts everything into that {T}.','Right on the button with the {T}!','{O} ate that {T} flush.','A crunching {T} from {P}.','{P} lets the {T} go, and it lands!','The crowd felt that {T}!','{O} won\'t want many more of those.']},
+  body:{p:1,l:['{P} digs one downstairs.','To the body! {O} felt that one.','{P} going to the ribs.','A thudding shot to the midsection by {P}.','{P} invests in the body.','That one sank in under the elbow.','{O} folds a little on that body shot.','Kill the body and the head will follow.','Right on the liver!','{P} is chopping down the tree.']},
+  counter:{p:2,l:['Beautiful counter by {P}!','{O} pays for the miss!','Slip and rip: {P} makes {O} pay.','Perfectly timed by {P}!','{P} was waiting for that!','Make them miss, make them pay!','{O} walked right into that one.','What timing from {P}!','{P} reads it and fires back!']},
+  perfect:{p:1,l:['{P} makes {O} miss by an inch.','Slick defense from {P}.','Nothing but air!','{O} can\'t find the target.','{P} slips it beautifully.','Hit and don\'t get hit: {P} is doing just that.','{O} is swinging at shadows.','Gone! {P} isn\'t there anymore.']},
+  ohit:{p:1,l:['{O} catches {P} clean!','Big {T} from {O}!','{P} has to be careful here.','{O} lands the {T}!','{P} walked onto that {T}.','That {T} from {O} got through.','{O} finds a home for the {T}.','{P} needs to keep those hands up.']},
+  hurt:{p:2,l:['{O} is hurt!','{O} is in trouble!','The legs are going on {O}!','{O} is wobbled!','{O} is holding on for dear life!','{O} doesn\'t know where {P} is!','{P} has {O} in all sorts of trouble!','Can {O} survive this?']},
+  phurt:{p:2,l:['{P} is hurt!','{P} needs to hold on!','{P} is in trouble!','{P} is on unsteady legs!','{P} has to clinch or get out of there!','{O} smells blood!']},
+  kd:{p:3,l:['DOWN GOES {O}!','{O} is down!','What a punch! {O} hits the canvas!','{O} is on the canvas!','Timber! {O} goes down!','{P} drops {O}!']},
+  pkd:{p:3,l:['{P} is down!','{P} goes down hard!','{O} drops {P}!','{P} hits the canvas!','{P} never saw it coming!']},
+  orise:{p:3,l:['{O} beats the count!','{O} is up, but are the legs there?','{O} makes it to their feet!','{O} is up, and {P} will be looking to finish.']},
+  prise:{p:3,l:['{P} is up! Can {P} survive the round?','{P} beats the count!','{P} is up! What heart!','{P} gets up, but there is a long way to go.']},
+  foul:{p:3,l:['That was illegal! The referee steps in and warns {O}.','{O} fights dirty, and the referee has seen it.','The referee has had enough of that from {O}.']},
+  ded:{p:3,l:['The referee takes a point from {O}!','{O} has been warned. That\'s a point gone.','Another foul, another point off {O}\'s card.']},
   dq:{p:3,l:['That\'s it! {O} is disqualified!']},
-  clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.']},
+  clock:{p:1,l:['Ten seconds left in the round.','Ten seconds! Time for a big finish.','Ten seconds to go: steal the round!','Final ten seconds of the round.']},
+  // the story of the fight: called at the start of a round and when the fight turns
+  rwin:{p:2,l:['{P} took that last round.','{P} is building a lead on the cards.','A good round for {P}.','{P} is getting into a rhythm.']},
+  rlose:{p:2,l:['{O} had the better of that last round.','{P} needs to win this round back.','{O} is edging ahead on the cards.','That round belonged to {O}.']},
+  rstreak:{p:2,l:['{P} has won the last two rounds. Momentum is building!','{P} is taking over this fight.','{O} needs to change something, fast.']},
+  rslide:{p:2,l:['{O} has won the last two rounds. {P} needs a spark.','{P} is slipping behind.','{P}\'s corner will be shouting for more.']},
+  champ:{p:2,l:['The championship rounds. This is where champions are made.','Into the championship rounds!','Deep water now: who has more left?']},
+  needko:{p:3,l:['Final round, and {P} is behind on the cards. {P} needs a knockout!','{P} needs something big in this last round!','It might take a knockout for {P} now.']},
+  close:{p:2,l:['Final round, and this is close!','It all comes down to this last round.','Three minutes to decide it.']},
+  gassed:{p:2,l:['{O} is running on empty!','Look at {O}\'s hands dropping. They\'re exhausted.','{O} is breathing hard.','The body work is paying off. {O} is tiring!']},
+  eye:{p:2,l:['{O}\'s eye is swelling shut!','That eye is closing on {O}.','{O} can\'t see those shots coming anymore.']},
+  ocut:{p:2,l:['{O} is cut!','Blood! {O} has been opened up.','A cut on {O}. The ringside doctor will be watching.']},
+  pcut:{p:2,l:['{P} has been cut!','{P} is bleeding.','A cut for {P}. The corner will have work to do.']},
+  combo:{p:1,l:['What a combination from {P}!','{P} puts it all together!','Punches in bunches from {P}!','{P} lets the hands go!']},
+  whiff:{p:1,l:['{P} is missing a lot of shots.','{P} is loading up and missing.','{O} is making {P} look ordinary.','{P} needs to set it up first.']},
 };
 /* game plans: chosen on fight night, judged each round from your own numbers. On plan = +6% damage on the plan's punches next round */
 const PLANS={
@@ -3759,7 +3783,8 @@ class Fight{
   }
   resolve(a,d,pu){
     const P=PUNCH[pu.type],o=pu.opts||{},side=this.screenSide(a,pu.type);
-    const rec=(r,dm,fl)=>{this.log({ev:'res',who:a.side,type:pu.type,body:!!pu.body,r,dm:dm?+dm.toFixed(2):0,fl:fl||null,ds:d.state});return r};
+    const rec=(r,dm,fl)=>{this.log({ev:'res',who:a.side,type:pu.type,body:!!pu.body,r,dm:dm?+dm.toFixed(2):0,fl:fl||null,ds:d.state});
+      if(a.side==='p'&&r==='miss'&&(a.missRun=(a.missRun||0)+1)===5){a.missRun=0;this.call('whiff')}return r};
     if(d.state==='down'||this.phase!=='fight')return rec('miss');
     if(d.state==='clinch')return rec('block');
     if(d.side==='p'&&this.cheats.god)return rec('block');
@@ -3858,7 +3883,8 @@ class Fight{
     if(flags.counter){this.text('COUNTER!','#ffd34d',pos.x,pos.y-30,.9,26);Sfx.roar(.12,1)}
     else if(flags.into)this.text(d.side==='p'?'SLIPPED INTO IT':'CAUGHT','#ff8a7a',pos.x,pos.y-30,.8,18);
     else if(flags.hay)this.text('HAYMAKER!','#ff7a2a',pos.x,pos.y-30,.9,26);
-    if(a.combo>=3&&a.side==='p')this.text(`${a.combo} HIT COMBO`,'#f0be48',200,36,.7,18);
+    if(a.combo>=3&&a.side==='p')this.text(`${a.combo} HIT COMBO`,'#f0be48',200,36,.7,18);if(a.combo===4&&a.side==='p')this.call('combo');
+    if(a.side==='p'){a.missRun=0;if(d.side==='o'&&!this.eyeCalled&&Math.max(d.dmg.swellL,d.dmg.swellR)>.8){this.eyeCalled=1;this.call('eye')}}
     const armor=d.side==='o'&&(d.state==='wind'||d.state==='act')&&d.pu&&(d.pu.opts.quick||(pu.type==='jab'&&d.pu.type!=='jab'))&&!o.stun&&!flags.hay;
     if(armor){if(d.pu.opts.quick)this.text('TRADE','#ffb347',pos.x,pos.y-55,.5,14)}
     else if(d.state==='wind'||d.state==='act'){d.pu=null;d.seq=[];this.setState(d,'stagger',.45)}
@@ -3879,7 +3905,7 @@ class Fight{
     }
     if(!pu.body&&dm>2.6&&!this.cfg.amateur){
       if(d.cut>0)d.cut=Math.min(130,d.cut+dm*.9);
-      else if(chance(.03*(1+(d.cutProne||0)))){d.cut=15;this.text('CUT!','#ff3b3b',pos.x,pos.y+20,1,22);this.log({ev:'cut',who:d.side})}
+      else if(chance(.03*(1+(d.cutProne||0)))){d.cut=15;this.text('CUT!','#ff3b3b',pos.x,pos.y+20,1,22);this.log({ev:'cut',who:d.side});this.call(d.side==='o'?'ocut':'pcut')}
     }
     d.unans.push(this.time);d.unans=d.unans.filter(t=>this.time-t<3);
     if(d.hp<=0){if(this.bmax(d,'noKD')){d.hp=1}else{this.knockdown(d,a);return}}
@@ -4049,7 +4075,7 @@ class Fight{
     if(this.cfg.onCheckpoint)try{this.cfg.onCheckpoint(this.checkpoint())}catch(e){}
     this.phase='intro';this.phaseT=0;
     const r=this.round,last=r===this.cfg.rounds;
-    this.ov.className='fov';
+    this.ov.className='fov';if(r>1&&!this.cfg.headless)setTimeout(()=>{if(this.round===r&&!this.ended)this.storyCall()},1300);
     const hint=(this.round===1&&Settings.hints&&(this.cfg.tutorial||this.cfg.practice))?`<div class="card" style="max-width:420px;text-align:left;font-size:14px;pointer-events:none"><b class="ui" style="text-transform:uppercase;letter-spacing:.06em">How to fight</b><br>Watch the <b style="color:var(--gold)">symbol over their glove</b> and listen for the wind-up. Dot or down-arrow: duck or slip. Curl: slip <b>away</b> from that side. Up-arrow uppercut: never duck it. Punch when they miss or wind up. Their guard blocks head shots when high, so go to the <b>body</b>.</div>`:'';
     this.ov.innerHTML=`<div class="bigtxt">${this.cfg.rounds===1?'SPARRING':last&&r>1?'FINAL ROUND':'ROUND '+r}</div>${this.introNote&&r===1?`<div class="pill red">${esc(this.introNote)}</div>`:''}${hint}`;
     Sfx.bell(1);
@@ -4120,11 +4146,18 @@ class Fight{
     setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},(clip?1700:2600)+cel);
   }
   /* broadcast captions: rate-limited, a bigger moment overrides a smaller one; cosmetic only (Math.random, never the fight RNG) */
+  /* a round-opening line from the scorecards (cosmetic only) */
+  storyCall(){const rc=this.roundCards,n=rc.length,R=this.cfg.rounds,r=this.round;if(!n)return;
+    const won=k=>{const c=rc[k];let p=0,o=0;for(const [a,b] of c){p+=a;o+=b}return p>o?1:o>p?-1:0},tot=this.cards.reduce((s,c)=>s+(c[0]>c[1]?1:c[1]>c[0]?-1:0),0);
+    if(r===R&&R>2){this.call(tot<0?'needko':'close');return}
+    if(R>=10&&r===R-2){this.call('champ');return}
+    const a=won(n-1),b=n>1?won(n-2):0;this.call(a>0&&b>0?'rstreak':a<0&&b<0?'rslide':a>0?'rwin':a<0?'rlose':'clock')}
   call(kind,x={}){
     const L=CALLS[kind];if(!L||this.cfg.headless||Settings.commentary===false||!this.stage||this.replaying)return;
     const now=performance.now()/1000;if(now<(this.ccUntil||0)&&L.p<=(this.ccPri||0))return;if(now-(this.ccLast||-9)<1.8&&L.p<2)return;
     const P=this.p.last&&this.p.last!=='You'?this.p.last:null,O=this.o.last||'Your opponent';
-    const t=L.l[Math.floor(Math.random()*L.l.length)].replace(/\{P\}/g,(m,i)=>P||(i?'the challenger':'The challenger')).replace(/\{O\}/g,O).replace(/\{T\}/g,x.t&&PUNCH[x.t]?PUNCH[x.t].name.toLowerCase():'shot');
+    const bag=(this.ccBag=this.ccBag||{})[kind]=this.ccBag[kind]&&this.ccBag[kind].length?this.ccBag[kind]:L.l.map((_,i)=>i).sort(()=>Math.random()-.5);
+    const t=L.l[bag.pop()].replace(/\{P\}/g,(m,i)=>P||(i?'the challenger':'The challenger')).replace(/\{O\}/g,O).replace(/\{T\}/g,x.t&&PUNCH[x.t]?PUNCH[x.t].name.toLowerCase():'shot');
     let el=this.ccEl;if(!el){el=this.ccEl=document.createElement('div');el.className='cc';el.setAttribute('aria-live','polite');this.stage.appendChild(el)}
     el.textContent=t;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');this.ccLast=now;this.ccPri=L.p;this.ccUntil=now+2.2;
   }
@@ -4266,7 +4299,7 @@ class Fight{
     if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg;
       // sculpted fighters walk to the ring in their robes (the still stays for anyone who cannot)
       for(const [img,side] of [[o,r.oLive],[p,r.pLive]]){if(!img||!side)continue;const host=document.createElement('div');host.style.cssText=img.style.cssText+';overflow:hidden';
-        if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:'walking',robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3},side.opt))}}},80);
+        if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:r3entrance(side.look,side.seed||0),robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3},side.opt))}}},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
@@ -4340,6 +4373,7 @@ class Fight{
     }
     this.clock-=dt;
     if(this.clock<=10&&this.clock+dt>10){Sfx.tick();this.call('clock')}
+    if(this.o.sta<this.o.maxSta*.25&&this.gasRound!==this.round&&this.phase==='fight'){this.gasRound=this.round;this.call('gassed')}
     if(this.clock<=0){this.clock=0;return this.endRound()}
     this.tickC(this.p,dt);this.tickC(this.o,dt);
     if(this.phase!=='fight')return;
@@ -5274,7 +5308,7 @@ function walkout(o,f){const A={lines:announceLines(o,f)};
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
     A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260});
-    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
+    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,seed:hashStr(String(f.id)),opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
   return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();
@@ -5725,7 +5759,7 @@ AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=
   const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
   el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
-AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el)r3stage(el,playerLook(),{clip:['fightingIdle','taunt'],height:b.height,arch:b.arch})}})();
+AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 
 /* the weigh-in face-off: you and your opponent square up, live where the sculpted fighters allow, otherwise as portraits */
 AFTER.fightnight=()=>{const P=$('#wiP'),O=$('#wiO');if(!P||!O||!G||!G.next)return;const b=B(),f=G.world.f[G.next.offer.oppId];if(!f)return;
@@ -6328,6 +6362,10 @@ function r3stage(host,look,opt={}){
     r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
     const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
+/* ring entrance clips by style; opponents without one get a fitting choice from their personality */
+const R3_ENTRANCE={walk:['walking'],shadow:['walking','leadJab','crossPunch','walking','hook'],taunt:['walking','taunt','walking','taunt1'],thump:['walking','standingTauntChestThump'],
+  snake:['snakeHipHopDance'],lock:['lockingHipHopDance'],thriller:['thrillerPart2']};
+function r3entrance(look,seed){const e=look&&look.entrance||(look&&look.expr==='cocky'?['thump','taunt'][seed%2]:['walk','walk','shadow'][seed%3]);return R3_ENTRANCE[e]||R3_ENTRANCE.walk}
 /* ================= saves (local + cloud) & boot ================= */
 const Save={
   mem:{},cloud:null,cloudSlots:{},lsOK:true,timer:null,

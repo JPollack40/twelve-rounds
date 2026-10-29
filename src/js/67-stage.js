@@ -28,3 +28,7 @@ function r3stage(host,look,opt={}){
     r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
     const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
+/* ring entrance clips by style; opponents without one get a fitting choice from their personality */
+const R3_ENTRANCE={walk:['walking'],shadow:['walking','leadJab','crossPunch','walking','hook'],taunt:['walking','taunt','walking','taunt1'],thump:['walking','standingTauntChestThump'],
+  snake:['snakeHipHopDance'],lock:['lockingHipHopDance'],thriller:['thrillerPart2']};
+function r3entrance(look,seed){const e=look&&look.entrance||(look&&look.expr==='cocky'?['thump','taunt'][seed%2]:['walk','walk','shadow'][seed%3]);return R3_ENTRANCE[e]||R3_ENTRANCE.walk}
