@@ -1,5 +1,5 @@
 {
- "when": "2026-10-29T13:10:39.411Z",
+ "when": "2026-10-29T13:34:57.916Z",
  "fights": [
   {
    "id": "human_eq_champ",
@@ -200,20 +200,19 @@
   "undisputedShare": 0.1,
   "multiDivShare": 0,
   "legendsAvg": 1.32,
-  "chaptersAvg": 1,
-  "moneyMed": 45437920,
+  "chaptersAvg": 0.99,
+  "moneyMed": 45550938,
   "womenN": 166,
   "womenChampShare": 0.99,
   "womenLegendsAvg": 1.13,
   "crossCircuitLegends": 0,
-  "hofMed": 401,
+  "hofMed": 390,
   "tiers": {
-   "Hall of Famer": 245,
-   "All-Time Great": 124,
-   "Champion": 109,
-   "Contender": 11,
-   "Journeyman": 1,
-   "The Greatest of All Time": 10
+   "Champion": 112,
+   "Hall of Famer": 253,
+   "All-Time Great": 115,
+   "The Greatest of All Time": 11,
+   "Contender": 9
   },
   "forcedRetireShare": 0,
   "dmgMed": 71
@@ -249,7 +248,7 @@
   },
   {
    "k": "chaptersAvg",
-   "v": 1,
+   "v": 0.99,
    "band": [
     0.3,
     5
@@ -302,5 +301,5 @@
    "ok": true
   }
  ],
- "seconds": 206
+ "seconds": 215
 }

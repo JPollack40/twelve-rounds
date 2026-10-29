@@ -33,7 +33,8 @@ SCR.anims=()=>{
       <div class="row" style="gap:8px;align-items:center"><button class="btn sm gold" data-act="anplay" id="anpb">${A.play?'❚❚ Pause':'▶ Play'}</button>
         <input type="range" id="anscr" min="0" max="1000" value="0" style="flex:1"><span id="ant" class="muted" style="font-size:12px;min-width:64px;text-align:right"></span></div>
       <div class="chips" style="flex-wrap:wrap">${[[.25,'¼×'],[.5,'½×'],[1,'1×']].map(([v,l])=>chip('anspeed',v,A.speed===v,l)).join('')}
-        ${chip('anmir',1,A.mir,'Mirrored')}${chip('anfight',1,A.fight,'As in a fight')}${chip('anfem',0,!A.fem,"Men's")}${chip('anfem',1,A.fem,"Women's")}</div>
+        ${chip('anmir',1,A.mir,'Mirrored')}${chip('anfight',1,A.fight,'As in a fight')}${chip('anfem',0,!A.fem&&!A.dun,"Men's")}${chip('anfem',1,A.fem&&!A.dun,"Women's")}${R3M.ok('duncan')?chip('anfem',2,A.dun,'Duncan V.'):''}</div>
+      ${A.dun?'<div class="muted" style="font-size:12.5px">Duncan takes each clip on his own rig: his body leans and twists on the spring, his head turns, and his gloves go where a boxer\'s hands would be. Knockdowns keep his spring topple.</div>':''}
       <div class="muted" style="font-size:12.5px">"As in a fight" shows the clip the way fights use it: turned toward you, hips raised a little with the feet planted, and punches keeping the stance's legs. Off shows the raw capture.</div></div>`
       :`<div class="card">The animations are still loading. Open this again in a moment.</div>`}
     <div class="row sp" style="margin-top:6px"><span class="muted" style="font-size:13px">${Object.values(off).filter(Boolean).length} of ${Object.keys(R3MC.clips).length} switched off</span><button class="btn sm" data-act="mcall">Turn all on</button></div>
@@ -43,7 +44,7 @@ AFTER.anims=()=>{const cv=$('#ancv');if(!cv)return;const A=UI.an;
   const sc=new THREE.Scene();sc.background=new THREE.Color(0xe9e4d8);sc.environment=r3env();r3lights(sc,{});
   const floor=new THREE.Mesh(new THREE.CircleGeometry(2.2,48),new THREE.MeshBasicMaterial({color:0xd6cfbf}));floor.rotation.x=-Math.PI/2;sc.add(floor);
   const cam=new THREE.PerspectiveCamera(32,.8,.05,40);
-  const look={skin:3,hair:A.fem?'braids':'short',hc:0,fem:A.fem?1:undefined,trunks:'#2f6fe2',trim:'#f0be48',gloves:'#d8392f'};
+  const look=A.dun?Object.assign({skin:2,hair:'bald'},LEGEND_VIS.duncan):{skin:3,hair:A.fem?'braids':'short',hc:0,fem:A.fem?1:undefined,trunks:'#2f6fe2',trim:'#f0be48',gloves:'#d8392f'};
   const bx=r3boxer(r3look(look,{}),{texSize:1024});sc.add(bx);let rot=-.35,drag=null;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX;cv.setPointerCapture(e.pointerId)});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
   cv.addEventListener('pointerup',()=>drag=null);cv.addEventListener('pointercancel',()=>drag=null);
@@ -56,7 +57,8 @@ AFTER.anims=()=>{const cv=$('#ancv');if(!cv)return;const A=UI.an;
     const ct=Math.min(A.t,C.dur),free=mcFree(A.k),kd=A.k==='knockedDown'||A.k==='gettingUp';
     r3mcPrep(A.k,ct,false,A.mir,A.fight&&!free,A.t,P,T);
     const pk=MC_PUNCH[A.k],hand=pk&&A.fight?(A.mir?(pk.h==='L'?'R':'L'):pk.h):null;
-    r3mcApply(bx,P,{clip:C,root:kd?.45:0,yaw:A.fight?(A.mir?-1:1)*MC_YAW*(kd?.3:free?.4:1):0,keepArm:hand,lift:A.fight&&!kd?.45:0});
+    if(A.dun){if(kd){bx.userData.core.quaternion.identity()}else r3mcApplyDuncan(bx,P,{yaw:(A.mir?-1:1)*MC_DUN_YAW,keepArm:hand});r3duncanTubes(bx)}
+    else r3mcApply(bx,P,{clip:C,root:kd?.45:0,yaw:A.fight?(A.mir?-1:1)*MC_YAW*(kd?.3:free?.4:1):0,keepArm:hand,lift:A.fight&&!kd?.45:0});
     bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
     cam.position.set(Math.sin(.15)*5.4,1.45,Math.cos(.15)*5.4);cam.lookAt(0,1.05,0);r.render(sc,cam);
     if(!scrubbing)scr.value=Math.round(ct/C.dur*1000);tl.textContent=`${ct.toFixed(2)} / ${C.dur.toFixed(2)}s`;
@@ -68,7 +70,7 @@ Object.assign(ACT,{
   anspeed(el){UI.an.speed=+el.dataset.v;$$('[data-act="anspeed"]').forEach(b=>b.classList.toggle('on',b===el))},
   anmir(el){UI.an.mir=!UI.an.mir;el.classList.toggle('on',UI.an.mir)},
   anfight(el){UI.an.fight=!UI.an.fight;el.classList.toggle('on',UI.an.fight)},
-  anfem(el){const f=el.dataset.v==='1';if(UI.an.fem!==f){UI.an.fem=f;UI.render()}},
+  anfem(el){const v=el.dataset.v;UI.an.fem=v==='1';UI.an.dun=v==='2';UI.render()},
   mctog(el){const k=el.dataset.k;Settings.mcOff=Object.assign({},Settings.mcOff);if(Settings.mcOff[k])delete Settings.mcOff[k];else Settings.mcOff[k]=1;saveSettings();
     el.textContent=Settings.mcOff[k]?'Off':'On';el.classList.toggle('gold',!Settings.mcOff[k])},
   mcall(){Settings.mcOff={};saveSettings();UI.render()}});

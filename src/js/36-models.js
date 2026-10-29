@@ -66,6 +66,12 @@ function r3duncanTubes(root){const u=root.userData;root.updateMatrixWorld(true);
 function r3duncanPose(R,P,glow){const f=R.f,o=f.o,root=R.opp,u=root.userData,t=f.time;
   const raw=P._raw||P,lean=raw.lean||0,cr=raw.crouch||0,tw=raw.twist||0,ht=raw.headTilt||0,rot=raw.rot||0,st=o.state,k=o.dur?clamp(o.t/o.dur,0,1):0;
   const closeness=(raw.scale||1)-1;root.position.set((raw.hip?raw.hip[0]:0)*.004,.1,.2+closeness*1.7);
+  // motion capture drives him too (except the knockdown, which keeps its spring topple)
+  if(r3mcOn(u)&&r3mcDrive(R,P)){root.rotation.set(0,0,0);
+    for(const h of ['L','R']){const A=u.arms[h==='L'?1:-1],gw=glow&&glow[h]||0;A.gm.emissive.set(gw>0?(glow.col||'#ffd34d'):'#000000');A.gm.emissiveIntensity=gw*.9}
+    const d=P.dmg||{},wear=clamp(((d.swellL||0)+(d.swellR||0)+(d.cheek||0))*.22+(P.cut||0)/220,0,.55);u.headM.color.setRGB(1-wear*.6,1-wear*.66,1-wear*.7);
+    return r3duncanTubes(root)}
+  u.core.quaternion.identity();u.headG.quaternion.identity();
   let fwd=0;if(st==='wind')fwd=-5*k;else if(st==='act')fwd=14;else if(st==='rec')fwd=14*(1-k);if(st==='stagger')fwd=-14;if(st==='clinch')fwd=12;
   const wob=o.hurt>0&&st!=='down'?Math.sin(t*9)*.08:0;
   u.core.rotation.set(fwd*Math.PI/180*.8,tw*.9,-lean*.5+wob);u.core.scale.set(1+cr*.06,1-cr*.14+Math.sin(t*3.1)*.01,1+cr*.06);

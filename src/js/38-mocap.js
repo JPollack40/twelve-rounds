@@ -87,7 +87,7 @@ function r3mcPrep(k,t,loop,mir,fight,tIdle,out,tmp){const C=R3MC.clips[k];r3mcSa
   if(fight&&(MC_PUNCH[k]||/Block$/.test(k))&&mcOk('fightingIdle')){const I=r3mcSample(R3MC.clips.fightingIdle,tIdle,true,mir,tmp);
     out[1]=out[1]+(I[1]-out[1])*.6;for(let i=33;i<MC_F;i++)out[i]=out[i]+(I[i]-out[i])*.6;r3mcNorm(out)}
   return out}
-function r3mcOn(u){return !!(Settings.mocap&&u&&u.rig&&R3MC.ready)}
+function r3mcOn(u){return !!(Settings.mocap&&u&&(u.rig||u.duncan)&&R3MC.ready)}
 /* ---------- the fight driver: picks a clip for the opponent's state each frame and crossfades between them ---------- */
 const MC_HIT={light:'lightHitToHead',medium:'mediumHitToHead',big:'bigHitToHead',body:'hitToBody',upper:'receivingABigUppercut',face:'receivePunchToTheFace'};
 function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||P;const M=R.mc||(R.mc={cur:null,prev:null,fade:1,react:null,hits:o.hits||0,pose:new Float32Array(MC_F),tmp:new Float32Array(MC_F),tmp2:new Float32Array(MC_F)});
@@ -114,7 +114,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   if(!want)want={k:'fightingIdle',t:t*(o.hurt>0?.8:1),loop:1,key:'idle'};
   // southpaws mirror everything (their lead hand is the right)
   if(south)want.mir=!want.mir;
-  if(!mcOk(want.k)){M.cur=null;return false}       // switched off in the animation studio: the classic posing takes this moment
+  if(!mcOk(want.k)||u.duncan&&(want.key==='kd'||want.key==='up')){M.cur=null;return false}       // switched off in the animation studio: the classic posing takes this moment
   const dt=clamp(t-(M.lastT??t),0,.1)||1/60;M.lastT=t;
   if(!M.cur||M.cur.key!==want.key){M.prevPose=M.prevPose||new Float32Array(MC_F);M.prevPose.set(M.pose);M.fade=M.cur?0:1;
     M.fadeLen=want.key==='kd'||M.cur&&M.cur.key==='kd'?.28:want.key[0]==='p'?.09:want.key[0]==='r'?.12:.22}
@@ -127,6 +127,7 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
   // Mixamo's stance is almost side-on: turn the body toward the camera, but keep the punching arm aimed straight at you. The close,
   // high first-person camera makes a real crouch read as kneeling, so the hips rise part way (feet stay planted by leg IK)
   const yaw=(south?-1:1)*MC_YAW*(want.key==='kd'||want.key==='up'?.3:want.free?.4:1);
+  if(u.duncan){r3mcApplyDuncan(R.opp,M.pose,{yaw:(south?-1:1)*MC_DUN_YAW,keepArm:want.hand,free:want.free});return true}
   r3mcApply(R.opp,M.pose,{clip:R3MC.clips[want.k],root:want.root||0,yaw,keepArm:want.hand,lift:want.key==='kd'||want.key==='up'?0:.45});
   // dodges keep the game's own slip and duck (lean and crouch) on top
   if(st==='dodge'){const lean=raw.lean||0,cr=raw.crouch||0;u.pelvis.position.y-=cr*.32;u.spine.rotateZ(-lean*.55);u.spine.rotateX(cr*.5)}
@@ -135,3 +136,28 @@ function r3mcDrive(R,P){const f=R.f,o=f.o,u=R.opp.userData,t=f.time,raw=P._raw||
 function r3mcCeleb(R){if(R.mcCel&&mcOk(R.mcCel))return R.mcCel;const L=R.oL||{},d=new Date(),hw=d.getMonth()===9&&d.getDate()>=25;const r=(L.hseed||0)%7;
   const pref=[hw?'thrillerPart2':null,r===0?'snakeHipHopDance':r===1?'lockingHipHopDance':null,L.expr==='cocky'?'standingTauntChestThump':null,['victory','victoryIdle1','victoryIdle'][r%3],'victory','victoryIdle1','victoryIdle','thrillerPart2','snakeHipHopDance','lockingHipHopDance'];
   return R.mcCel=pref.find(k=>k&&mcOk(k))||'fightingIdle'}
+/* ---------- Duncan V.: the same clips mapped onto his rig. His core (body on the spring) takes the chest's lean and twist and
+   squashes as the hips dip; his head takes the head's turn; each glove goes where the fighter's hand is, reached from his shoulder
+   anchor along the clip's arm directions, and the conduit arms re-route to follow. His knockdown keeps its spring topple. */
+const MC_DUN_YAW=1.15,MC_DUN_K=.0125,_mde=new THREE.Euler(),MC_DUN_G0=new THREE.Vector3(0,1,.35).normalize();
+function r3mcApplyDuncan(root,P,o={}){const u=root.userData,Y=_mv[7].set(0,1,0);
+  const qa=(i,q)=>q.set(P[3+i*4],P[4+i*4],P[5+i*4],P[6+i*4]);const Ds=qa(1,_mq[1]),Dd=qa(2,_mq[2]);
+  const yq=_mq[5].setFromAxisAngle(Y,o.yaw||0);Ds.premultiply(yq);Dd.premultiply(yq);
+  // the core leans and twists with the chest (a little less: he is bolted down), and the spring takes the hips' dip
+  // he is bolted down: the core follows the chest's lean and twist within limits, so he never turns his back on you
+  const e=_mde.setFromQuaternion(Ds,'YXZ');u.core.quaternion.setFromEuler(_mde.set(clamp(e.x*.7,-.35,.35),clamp(e.y*.6,-.45,.45),clamp(e.z*.7,-.3,.3),'YXZ'));const dip=clamp((R3MC.restY*.93-P[1])/R3MC.restY,-.15,.3);
+  u.core.scale.set(1+dip*.25,1-dip*.5,1+dip*.25);
+  const eh=_mde.setFromQuaternion(_mq[3].copy(Ds).invert().multiply(Dd),'YXZ');u.headG.quaternion.setFromEuler(_mde.set(clamp(eh.x*.7,-.3,.3),clamp(eh.y*.7,-.5,.5),clamp(eh.z*.7,-.3,.3),'YXZ'));
+  root.updateMatrixWorld(true);const toRoot=_mB[0].copy(root.matrixWorld).invert().multiply(u.core.matrixWorld);
+  // where a boxer's hand sits relative to their head (cm, from the clip with typical proportions), carried onto Duncan's head
+  const head=_mv[5].set(0,u.hy0,0).applyMatrix4(toRoot),hc=_mv[4].set(0,26,2).applyQuaternion(Ds);
+  const keep=o.keepArm==='L'?0:o.keepArm==='R'?3:-9;
+  for(const [s,b] of [[1,0],[-1,3]]){const A=u.arms[s];
+    const U=_mv[0].set(P[15+b*3],P[16+b*3],P[17+b*3]),F=_mv[1].set(P[18+b*3],P[19+b*3],P[20+b*3]);
+    if(b!==keep){U.applyAxisAngle(Y,o.yaw||0);F.applyAxisAngle(Y,o.yaw||0)}
+    const hand=_mv[2].set(s*17,0,0).applyQuaternion(Ds).addScaledVector(U,28).addScaledVector(F,27).sub(hc);
+    const T=_mv[3].copy(head).addScaledVector(hand,MC_DUN_K);T.y=Math.max(T.y,.4);T.z=Math.min(T.z,1.15);A.glove.position.copy(T);
+    // the fist faces where the forearm points
+    // the fist faces where the forearm points, but always mostly toward you (never the cuff)
+    // his known-good guard angle, turned by however far the clip's forearm has moved from a guard (forearm up and a little forward)
+    A.glove.quaternion.setFromUnitVectors(MC_DUN_G0,_mv[6].copy(F).add(_mv[4].set(0,0,.6)).normalize()).multiply(_mq[0].setFromEuler(_mde.set(-1.15,s*.15,s*-.1)))}}
