@@ -452,7 +452,7 @@ function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
   if(b.hype>60)L.push('The crowd is on its feet!');
   L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
-function walkout(o,f){const A={lines:announceLines(o,f)};
+function walkout(o,f){const A={lines:announceLines(o,f),title:!!(o.title&&!o.title.regional)};
   if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
@@ -556,13 +556,14 @@ SCR.result=()=>{
   const mny=sum.moneyLines?`<div class="card"><h3>Payday</h3><div class="tblw"><table class="t">${sum.moneyLines.map(l=>`<tr><td>${esc(l[0])}</td><td class="r num ${l[1]<0?'bad':''}">${money(l[1])}</td></tr>`).join('')}<tr><td><b>Net</b></td><td class="r num"><b>${money(sum.money)}</b></td></tr></table></div></div>`:'';
   const notes=coachNotes(res,win);
   const cn=notes.length?`<div class="card"><h3>Coach's notes</h3><ul style="margin:6px 0 0 18px;padding:0">${notes.map(n=>`<li style="margin:4px 0">${esc(n)}</li>`).join('')}</ul></div>`:'';
+  const bp=win&&sum.belt?beltPresentHTML(sum.belt):'';
   const lines=sum.lines.map(l=>`<div class="pill gold" style="white-space:normal">${esc(l)}</div>`).join('');
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="hero"><div class="in" style="align-items:center;text-align:center">
       <div id="rstage" style="width:min(100%,260px);aspect-ratio:3/4;margin:-6px auto 0;display:none"></div>
       <div class="kicker">${esc(o.label)}</div><div class="bigtxt" style="font-size:clamp(44px,13vw,80px);color:${win?'var(--gold)':draw?'var(--canvas)':'var(--bad)'}">${big.toUpperCase()}</div>
       <p class="ui" style="font-size:20px;font-weight:700">${mlong}${['KO','TKO','RTD'].includes(res.method)?` · Round ${res.round}${res.method!=='RTD'?', '+res.time:''}`:''}</p>
-      <p class="muted">vs ${esc(fullName(f))}</p>${res.note?`<p class="muted">${esc(res.note)}</p>`:''}<div class="col" style="gap:6px;align-items:center">${lines}</div></div></div>
+      <p class="muted">vs ${esc(fullName(f))}</p>${res.note?`<p class="muted">${esc(res.note)}</p>`:''}<div class="col" style="gap:6px;align-items:center">${lines}</div></div></div>${bp}
     <div class="grid3">
       <div class="card"><span class="lbl">Experience</span><p class="rec">+${sum.xp} XP</p>${sum.levelUps?`<p class="goldt">Level up! Now level ${b.level}</p>`:''}</div>
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
@@ -903,10 +904,24 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('[data-act]');if(a&&!a.closest('.fight')&&!a.closest('.modal [data-act="sign"]')&&ACT[a.dataset.act]){if(a.hasAttribute('disabled'))return;ACT[a.dataset.act](a)}
 });
 
+/* belt presentation after a world-title win: each belt laid out in its sanctioning body's colours */
+const BELT_HUE={WBF:'#1f7a3a',IBC:'#b3202c',UBO:'#1d3f8f',GBA:'#4a2a7a'};
+function beltSVG(k){const c=BELT_HUE[k]||'#5a2a8a';return `<svg viewBox="0 0 220 80" style="width:min(40vw,170px);height:auto;display:block" role="img" aria-label="${esc(k)} belt">
+  <defs><linearGradient id="bg${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset=".45" stop-color="#e0b04a"/><stop offset="1" stop-color="#8a6418"/></linearGradient></defs>
+  <rect x="2" y="26" width="216" height="28" rx="6" fill="${c}" stroke="#0008" stroke-width="2"/>
+  <rect x="2" y="29" width="216" height="3" fill="url(#bg${k})"/><rect x="2" y="48" width="216" height="3" fill="url(#bg${k})"/>
+  ${[30,190].map(x=>`<ellipse cx="${x}" cy="40" rx="17" ry="15" fill="url(#bg${k})" stroke="#5a3f10" stroke-width="1.5"/><circle cx="${x}" cy="40" r="6" fill="${c}"/>`).join('')}
+  <ellipse cx="110" cy="40" rx="44" ry="37" fill="url(#bg${k})" stroke="#5a3f10" stroke-width="2"/><ellipse cx="110" cy="40" rx="35" ry="28" fill="none" stroke="#7a5714" stroke-width="1.5"/>
+  <circle cx="110" cy="30" r="9" fill="${c}" stroke="#fff6" stroke-width="1"/><text x="110" y="58" text-anchor="middle" font-family="var(--f-ui),sans-serif" font-weight="900" font-size="15" fill="#3a2806" letter-spacing="1">${esc(k)}</text></svg>`}
+function beltPresentHTML(bt){const d=DIVS[bt.div];
+  return `<div class="card col beltp" style="align-items:center;text-align:center;gap:8px"><div class="kicker">${bt.defense?'Still the champion':bt.undisputed?'Undisputed':'The belt presentation'}</div>
+    <div class="row" style="flex-wrap:wrap;justify-content:center;gap:6px">${bt.belts.map((k,i)=>`<div class="bpi" style="animation-delay:${.25+i*.35}s">${beltSVG(k)}</div>`).join('')}</div>
+    <p class="muted" style="margin:0;font-size:13.5px">${bt.defense?`The ${bt.belts.join(' and ')} ${esc(d.name)} ${bt.belts.length>1?'belts go':'belt goes'} back around your waist.`:`The ${bt.belts.join(' and ')} ${bt.belts.length>1?'belts are':'belt is'} strapped around your waist. ${isW()?"Women's ":''}${esc(d.name)} champion of the world.`}</p></div>`}
 /* the results screen: your fighter celebrates a win (a KO gets the big one) or hangs their head after a loss */
 AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=UI.lastResult.res,b=B(),win=res.winner==='p',ko=['KO','TKO','RTD'].includes(res.method);
   const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
-  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
+  const belt=win&&UI.lastResult.sum.belt;
+  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 

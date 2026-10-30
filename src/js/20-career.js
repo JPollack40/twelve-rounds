@@ -650,10 +650,11 @@ function applyResult(o,res){
       if(win){
         const prev=beltsOf('P',d).length;
         o.title.belts.forEach(k=>G.world.champs[d][k]='P');
+        out.belt={belts:o.title.belts.slice(),div:d,defense:!!o.title.defense};
         if(o.title.defense){b.defenses++;out.lines.push('Title defended!')}
         else{b.titleWins++;b.formerChamp=true;if(!b.titleDivs.includes(d))b.titleDivs.push(d);G.flags.tookFrom=f.id;G.flags.tookWeek=G.week;
           out.lines.push(`NEW ${o.title.belts.join(' & ')} ${DIVS[d].name.toUpperCase()} CHAMPION`)}
-        if(beltsOf('P',d).length===4&&prev<4){b.undisputed++;out.lines.push('UNDISPUTED CHAMPION OF THE WORLD');news(`${fullName(b)} is the undisputed ${DIVS[d].name} champion of the world.`,'gold')}
+        if(beltsOf('P',d).length===4&&prev<4){b.undisputed++;out.belt.undisputed=true;out.lines.push('UNDISPUTED CHAMPION OF THE WORLD');news(`${fullName(b)} is the undisputed ${DIVS[d].name} champion of the world.`,'gold')}
         G.flags.lastDefWeek=G.week;
       }else if(loss){
         const lost=beltsOf('P',d);lost.forEach(k=>G.world.champs[d][k]=f.id);

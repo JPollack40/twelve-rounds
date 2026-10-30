@@ -215,6 +215,13 @@ table.t td.r,table.t th.r{text-align:right}
 .annc{position:absolute;inset:0;z-index:8;background:radial-gradient(circle at 50% 40%,rgba(30,24,10,.95),rgba(0,0,0,.98));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
 .annc .al{opacity:0;font-family:var(--f-ui);font-weight:800;font-size:clamp(17px,4.6vw,24px);letter-spacing:.03em;max-width:560px;animation:alIn .5s ease-out forwards}
 .annc .al.k{color:var(--gold);font-size:13px;letter-spacing:.16em;text-transform:uppercase}
+.annc.title{background:radial-gradient(circle at 50% 40%,rgba(40,30,8,.94),rgba(0,0,0,.98));overflow:hidden}
+.annc.title::before,.annc.title::after{content:'';position:absolute;top:-20%;width:46%;height:140%;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(180deg,rgba(255,214,130,.3),rgba(255,214,130,0) 80%);clip-path:polygon(44% 0,56% 0,100% 100%,0 100%);transform-origin:50% 0;animation:beam 5s ease-in-out infinite alternate}
+.annc.title::before{left:2%;--a:-18deg;--b:14deg}.annc.title::after{right:2%;--a:16deg;--b:-12deg;animation-delay:-2.5s;background:linear-gradient(180deg,rgba(140,170,255,.28),rgba(140,170,255,0) 80%)}
+@keyframes beam{from{transform:rotate(var(--a))}to{transform:rotate(var(--b))}}
+.beltp{border-color:var(--gold);background:radial-gradient(circle at 50% 0,rgba(224,176,74,.18),transparent 70%),var(--card,transparent)}
+.bpi{opacity:0;animation:bpIn .7s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes bpIn{from{opacity:0;transform:translateY(14px) scale(.85)}to{opacity:1;transform:none}}
 .annc .skip{position:absolute;bottom:14px;font-size:12px;color:#fff8;letter-spacing:.1em;text-transform:uppercase}
 @keyframes alIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .coachb.on{opacity:1;transform:translate(-50%,0)}
@@ -1418,10 +1425,11 @@ function applyResult(o,res){
       if(win){
         const prev=beltsOf('P',d).length;
         o.title.belts.forEach(k=>G.world.champs[d][k]='P');
+        out.belt={belts:o.title.belts.slice(),div:d,defense:!!o.title.defense};
         if(o.title.defense){b.defenses++;out.lines.push('Title defended!')}
         else{b.titleWins++;b.formerChamp=true;if(!b.titleDivs.includes(d))b.titleDivs.push(d);G.flags.tookFrom=f.id;G.flags.tookWeek=G.week;
           out.lines.push(`NEW ${o.title.belts.join(' & ')} ${DIVS[d].name.toUpperCase()} CHAMPION`)}
-        if(beltsOf('P',d).length===4&&prev<4){b.undisputed++;out.lines.push('UNDISPUTED CHAMPION OF THE WORLD');news(`${fullName(b)} is the undisputed ${DIVS[d].name} champion of the world.`,'gold')}
+        if(beltsOf('P',d).length===4&&prev<4){b.undisputed++;out.belt.undisputed=true;out.lines.push('UNDISPUTED CHAMPION OF THE WORLD');news(`${fullName(b)} is the undisputed ${DIVS[d].name} champion of the world.`,'gold')}
         G.flags.lastDefWeek=G.week;
       }else if(loss){
         const lost=beltsOf('P',d);lost.forEach(k=>G.world.champs[d][k]=f.id);
@@ -4292,14 +4300,14 @@ class Fight{
     Object.assign(this.p,deep(cp.p));Object.assign(this.o,deep(cp.o));this.o.ai=deep(cp.oai);this.time=cp.time||0;this.introNote=cp.round>1?`Resumed at round ${cp.round}`:null;this.resumed=true}
   /* ring announcer: a short, skippable introduction before the opening bell */
   announce(){const A=this.cfg.announce;if(!A||!this.stage)return;this.paused=true;this.announcing=true;
-    const el=document.createElement('div');el.className='annc';
+    const el=document.createElement('div');el.className='annc'+(A.title?' title':'');
     const imgs=A.imgs?`<div class="row" style="gap:10px;justify-content:center;align-items:flex-end"><div class="al" style="animation-delay:${1.15*2}s"><img id="wkO" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#9fb3ff">Blue corner</div></div><div class="al" style="animation-delay:${1.15*3}s"><img id="wkP" alt="" style="width:min(38vw,170px);aspect-ratio:1;border-radius:10px;display:block;background:#0006"><div class="lbl" style="color:#ff8a7a">Red corner</div></div></div>`:'';
     el.innerHTML=A.lines.map((l,i)=>`<div class="al${i===0?' k':''}" style="animation-delay:${i*1.15}s">${esc(l)}</div>`).join('')+imgs+'<div class="skip">Tap to skip</div>';
     this.stage.appendChild(el);Sfx.roar(.18,1.6);if(this.ov)this.ov.style.visibility='hidden';
     if(A.imgs)setTimeout(()=>{if(!this.announcing)return;const r=A.imgs();const o=el.querySelector('#wkO'),p=el.querySelector('#wkP');if(o&&r.oImg)o.src=r.oImg;if(p&&r.pImg)p.src=r.pImg;
       // sculpted fighters walk to the ring in their robes (the still stays for anyone who cannot)
       for(const [img,side] of [[o,r.oLive],[p,r.pLive]]){if(!img||!side)continue;const host=document.createElement('div');host.style.cssText=img.style.cssText+';overflow:hidden';
-        if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:r3entrance(side.look,side.seed||0),robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3},side.opt))}}},80);
+        if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:r3entrance(side.look,side.seed||0),robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3,title:A.title?'walk':null},side.opt))}}},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
@@ -5303,7 +5311,7 @@ function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
   if(b.hype>60)L.push('The crowd is on its feet!');
   L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
-function walkout(o,f){const A={lines:announceLines(o,f)};
+function walkout(o,f){const A={lines:announceLines(o,f),title:!!(o.title&&!o.title.regional)};
   if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
@@ -5407,13 +5415,14 @@ SCR.result=()=>{
   const mny=sum.moneyLines?`<div class="card"><h3>Payday</h3><div class="tblw"><table class="t">${sum.moneyLines.map(l=>`<tr><td>${esc(l[0])}</td><td class="r num ${l[1]<0?'bad':''}">${money(l[1])}</td></tr>`).join('')}<tr><td><b>Net</b></td><td class="r num"><b>${money(sum.money)}</b></td></tr></table></div></div>`:'';
   const notes=coachNotes(res,win);
   const cn=notes.length?`<div class="card"><h3>Coach's notes</h3><ul style="margin:6px 0 0 18px;padding:0">${notes.map(n=>`<li style="margin:4px 0">${esc(n)}</li>`).join('')}</ul></div>`:'';
+  const bp=win&&sum.belt?beltPresentHTML(sum.belt):'';
   const lines=sum.lines.map(l=>`<div class="pill gold" style="white-space:normal">${esc(l)}</div>`).join('');
   return `<div class="scr"><div class="wrap" style="max-width:760px">
     <div class="hero"><div class="in" style="align-items:center;text-align:center">
       <div id="rstage" style="width:min(100%,260px);aspect-ratio:3/4;margin:-6px auto 0;display:none"></div>
       <div class="kicker">${esc(o.label)}</div><div class="bigtxt" style="font-size:clamp(44px,13vw,80px);color:${win?'var(--gold)':draw?'var(--canvas)':'var(--bad)'}">${big.toUpperCase()}</div>
       <p class="ui" style="font-size:20px;font-weight:700">${mlong}${['KO','TKO','RTD'].includes(res.method)?` · Round ${res.round}${res.method!=='RTD'?', '+res.time:''}`:''}</p>
-      <p class="muted">vs ${esc(fullName(f))}</p>${res.note?`<p class="muted">${esc(res.note)}</p>`:''}<div class="col" style="gap:6px;align-items:center">${lines}</div></div></div>
+      <p class="muted">vs ${esc(fullName(f))}</p>${res.note?`<p class="muted">${esc(res.note)}</p>`:''}<div class="col" style="gap:6px;align-items:center">${lines}</div></div></div>${bp}
     <div class="grid3">
       <div class="card"><span class="lbl">Experience</span><p class="rec">+${sum.xp} XP</p>${sum.levelUps?`<p class="goldt">Level up! Now level ${b.level}</p>`:''}</div>
       ${sum.pts!=null?`<div class="card"><span class="lbl">Ranking</span><p class="rec num ${sum.pts>=0?'good':'bad'}">${sum.pts>=0?'+':''}${sum.pts} pts</p>${sum.rank?`<p class="muted">#${sum.rank[0]} → #${sum.rank[1]} ${DIVS[b.div].short}</p>`:''}</div>`:''}
@@ -5754,10 +5763,24 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('[data-act]');if(a&&!a.closest('.fight')&&!a.closest('.modal [data-act="sign"]')&&ACT[a.dataset.act]){if(a.hasAttribute('disabled'))return;ACT[a.dataset.act](a)}
 });
 
+/* belt presentation after a world-title win: each belt laid out in its sanctioning body's colours */
+const BELT_HUE={WBF:'#1f7a3a',IBC:'#b3202c',UBO:'#1d3f8f',GBA:'#4a2a7a'};
+function beltSVG(k){const c=BELT_HUE[k]||'#5a2a8a';return `<svg viewBox="0 0 220 80" style="width:min(40vw,170px);height:auto;display:block" role="img" aria-label="${esc(k)} belt">
+  <defs><linearGradient id="bg${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset=".45" stop-color="#e0b04a"/><stop offset="1" stop-color="#8a6418"/></linearGradient></defs>
+  <rect x="2" y="26" width="216" height="28" rx="6" fill="${c}" stroke="#0008" stroke-width="2"/>
+  <rect x="2" y="29" width="216" height="3" fill="url(#bg${k})"/><rect x="2" y="48" width="216" height="3" fill="url(#bg${k})"/>
+  ${[30,190].map(x=>`<ellipse cx="${x}" cy="40" rx="17" ry="15" fill="url(#bg${k})" stroke="#5a3f10" stroke-width="1.5"/><circle cx="${x}" cy="40" r="6" fill="${c}"/>`).join('')}
+  <ellipse cx="110" cy="40" rx="44" ry="37" fill="url(#bg${k})" stroke="#5a3f10" stroke-width="2"/><ellipse cx="110" cy="40" rx="35" ry="28" fill="none" stroke="#7a5714" stroke-width="1.5"/>
+  <circle cx="110" cy="30" r="9" fill="${c}" stroke="#fff6" stroke-width="1"/><text x="110" y="58" text-anchor="middle" font-family="var(--f-ui),sans-serif" font-weight="900" font-size="15" fill="#3a2806" letter-spacing="1">${esc(k)}</text></svg>`}
+function beltPresentHTML(bt){const d=DIVS[bt.div];
+  return `<div class="card col beltp" style="align-items:center;text-align:center;gap:8px"><div class="kicker">${bt.defense?'Still the champion':bt.undisputed?'Undisputed':'The belt presentation'}</div>
+    <div class="row" style="flex-wrap:wrap;justify-content:center;gap:6px">${bt.belts.map((k,i)=>`<div class="bpi" style="animation-delay:${.25+i*.35}s">${beltSVG(k)}</div>`).join('')}</div>
+    <p class="muted" style="margin:0;font-size:13.5px">${bt.defense?`The ${bt.belts.join(' and ')} ${esc(d.name)} ${bt.belts.length>1?'belts go':'belt goes'} back around your waist.`:`The ${bt.belts.join(' and ')} ${bt.belts.length>1?'belts are':'belt is'} strapped around your waist. ${isW()?"Women's ":''}${esc(d.name)} champion of the world.`}</p></div>`}
 /* the results screen: your fighter celebrates a win (a KO gets the big one) or hangs their head after a loss */
 AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=UI.lastResult.res,b=B(),win=res.winner==='p',ko=['KO','TKO','RTD'].includes(res.method);
   const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
-  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2}))el.style.display='none'};
+  const belt=win&&UI.lastResult.sum.belt;
+  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 
@@ -6347,6 +6370,7 @@ function r3stage(host,look,opt={}){
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
   if(opt.bg)sc.background=new THREE.Color(opt.bg);
+  if(opt.belt)r3belt(bx,L);const fx=opt.title?r3spectacle(sc,opt.title):null;
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
   for(const ev of ['pointerup','pointercancel','pointerleave'])cv.addEventListener(ev,()=>drag=null);
@@ -6359,13 +6383,49 @@ function r3stage(host,look,opt={}){
     if(ct>C.dur&&!hold){prev.set(P);fade=0;ct=0;i=(i+1)%list.length;C=R3MC.clips[list[i]]}
     r3mcSample(C,Math.min(ct,C.dur),!hold&&list.length===1,!!opt.mirror,P);
     if(fade<1){fade=Math.min(1,fade+dt/.35);r3mcBlend(prev,P,fade*fade*(3-2*fade),blend);P.set(blend)}
-    r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
+    if(fx)fx(dt);r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
     const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
 /* ring entrance clips by style; opponents without one get a fitting choice from their personality */
 const R3_ENTRANCE={walk:['walking'],shadow:['walking','leadJab','crossPunch','walking','hook'],taunt:['walking','taunt','walking','taunt1'],thump:['walking','standingTauntChestThump'],
   snake:['snakeHipHopDance'],lock:['lockingHipHopDance'],thriller:['thrillerPart2']};
 function r3entrance(look,seed){const e=look&&look.entrance||(look&&look.expr==='cocky'?['thump','taunt'][seed%2]:['walk','walk','shadow'][seed%3]);return R3_ENTRANCE[e]||R3_ENTRANCE.walk}
+/* the waist of a sculpted model, measured once from the trunk vertices just above the pelvis joint */
+function r3waist(mk){const M=R3M.m[mk];if(M.waist)return M.waist;const X=M.extras,J=X.joints,p=M.geo.attributes.position.array,si=M.geo.attributes.skinIndex.array,sw=M.geo.attributes.skinWeight.array;
+  const tr=['pelvis','spine','hipL','hipR'].map(b=>X.bones.indexOf(b)),y0=J.pelvis[1]+.05;let xm=0,zf=-9,zb=9;
+  for(let v=0;v<p.length/3;v++){if(Math.abs(p[v*3+1]-y0)>.025)continue;let w=0;for(let k=0;k<4;k++)if(tr.includes(si[v*4+k]))w+=sw[v*4+k];if(w<.6)continue;
+    xm=Math.max(xm,Math.abs(p[v*3]));zf=Math.max(zf,p[v*3+2]);zb=Math.min(zb,p[v*3+2])}
+  return M.waist={y:y0-J.pelvis[1],z:(zf+zb)/2-J.pelvis[2],rx:xm,rz:(zf-zb)/2}}
+/* a championship belt buckled round the waist: black strap, gold trim, a big gold centre plate and two side plates */
+function r3belt(bx,L){const u=bx.userData;if(!u.rig)return null;const W=r3waist(u.mk),BT=R3_RIG_BT[L.bt]||R3_RIG_BT.athletic;
+  const rx=W.rx+.022,rz=W.rz+.03+BT.belly*.05,g=new THREE.Group();g.position.set(0,W.y,W.z+BT.belly*.025);
+  const gold=new THREE.MeshStandardMaterial({color:0xe0b04a,metalness:1,roughness:.28}),strap=new THREE.MeshStandardMaterial({color:0x17120e,roughness:.6}),gem=new THREE.MeshStandardMaterial({color:0xb01828,metalness:.4,roughness:.15});
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.085,48,1,true),strap);band.material.side=THREE.DoubleSide;band.scale.set(rx,1,rz);g.add(band);
+  for(const y of [-.043,.043]){const t=new THREE.Mesh(new THREE.TorusGeometry(1,.009,6,64),gold);t.rotation.x=Math.PI/2;t.scale.set(rx,rz,1);t.position.y=y;g.add(t)}
+  const plate=(r,a,dz)=>{const m=new THREE.Group(),d=new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.04,.018,40),gold);d.rotation.x=Math.PI/2;m.add(d);
+    const j=new THREE.Mesh(new THREE.CylinderGeometry(r*.42,r*.42,.012,28),gem);j.rotation.x=Math.PI/2;j.position.z=.012;m.add(j);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(r*.72,.006,6,40),gold);ring.position.z=.012;m.add(ring);
+    m.position.set(Math.sin(a)*rx,0,Math.cos(a)*rz+dz);m.rotation.y=Math.atan2(Math.sin(a)*rz,Math.cos(a)*rx);g.add(m)};
+  plate(.12,0,.012);for(const a of [-.95,.95])plate(.055,a,.006);
+  u.pelvis.add(g);u.belt=g;return g}
+/* big-fight spectacle around a live stage: sweeping coloured beams and pyro bursts either side. Returns a per-frame update. */
+function r3spectacle(sc,kind){const g=new THREE.Group();sc.add(g);let t=0;
+  const beams=[[0xffd27a,-1.4,.0],[0x7aa6ff,1.4,1.7],[0xffffff,0,3.1]].map(([c,x,ph])=>{const m=new THREE.Mesh(new THREE.ConeGeometry(.75,7,24,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.09,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    m.geometry.translate(0,-3.5,0);const piv=new THREE.Group();piv.position.set(x,6.2,-2.4);piv.add(m);g.add(piv);return {piv,ph}});
+  const spot=new THREE.SpotLight(0xffe2a8,60,20,.35,.6,1.5);spot.position.set(0,7,1.5);spot.target.position.set(0,1,0);g.add(spot,spot.target);
+  const flash=new THREE.PointLight(0xff9a40,0,8,1.6);flash.position.set(0,1,-.6);g.add(flash);
+  const N=180,pos=new Float32Array(N*3),col=new Float32Array(N*3),vel=new Float32Array(N*3),life=new Float32Array(N);
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.26,toneMapped:false,map:r3spriteTex(),vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));pts.frustumCulled=false;g.add(pts);
+  let next=.25,side=1,k=0;const gold=kind==='belt';
+  const burst=()=>{for(const x of gold?[-.85,.85]:[side*.85]){for(let n=0;n<45;n++){const i=k++%N;pos[i*3]=x;pos[i*3+1]=.05;pos[i*3+2]=-.7;
+      const a=Math.random()*Math.PI*2,s=Math.random()*.7;vel[i*3]=Math.cos(a)*s;vel[i*3+1]=3.4+Math.random()*1.8;vel[i*3+2]=Math.sin(a)*s;life[i]=1}}side=-side;flash.intensity=Settings.flashes===false?0:14};
+  return dt=>{t+=dt;for(const b of beams){b.piv.rotation.z=Math.sin(t*.7+b.ph)*.42;b.piv.rotation.x=Math.cos(t*.5+b.ph)*.18-.12}
+    spot.intensity=50+Math.sin(t*3)*10;flash.intensity*=Math.pow(.02,dt);
+    if((next-=dt)<=0){burst();next=gold?1.6:2.2}
+    for(let i=0;i<N;i++){if(life[i]<=0){col[i*3]=col[i*3+1]=col[i*3+2]=0;continue}life[i]-=dt*.8;vel[i*3+1]-=6.5*dt;
+      for(let a=0;a<3;a++)pos[i*3+a]+=vel[i*3+a]*dt;const l=Math.max(0,life[i]),h=Math.min(1,l*1.4);col[i*3]=h*2;col[i*3+1]=h*(gold?1.5:1);col[i*3+2]=h*(gold?.6:.35)}
+    geo.attributes.position.needsUpdate=geo.attributes.color.needsUpdate=true}}
 /* ================= saves (local + cloud) & boot ================= */
 const Save={
   mem:{},cloud:null,cloudSlots:{},lsOK:true,timer:null,
