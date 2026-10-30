@@ -452,12 +452,15 @@ function announceLines(o,f){const b=B(),rec=x=>`${x.w}-${x.l}${x.d?'-'+x.d:''}`;
   L.push(`And in the red corner, from ${b.home}, ${rec(b.record)}: ${nm(b)}!`);
   if(b.hype>60)L.push('The crowd is on its feet!');
   L.push("Touch gloves, protect yourselves at all times, and let's have a fight!");return L}
-function walkout(o,f){const A={lines:announceLines(o,f),title:!!(o.title&&!o.title.regional)};
+function walkout(o,f){const A={lines:announceLines(o,f),title:!!(o.title&&!o.title.regional)},b0=B();
+  // for the decision reading: names, and who walks in holding the belts at stake
+  A.names={p:b0.nick?`${b0.first} "${b0.nick}" ${b0.last}`:`${b0.first} ${b0.last}`,o:f.nick?`${f.first} "${f.nick}" ${f.last}`:`${f.first} ${f.last}`};
+  if(A.title){A.belts=o.title.belts.slice();A.champ=o.title.defense?'p':A.belts.some(k=>G.world.champs[b0.div][k]===f.id)?'o':null;A.div=`${isW()?"women's ":''}${DIVS[b0.div].name}`}
   if(R3P.ok())A.imgs=()=>{try{const b=B();const pl=playerLook();if(!pl.robe)pl.robe=null;
     A.pImg=R3P.shot(pl,{mode:'full',robe:!!pl.robe,guard:'down',height:b.height,arch:b.arch,size:260});
     const ol=Object.assign({},fillLook(f));ol.robe=ol.robe||['satin','hood','satin'][hashStr(f.id)%3];if(beltsOf(f.id,f.div).length)ol.robe='gold';
     A.oImg=R3P.shot(ol,{mode:'full',robe:true,guard:'down',height:f.height,arch:f.arch,legend:f.legend,size:260});
-    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch}};A.oLive={look:ol,rot:.5,seed:hashStr(String(f.id)),opt:{height:f.height,arch:f.arch,legend:f.legend}}}catch(e){}return A};
+    A.pLive={look:pl,rot:-.5,opt:{height:b.height,arch:b.arch,sash:beltsOf('P',b.div).length>0}};A.oLive={look:ol,rot:.5,seed:hashStr(String(f.id)),opt:{height:f.height,arch:f.arch,legend:f.legend,sash:beltsOf(f.id,f.div).length>0}}}catch(e){}return A};
   return A}
 function startFight(sim,resume){
   const n=G.next,o=n.offer,f=G.world.f[o.oppId],wi=weightInfo();

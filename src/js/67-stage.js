@@ -13,7 +13,7 @@ function r3stage(host,look,opt={}){
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
   if(opt.bg)sc.background=new THREE.Color(opt.bg);
-  if(opt.belt)r3belt(bx,L);const fx=opt.title?r3spectacle(sc,opt.title):null;
+  if(opt.belt||opt.sash)r3belt(bx,L,!!opt.sash,!!opt.robe);const fx=opt.title?r3spectacle(sc,opt.title):null;
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
   for(const ev of ['pointerup','pointercancel','pointerleave'])cv.addEventListener(ev,()=>drag=null);
@@ -40,8 +40,11 @@ function r3waist(mk){const M=R3M.m[mk];if(M.waist)return M.waist;const X=M.extra
     xm=Math.max(xm,Math.abs(p[v*3]));zf=Math.max(zf,p[v*3+2]);zb=Math.min(zb,p[v*3+2])}
   return M.waist={y:y0-J.pelvis[1],z:(zf+zb)/2-J.pelvis[2],rx:xm,rz:(zf-zb)/2}}
 /* a championship belt buckled round the waist: black strap, gold trim, a big gold centre plate and two side plates */
-function r3belt(bx,L){const u=bx.userData;if(!u.rig)return null;const W=r3waist(u.mk),BT=R3_RIG_BT[L.bt]||R3_RIG_BT.athletic;
-  const rx=W.rx+.022,rz=W.rz+.03+BT.belly*.05,g=new THREE.Group();g.position.set(0,W.y,W.z+BT.belly*.025);
+/* sash: a reigning champion walks out with it slung from the left shoulder across to the right hip (over the robe when worn) */
+function r3belt(bx,L,sash,robe){const u=bx.userData;if(!u.rig)return null;const W=r3waist(u.mk),BT=R3_RIG_BT[L.bt]||R3_RIG_BT.athletic,J=R3M.m[u.mk].extras.joints;
+  let rx=W.rx+.022,rz=W.rz+.03+BT.belly*.05;const g=new THREE.Group();g.position.set(0,W.y,W.z+BT.belly*.025);
+  if(sash){const sh=J.shL,hy=J.pelvis[1]+.06,dx=sh[0]*.85+.12,dy=sh[1]+.04-hy,k=robe&&L.robe?(R3_ROBE[L.robe]&&R3_ROBE[L.robe].fit?1.34:1.3):1;rx=Math.hypot(dx,dy)/2*k*1.04;rz=(W.rz+.05+BT.belly*.03)*k;
+    g.position.set(dx/2-.12,hy+dy/2-J.spine[1],W.z+J.pelvis[2]-J.spine[2]+.01);g.rotation.z=Math.atan2(dy,dx)}
   const gold=new THREE.MeshStandardMaterial({color:0xe0b04a,metalness:1,roughness:.28}),strap=new THREE.MeshStandardMaterial({color:0x17120e,roughness:.6}),gem=new THREE.MeshStandardMaterial({color:0xb01828,metalness:.4,roughness:.15});
   const band=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.085,48,1,true),strap);band.material.side=THREE.DoubleSide;band.scale.set(rx,1,rz);g.add(band);
   for(const y of [-.043,.043]){const t=new THREE.Mesh(new THREE.TorusGeometry(1,.009,6,64),gold);t.rotation.x=Math.PI/2;t.scale.set(rx,rz,1);t.position.y=y;g.add(t)}
@@ -50,7 +53,7 @@ function r3belt(bx,L){const u=bx.userData;if(!u.rig)return null;const W=r3waist(
     const ring=new THREE.Mesh(new THREE.TorusGeometry(r*.72,.006,6,40),gold);ring.position.z=.012;m.add(ring);
     m.position.set(Math.sin(a)*rx,0,Math.cos(a)*rz+dz);m.rotation.y=Math.atan2(Math.sin(a)*rz,Math.cos(a)*rx);g.add(m)};
   plate(.12,0,.012);for(const a of [-.95,.95])plate(.055,a,.006);
-  u.pelvis.add(g);u.belt=g;return g}
+  (sash?u.spine:u.pelvis).add(g);u.belt=g;return g}
 /* big-fight spectacle around a live stage: sweeping coloured beams and pyro bursts either side. Returns a per-frame update. */
 function r3spectacle(sc,kind){const g=new THREE.Group();sc.add(g);let t=0;
   const beams=[[0xffd27a,-1.4,.0],[0x7aa6ff,1.4,1.7],[0xffffff,0,3.1]].map(([c,x,ph])=>{const m=new THREE.Mesh(new THREE.ConeGeometry(.75,7,24,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.09,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));

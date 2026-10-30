@@ -653,6 +653,7 @@ class Fight{
     if(this.cfg.headless)return;
     const K=this.kdClip,clip=['KO','TKO'].includes(method)&&K&&K.round===this.round&&this.r3d&&Settings.replay!==false&&K.frames.length>20?K:null;
     const out=()=>{this.destroy();this.cfg.onEnd(this.res)};
+    if(this.cfg.announce&&this.cfg.announce.names&&['UD','SD','MD','DRAW','SPLIT DRAW'].includes(method)){setTimeout(()=>this.readCards(winner,method,out),2200);return}
     // a sculpted opponent who beats you gets a moment to celebrate
     const cel=winner==='o'&&this.r3d&&this.r3d.mc?1600:0;
     setTimeout(()=>{if(clip&&this.r3d)this.playReplay(clip,out);else out()},(clip?1700:2600)+cel);
@@ -814,6 +815,20 @@ class Fight{
         if(r3stageOn(side.look)){img.replaceWith(host);r3stage(host,side.look,Object.assign({clip:r3entrance(side.look,side.seed||0),robe:true,rot:side.rot,bg:0x161a2c,zoom:1.3,title:A.title?'walk':null},side.opt))}}},80);
     const done=()=>{if(!this.announcing)return;this.announcing=false;clearTimeout(this.annTO);el.remove();if(this.ov)this.ov.style.visibility='';this.paused=false;this.last=performance.now();Sfx.roar(.3,1.2)};
     el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()});this.annTO=setTimeout(done,A.lines.length*1150+1500)}
+  /* the decision read out: each judge's card, a pause, then the winner (and, in a title fight, "and still" or "and new") */
+  readCards(winner,method,out){const A=this.cfg.announce,N=A.names,el=document.createElement('div');el.className='annc'+(A.title?' title':'');
+    const J=['A. Torres','M. Klein','S. Okafor'],R=this.cfg.rounds,draw=winner==='draw';
+    const L=[{t:'Ladies and gentlemen, we go to the scorecards',k:1},{t:`After ${R} rounds of boxing…`}];
+    this.cards.forEach((c,i)=>L.push({t:c[0]===c[1]?`Judge ${J[i]} scores it even, ${c[0]}-${c[1]}.`:`Judge ${J[i]} scores it ${Math.max(c[0],c[1])}-${Math.min(c[0],c[1])}.`}));
+    const how={UD:'unanimous decision',SD:'split decision',MD:'majority decision'}[method];
+    if(draw)L.push({t:method==='SPLIT DRAW'?'This bout is declared… a split draw!':'This bout is declared… a draw!',w:1});
+    else{const nm=N[winner],tag=A.title?(A.champ===winner?`AND STILL ${A.belts.join(' and ')} ${A.div} champion of the world…`:`AND NEW ${A.belts.join(' and ')} ${A.div} champion of the world…`):'your winner…';
+      L.push({t:`For the winner, by ${how}…`},{t:tag,g:A.title?1:0,gap:1},{t:nm.toUpperCase()+'!',w:1,gap:.6})}
+    let d=0;el.innerHTML=L.map(l=>{d+=l.gap||0;const h=`<div class="al${l.k?' k':''}${l.g?' g':''}${l.w?' win':''}" style="animation-delay:${d.toFixed(2)}s">${esc(l.t)}</div>`;d+=1.15;return h}).join('')+'<div class="skip">Tap to skip</div>';
+    this.stage.appendChild(el);if(this.ov)this.ov.style.visibility='hidden';
+    const tw=setTimeout(()=>{Sfx.roar(.45,2.5)},(d-1.15)*1000);
+    let gone=false;const done=()=>{if(gone)return;gone=true;clearTimeout(tw);clearTimeout(to);el.remove();out()};const to=setTimeout(done,(d+1.6)*1000);
+    el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();done()})}
   resume(){$('#pzov',this.el)?.remove();this.paused=false;this.last=performance.now()}
   snapshot(){
     const c=x=>({hp:+x.hp.toFixed(1),maxHp:+x.maxHp.toFixed(1),sta:+x.sta.toFixed(1),state:x.state,hurt:+x.hurt.toFixed(2),kd:x.kdTotal,cut:+x.cut.toFixed(0),meter:+x.meter.toFixed(0),stats:x.stats});
