@@ -3560,21 +3560,27 @@ function r3refPose(bx,mode,o={}){const u=bx.userData,t=o.t||0;
     r3ik(u.arms[s],T,P);u.arms[s].glove.rotation.set(0,0,0)}}
 /* the referee in the fight: out of shot by the ropes until he's needed. He walks in to count over a knockdown, wave off a
    stoppage or break a clinch, then walks back. R is the fight renderer. */
-const REF_HOME={x:-2.1,z:-1.3};
+const REF_HOME={x:-1.45,z:-1.05};
 function r3refTick(R,dt){const f=R.f,bx=R.ref;if(!bx)return;const S=R.refS||(R.refS={x:REF_HOME.x,z:REF_HOME.z,yaw:.8,walk:0,P:new Float32Array(MC_F),t:0});S.t+=dt;
-  let tx=REF_HOME.x,tz=REF_HOME.z,lx=0,lz=.6,mode='stand',o={t:S.t};const c=f.count,res=f.res||{};
+  let tx=REF_HOME.x,tz=REF_HOME.z,lx=0,lz=.6,mode='stand',o={t:S.t},fast=false;const c=f.count,res=f.res||{};
   if(f.phase==='down'&&c){if(c.d.side==='o'){tx=-.62;tz=-.75;lx=.1;lz=.1;o.lean=.2;o.nod=.3}else{tx=-.3;tz=-.1;lx=0;lz=2.6;o.lean=.22;o.nod=.15}
     mode='count';o.phase=c.t<0?.3:c.t}
   else if(f.ended&&['KO','TKO','RTD','DQ'].includes(res.method)){tx=-.8;tz=-.35;lx=0;lz=2.6;mode='wave'}
-  else if(f.p.state==='clinch'||f.o.state==='clinch'){tx=-.75;tz=-.2;lx=.5;lz=1.2;mode='break';o.hands=[_rv[2].set(-.25,R.hyW-.45,.55),_rv[3].set(-.35,R.hyW-.4,1.1)]}
+  else if(f.p.state==='clinch'||f.o.state==='clinch'||S.brk>0){if(f.p.state==='clinch'||f.o.state==='clinch')S.brk=.8;else S.brk-=dt;
+    tx=-.5;tz=.05;lx=.6;lz=1.2;mode='break';fast=true;o.hands=[_rv[2].set(-.12,R.hyW-.45,.6),_rv[3].set(-.2,R.hyW-.4,1.3)]}
   const dx=tx-S.x,dz=tz-S.z,dist=Math.hypot(dx,dz),walking=dist>.06;
-  if(walking){const st=Math.min(dist,2.3*dt);S.x+=dx/dist*st;S.z+=dz/dist*st;S.yaw=r3turn(S.yaw,Math.atan2(dx,dz),dt*8)}
+  if(walking){const st=Math.min(dist,(fast?3.4:2.3)*dt);S.x+=dx/dist*st;S.z+=dz/dist*st;S.yaw=r3turn(S.yaw,Math.atan2(dx,dz),dt*8)}
   else S.yaw=r3turn(S.yaw,Math.atan2(lx-S.x,lz-S.z),dt*6);
   bx.position.set(S.x,.1,S.z);bx.rotation.set(0,S.yaw,0);
   const C=R3MC.ready&&Settings.mocap&&R3MC.clips.walking;
   if(walking&&C){S.walk+=dt;r3mcSample(C,S.walk%C.dur,true,false,S.P);r3mcApply(bx,S.P,{clip:C,lift:0});bx.userData.chest.rotation.set(0,0,0);for(const s of [1,-1])bx.userData.arms[s].glove.rotation.set(0,0,0)}
   else{S.walk=0;r3refPose(bx,mode,o)}}
 function r3turn(a,b,k){let d=((b-a)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI;return a+d*Math.min(1,k)}
+/* results: the referee beside the winner, holding their right hand up (fighter is the sculpted boxer on a live stage) */
+function r3refRaise(ref,bx){const a=bx.userData.arms[-1],u=bx.userData;bx.updateWorldMatrix(true,true);
+  const T=bx.localToWorld(_rv[2].set(-.36,u.hy0+.5,.12)),P=bx.localToWorld(_rv[3].set(-1.2,u.hy0-.6,-.4));r3ik(a,T,P);a.glove.rotation.set(0,0,0);
+  r3refPose(ref,'stand',{look:-.15});const H=_rv[0].copy(T);H.y-=.12;const r=ref.userData;ref.updateWorldMatrix(true,true);
+  r3ik(r.arms[1],H,ref.localToWorld(_rv[1].set(1.2,r.hy0-1.2,-.6)))}
 /* ================= real-time fight engine =================
    Simulation runs on a fixed 1/120 s step with its own seeded RNG; rendering interpolates poses. */
 const PUNCH={
@@ -5877,9 +5883,10 @@ function beltPresentHTML(bt){const d=DIVS[bt.div];
     <p class="muted" style="margin:0;font-size:13.5px">${bt.defense?`The ${bt.belts.join(' and ')} ${esc(d.name)} ${bt.belts.length>1?'belts go':'belt goes'} back around your waist.`:`The ${bt.belts.join(' and ')} ${bt.belts.length>1?'belts are':'belt is'} strapped around your waist. ${isW()?"Women's ":''}${esc(d.name)} champion of the world.`}</p></div>`}
 /* the results screen: your fighter celebrates a win (a KO gets the big one) or hangs their head after a loss */
 AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=UI.lastResult.res,b=B(),win=res.winner==='p',ko=['KO','TKO','RTD'].includes(res.method);
-  const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
+  const ref=win&&!ko;   // a decision (or DQ) win: the referee raises your hand
+  const clip=win?(ko?['victory','victoryIdle1']:ref?['victoryIdle']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
   const belt=win&&UI.lastResult.sum.belt;
-  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
+  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:ref?.15:-.2,ref,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 
@@ -6469,6 +6476,7 @@ function r3stage(host,look,opt={}){
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
   if(opt.bg)sc.background=new THREE.Color(opt.bg);
+  let ref=null;if(opt.ref&&r3refOn()&&bx.userData.rig){try{ref=r3referee();ref.position.set(-.62,0,-.05);ref.rotation.y=.3;sc.add(ref);bx.position.x=.3}catch(e){ref=null}}
   if(opt.belt||opt.sash)r3belt(bx,L,!!opt.sash,!!opt.robe);const fx=opt.title?r3spectacle(sc,opt.title):null;
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
@@ -6482,8 +6490,8 @@ function r3stage(host,look,opt={}){
     if(ct>C.dur&&!hold){prev.set(P);fade=0;ct=0;i=(i+1)%list.length;C=R3MC.clips[list[i]]}
     r3mcSample(C,Math.min(ct,C.dur),!hold&&list.length===1,!!opt.mirror,P);
     if(fade<1){fade=Math.min(1,fade+dt/.35);r3mcBlend(prev,P,fade*fade*(3-2*fade),blend);P.set(blend)}
-    if(fx)fx(dt);r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
-    const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
+    if(fx)fx(dt);r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);if(ref)r3refRaise(ref,bx);
+    const h=2.45*bx.scale.y,z=(opt.zoom||1)*(ref?.82:1);cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
 /* ring entrance clips by style; opponents without one get a fitting choice from their personality */
 const R3_ENTRANCE={walk:['walking'],shadow:['walking','leadJab','crossPunch','walking','hook'],taunt:['walking','taunt','walking','taunt1'],thump:['walking','standingTauntChestThump'],

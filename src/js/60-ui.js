@@ -922,9 +922,10 @@ function beltPresentHTML(bt){const d=DIVS[bt.div];
     <p class="muted" style="margin:0;font-size:13.5px">${bt.defense?`The ${bt.belts.join(' and ')} ${esc(d.name)} ${bt.belts.length>1?'belts go':'belt goes'} back around your waist.`:`The ${bt.belts.join(' and ')} ${bt.belts.length>1?'belts are':'belt is'} strapped around your waist. ${isW()?"Women's ":''}${esc(d.name)} champion of the world.`}</p></div>`}
 /* the results screen: your fighter celebrates a win (a KO gets the big one) or hangs their head after a loss */
 AFTER.result=()=>{const el=$('#rstage');if(!el||!UI.lastResult)return;const res=UI.lastResult.res,b=B(),win=res.winner==='p',ko=['KO','TKO','RTD'].includes(res.method);
-  const clip=win?(ko?['victory','victoryIdle1']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
+  const ref=win&&!ko;   // a decision (or DQ) win: the referee raises your hand
+  const clip=win?(ko?['victory','victoryIdle1']:ref?['victoryIdle']:['victoryIdle','victory']):res.winner==='draw'?['fightingIdle']:['defeated'];
   const belt=win&&UI.lastResult.sum.belt;
-  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:-.2,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
+  el.style.display='block';if(!r3stage(el,playerLook(),{clip,hold:!win&&res.winner!=='draw',height:b.height,arch:b.arch,rot:ref?.15:-.2,ref,belt:!!belt,title:belt?'belt':null,bg:belt?0x14121c:null}))el.style.display='none'};
 /* the locker: your fighter shows off the kit in their stance */
 AFTER.locker=(()=>{const prev=AFTER.locker;return a=>{if(prev)prev(a);const el=$('#lkstage'),b=B();if(el){const L=playerLook();r3stage(el,L,{clip:L.entrance&&L.entrance!=='walk'?r3entrance(L,0):['fightingIdle','taunt'],height:b.height,arch:b.arch})}}})();
 

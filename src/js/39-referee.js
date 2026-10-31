@@ -60,18 +60,24 @@ function r3refPose(bx,mode,o={}){const u=bx.userData,t=o.t||0;
     r3ik(u.arms[s],T,P);u.arms[s].glove.rotation.set(0,0,0)}}
 /* the referee in the fight: out of shot by the ropes until he's needed. He walks in to count over a knockdown, wave off a
    stoppage or break a clinch, then walks back. R is the fight renderer. */
-const REF_HOME={x:-2.1,z:-1.3};
+const REF_HOME={x:-1.45,z:-1.05};
 function r3refTick(R,dt){const f=R.f,bx=R.ref;if(!bx)return;const S=R.refS||(R.refS={x:REF_HOME.x,z:REF_HOME.z,yaw:.8,walk:0,P:new Float32Array(MC_F),t:0});S.t+=dt;
-  let tx=REF_HOME.x,tz=REF_HOME.z,lx=0,lz=.6,mode='stand',o={t:S.t};const c=f.count,res=f.res||{};
+  let tx=REF_HOME.x,tz=REF_HOME.z,lx=0,lz=.6,mode='stand',o={t:S.t},fast=false;const c=f.count,res=f.res||{};
   if(f.phase==='down'&&c){if(c.d.side==='o'){tx=-.62;tz=-.75;lx=.1;lz=.1;o.lean=.2;o.nod=.3}else{tx=-.3;tz=-.1;lx=0;lz=2.6;o.lean=.22;o.nod=.15}
     mode='count';o.phase=c.t<0?.3:c.t}
   else if(f.ended&&['KO','TKO','RTD','DQ'].includes(res.method)){tx=-.8;tz=-.35;lx=0;lz=2.6;mode='wave'}
-  else if(f.p.state==='clinch'||f.o.state==='clinch'){tx=-.75;tz=-.2;lx=.5;lz=1.2;mode='break';o.hands=[_rv[2].set(-.25,R.hyW-.45,.55),_rv[3].set(-.35,R.hyW-.4,1.1)]}
+  else if(f.p.state==='clinch'||f.o.state==='clinch'||S.brk>0){if(f.p.state==='clinch'||f.o.state==='clinch')S.brk=.8;else S.brk-=dt;
+    tx=-.5;tz=.05;lx=.6;lz=1.2;mode='break';fast=true;o.hands=[_rv[2].set(-.12,R.hyW-.45,.6),_rv[3].set(-.2,R.hyW-.4,1.3)]}
   const dx=tx-S.x,dz=tz-S.z,dist=Math.hypot(dx,dz),walking=dist>.06;
-  if(walking){const st=Math.min(dist,2.3*dt);S.x+=dx/dist*st;S.z+=dz/dist*st;S.yaw=r3turn(S.yaw,Math.atan2(dx,dz),dt*8)}
+  if(walking){const st=Math.min(dist,(fast?3.4:2.3)*dt);S.x+=dx/dist*st;S.z+=dz/dist*st;S.yaw=r3turn(S.yaw,Math.atan2(dx,dz),dt*8)}
   else S.yaw=r3turn(S.yaw,Math.atan2(lx-S.x,lz-S.z),dt*6);
   bx.position.set(S.x,.1,S.z);bx.rotation.set(0,S.yaw,0);
   const C=R3MC.ready&&Settings.mocap&&R3MC.clips.walking;
   if(walking&&C){S.walk+=dt;r3mcSample(C,S.walk%C.dur,true,false,S.P);r3mcApply(bx,S.P,{clip:C,lift:0});bx.userData.chest.rotation.set(0,0,0);for(const s of [1,-1])bx.userData.arms[s].glove.rotation.set(0,0,0)}
   else{S.walk=0;r3refPose(bx,mode,o)}}
 function r3turn(a,b,k){let d=((b-a)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI;return a+d*Math.min(1,k)}
+/* results: the referee beside the winner, holding their right hand up (fighter is the sculpted boxer on a live stage) */
+function r3refRaise(ref,bx){const a=bx.userData.arms[-1],u=bx.userData;bx.updateWorldMatrix(true,true);
+  const T=bx.localToWorld(_rv[2].set(-.36,u.hy0+.5,.12)),P=bx.localToWorld(_rv[3].set(-1.2,u.hy0-.6,-.4));r3ik(a,T,P);a.glove.rotation.set(0,0,0);
+  r3refPose(ref,'stand',{look:-.15});const H=_rv[0].copy(T);H.y-=.12;const r=ref.userData;ref.updateWorldMatrix(true,true);
+  r3ik(r.arms[1],H,ref.localToWorld(_rv[1].set(1.2,r.hy0-1.2,-.6)))}

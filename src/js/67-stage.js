@@ -13,6 +13,7 @@ function r3stage(host,look,opt={}){
   const cam=new THREE.PerspectiveCamera(30,1,.05,40);
   const list=(Array.isArray(opt.clip)?opt.clip:[opt.clip||'fightingIdle']).filter(k=>R3MC.clips[k]&&mcOk(k));if(!list.length)list.push('fightingIdle');
   if(opt.bg)sc.background=new THREE.Color(opt.bg);
+  let ref=null;if(opt.ref&&r3refOn()&&bx.userData.rig){try{ref=r3referee();ref.position.set(-.62,0,-.05);ref.rotation.y=.3;sc.add(ref);bx.position.x=.3}catch(e){ref=null}}
   if(opt.belt||opt.sash)r3belt(bx,L,!!opt.sash,!!opt.robe);const fx=opt.title?r3spectacle(sc,opt.title):null;
   let rot=opt.rot??-.3,drag=null,i=0,ct=0,last=performance.now(),lastDraw=0;
   cv.addEventListener('pointerdown',e=>{drag=e.clientX});cv.addEventListener('pointermove',e=>{if(drag==null)return;rot+=(e.clientX-drag)*.012;drag=e.clientX});
@@ -26,8 +27,8 @@ function r3stage(host,look,opt={}){
     if(ct>C.dur&&!hold){prev.set(P);fade=0;ct=0;i=(i+1)%list.length;C=R3MC.clips[list[i]]}
     r3mcSample(C,Math.min(ct,C.dur),!hold&&list.length===1,!!opt.mirror,P);
     if(fade<1){fade=Math.min(1,fade+dt/.35);r3mcBlend(prev,P,fade*fade*(3-2*fade),blend);P.set(blend)}
-    if(fx)fx(dt);r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);
-    const h=2.45*bx.scale.y,z=opt.zoom||1;cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
+    if(fx)fx(dt);r3mcApply(bx,P,{clip:C,lift:0});bx.rotation.y=rot;bx.updateWorldMatrix(true,true);if(ref)r3refRaise(ref,bx);
+    const h=2.45*bx.scale.y,z=(opt.zoom||1)*(ref?.82:1);cam.position.set(Math.sin(.15)*h*2.55/z,h*.6,Math.cos(.15)*h*2.55/z);cam.lookAt(0,h*.52,0);r.render(sc,cam)};
   requestAnimationFrame(tick);return true}
 /* ring entrance clips by style; opponents without one get a fitting choice from their personality */
 const R3_ENTRANCE={walk:['walking'],shadow:['walking','leadJab','crossPunch','walking','hook'],taunt:['walking','taunt','walking','taunt1'],thump:['walking','standingTauntChestThump'],
