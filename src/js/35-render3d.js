@@ -706,6 +706,8 @@ class Render3D{
       // forearm: a unit-length limb stretched each frame from the glove's cuff back to a shoulder point below the screen
       const fore=r3mesh(r3limb(1,t=>(.085+.025*Math.sin(t*Math.PI*.8))/(1),1,1),foreM,{olw:.004});r3outline(fore);this.cam.add(fore);
       this.pg[h]={g:gl,s,gm,fore}}
+    // the referee (sculpted fighters only)
+    if(r3refOn()&&!low)try{this.ref=r3referee();this.scene.add(this.ref)}catch(e){this.ref=null}
     this.texKey='';this.fxSeen=0;this.flashT=0;
     this.resize();
   }
@@ -799,7 +801,7 @@ class Render3D{
     const hy=this.hyW;this.cam.position.set(cx,hy-.36+cy,2.62);
     const look=_v[2].set(cx*.4,hy-.56+cy*.5,.2);this.cam.lookAt(look);this.cam.rotation.z+=c.rot;
     this.cam.updateProjectionMatrix();this.cam.updateMatrixWorld();
-    this.poseOpp(P,glow);this.posePlayer();
+    this.poseOpp(P,glow);this.posePlayer();if(this.ref)r3refTick(this,rdt);
     if(f.fx.length>this.fxSeen){const last=f.fx[f.fx.length-1];const body=last.y>200;const u0=this.opp.userData;const hp=_v[3].set(0,body?u0.hy0-.6:u0.hy0,.25).applyMatrix4(this.opp.matrixWorld);this.oppFlash.position.copy(hp);this.flashT=.18*(last.s||1);this.oppFlash.material.color.set(last.col||'#fff3d6');this.oppFlash.scale.setScalar(.8*(last.s||1))}
     this.fxSeen=f.fx.length;
     this.flashT=Math.max(0,this.flashT-rdt);this.oppFlash.material.opacity=Math.min(1,this.flashT*7);
