@@ -55,6 +55,7 @@ function r3refPose(bx,mode,o={}){const u=bx.userData,t=o.t||0;
     if(mode==='count'&&s===-1){const ph=o.phase||0,up=ph<.55?ph/.55:1-(ph-.55)/.45;T=W(_rv[0],-.42,hy-.8+up*.65,.6);P=W(_rv[1],-1.2,hy-1,-.2)}
     else if(mode==='wave'){const sw=Math.sin(t*9)*.32;T=W(_rv[0],s*(.18+sw*s),hy+.1,.35);P=W(_rv[1],s*1.2,hy-.4,-.4)}
     else if(mode==='break'&&o.hands){T=_rv[0].copy(o.hands[s>0?0:1]);P=W(_rv[1],s*1.2,hy-1.2,-.3)}
+    else if(mode==='warn'&&s===-1){T=W(_rv[0],-.22+Math.sin(t*13)*.05,hy-.18,.6);P=W(_rv[1],-1.2,hy-.8,-.2)}
     else if(mode==='raise'&&s===-1){T=W(_rv[0],-.42,hy+.55,.08);P=W(_rv[1],-1.2,hy,-.5)}
     else{T=W(_rv[0],s*.3,hy-1.05,.05);P=W(_rv[1],s*.6,hy-.8,-.6)}
     r3ik(u.arms[s],T,P);u.arms[s].glove.rotation.set(0,0,0)}}
@@ -67,6 +68,7 @@ function r3refTick(R,dt){const f=R.f,bx=R.ref;if(!bx)return;const S=R.refS||(R.r
   if(f.phase==='down'&&c){if(c.d.side==='o'){tx=-.62;tz=-.75;lx=.1;lz=.1;o.lean=.2;o.nod=.3}else{tx=-.3;tz=-.1;lx=0;lz=2.6;o.lean=.22;o.nod=.15}
     mode='count';o.phase=c.t<0?.3:c.t}
   else if(f.ended&&['KO','TKO','RTD','DQ'].includes(res.method)){tx=-.8;tz=-.35;lx=0;lz=2.6;mode='wave'}
+  else if(f.foulAt&&performance.now()-f.foulAt<2600){tx=-.5;tz=-.25;lx=0;lz=.3;mode='warn';fast=true}   // a foul: he steps in and wags a finger at the offender
   else if(f.phase==='intro'){tx=-.6;tz=-.15;lx=.6;lz=.9;mode='break';o.hands=[_rv[2].set(-.15,R.hyW-.8,.45),_rv[3].set(-.25,R.hyW-.8,1)];
     if(f.round===1&&!S.placed){S.x=tx;S.z=tz;S.yaw=Math.atan2(lx-tx,lz-tz)}}   // "protect yourselves at all times": between you until the bell
   else if(f.p.state==='clinch'||f.o.state==='clinch'||S.brk>0){if(f.p.state==='clinch'||f.o.state==='clinch')S.brk=.8;else S.brk-=dt;

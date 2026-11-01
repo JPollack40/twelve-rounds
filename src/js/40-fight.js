@@ -512,7 +512,7 @@ class Fight{
     p.hp=Math.max(1,p.hp-(head?4:2));p.sta=Math.min(p.maxSta,p.sta+14);p.hurt=0;p.pu=null;p.seq=[];p.state='idle';o.pu=null;o.seq=[];o.state='idle';
     this.stop=.8;this.shake=Math.max(this.shake,6);Sfx.hit(.5,true);buzz(40);
     if(head&&!p.cut&&chance(.4)){p.cut=15;this.text('CUT FROM A HEADBUTT','#ff3b3b',200,260,1.2,16)}
-    o.foulAnim={kind:head?'head':'elbow',id:(o.foulAnim?o.foulAnim.id:0)+1};
+    o.foulAnim={kind:head?'head':'elbow',id:(o.foulAnim?o.foulAnim.id:0)+1};this.foulAt=performance.now();
     this.log({ev:'foul',who:'o',kind:head?'head':'elbow',n});
     if(n>=5){this.text('DISQUALIFIED','#ff5a4a',200,140,3,26);this.call('dq');return this.finish('p','DQ','Disqualified for repeated fouls.')}
     if(n>1)o.rs.ded++;
